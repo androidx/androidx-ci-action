@@ -14,29 +14,31 @@
  * limitations under the License.
  */
 
-package dev.androidx.ci.config
+package dev.androidx.ci.gcloud
 
-import com.google.auth.Credentials
+import com.google.cloud.storage.BlobInfo
 
 /**
- * Common configuration for TestRunner.
+ * Represents the unique path of a Google Cloud Storage object.
  */
-class Config {
-    class Github(
-        val endPoint: String = "https://api.github.com",
-        val owner: String,
-        val repo: String,
-        val token: String
-    )
-    class GCloud(
-        val credentials: Credentials,
-        /**
-         * The name of the bucket to use
-         */
-        val bucketName: String,
-        /**
-         * The relative path in the bucket to put values
-         */
-        val bucketPath: String
-    )
+data class GcsPath(val path: String) {
+    override fun toString(): String {
+        return path
+    }
+
+    companion object {
+        fun create(
+            blob: BlobInfo
+        ): GcsPath = create(
+            bucketName = blob.bucket,
+            bucketPath = blob.name
+        )
+
+        fun create(
+            bucketName: String,
+            bucketPath: String
+        ): GcsPath = GcsPath(
+            "gs://$bucketName/$bucketPath"
+        )
+    }
 }

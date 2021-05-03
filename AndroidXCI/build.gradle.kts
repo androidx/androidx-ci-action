@@ -17,7 +17,7 @@
 plugins {
     kotlin("jvm") version "1.4.30" apply false
     id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
-    id("org.jlleitschuh.gradle.ktlint-idea")  version "10.0.0"
+    id("org.jlleitschuh.gradle.ktlint-idea") version "10.0.0"
 }
 
 group = "dev.androidx.build.ci"
