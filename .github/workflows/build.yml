@@ -1,6 +1,6 @@
 name: Test
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -16,4 +16,8 @@ jobs:
       - uses: eskatos/gradle-command-action@v1
         with: 
           build-root-directory: AndroidXCI
+          wrapper-directory: AndroidXCI/gradle/wrapper
+          wrapper-cache-enabled: true
+          dependencies-cache-enabled: true
+          configuration-cache-enabled: true
           arguments: check
