@@ -29,11 +29,21 @@ import retrofit2.http.Path
 import retrofit2.http.Url
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import kotlin.jvm.Throws
 
+/**
+ * Class to handle communications with the Github API
+ */
 interface GithubApi {
+    /**
+     * Returns the artifacts in the given run
+     */
     @GET("actions/runs/{runId}/artifacts")
     suspend fun artifacts(@Path("runId") runId: String): ArtifactsResponse
 
+    /**
+     * Returns the contents of an artifact. Use [zipArchiveStream] to parse the zip file.
+     */
     @GET
     suspend fun zipArchive(@Url path: String): ResponseBody
 
@@ -64,6 +74,10 @@ interface GithubApi {
     }
 }
 
+/**
+ * Opens a stream for the given path and returns a sequence of Zip entries that can be skipped or
+ * read.
+ */
 suspend fun GithubApi.zipArchiveStream(path: String): Sequence<ZipEntryScope> {
     return zipArchive(path).use {
         val zipInputStream = ZipInputStream(it.byteStream().buffered())
@@ -96,7 +110,13 @@ private class ZipEntryScopeImpl(
     }
 }
 
+/**
+ * The scope for reading a single zip entry.
+ * [bytes] can only be accessed while reading the entry in the stream such that trying to access
+ * it afterwards will throw an [IllegalStateException]
+ */
 interface ZipEntryScope {
     val entry: ZipEntry
+    @get:Throws(IllegalStateException::class)
     val bytes: ByteArray
 }

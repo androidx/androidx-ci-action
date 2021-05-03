@@ -18,6 +18,9 @@ package dev.androidx.ci.github.dto
 
 import com.squareup.moshi.Json
 
+/**
+ * Response from artifacts endpoint in github API
+ */
 data class ArtifactsResponse(
     val artifacts: List<Artifact>
 ) {

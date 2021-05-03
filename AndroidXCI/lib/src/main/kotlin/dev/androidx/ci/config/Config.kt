@@ -16,6 +16,9 @@
 
 package dev.androidx.ci.config
 
+/**
+ * Common configuration for TestRunner.
+ */
 class Config {
     class Github(
         val endPoint: String = "https://api.github.com",
