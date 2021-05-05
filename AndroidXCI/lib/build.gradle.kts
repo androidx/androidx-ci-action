@@ -24,6 +24,7 @@ dependencies {
     implementation(libs.bundles.retrofit)
     implementation(libs.moshix.metadata)
     implementation(libs.coroutines.core)
+    implementation(libs.gcloud.storage)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.truth)
