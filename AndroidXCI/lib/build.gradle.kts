@@ -15,8 +15,15 @@
  */
 
 plugins {
+    `kotlin-dsl`
     kotlin("jvm")
     id("org.jlleitschuh.gradle.ktlint")
+    id("androidx-model-builder")
+}
+
+generatedModels {
+    this.pkg.set("dev.androidx.ci.generated.ftl")
+    this.discoveryFileUrl.set("https://testing.googleapis.com/\$discovery/rest?version=v1")
 }
 
 dependencies {

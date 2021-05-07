@@ -1,7 +1,8 @@
 AndroidXCI/build
 AndroidXCI/lib/build
+AndroidXCI/ftlModelBuilder/build
 AndroidXCI/.idea
 **/.idea/**
+**/.gradle/**
 !**/.idea/codeStyleSettings.xml
 !**/.idea/copyright
-AndroidXCI/.gradle

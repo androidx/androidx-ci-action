@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-plugins {
-    kotlin("jvm") version "1.4.31" apply false
-    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
-    id("org.jlleitschuh.gradle.ktlint-idea") version "10.0.0"
+package dev.androidx.ci.codegen.plugin
+
+import org.gradle.api.Project
+import org.gradle.api.provider.Property
+
+interface GeneratedModelsExtension {
+    val discoveryFileUrl: Property<String>
+    val pkg: Property<String>
 }
 
-group = "dev.androidx.build.ci"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
-
-subprojects {
-    repositories {
-        mavenCentral()
-    }
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).configureEach {
-        kotlinOptions {
-            jvmTarget = "1.8"
-        }
-    }
-}
+internal val Project.generatedModelsExt
+    get() = extensions.getByType(GeneratedModelsExtension::class.java)

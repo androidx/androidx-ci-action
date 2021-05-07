@@ -16,3 +16,10 @@
 
 enableFeaturePreview("VERSION_CATALOGS")
 include(":lib")
+pluginManagement {
+    includeBuild("ftlModelBuilder")
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}

@@ -13,27 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+enableFeaturePreview("VERSION_CATALOGS")
 
-plugins {
-    kotlin("jvm") version "1.4.31" apply false
-    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
-    id("org.jlleitschuh.gradle.ktlint-idea") version "10.0.0"
-}
-
-group = "dev.androidx.build.ci"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
-
-subprojects {
-    repositories {
-        mavenCentral()
-    }
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).configureEach {
-        kotlinOptions {
-            jvmTarget = "1.8"
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
         }
     }
 }
