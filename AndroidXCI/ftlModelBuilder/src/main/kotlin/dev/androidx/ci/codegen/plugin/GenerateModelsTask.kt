@@ -25,6 +25,9 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
+/**
+ * Task that generates kotlin model code based on a discovery document.
+ */
 @CacheableTask
 internal abstract class GenerateModelsTask : DefaultTask() {
     @get:Input

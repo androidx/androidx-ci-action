@@ -54,7 +54,7 @@ internal class DiscoveryDocumentModelGenerator(
     fun generate() {
         val discoveryDoc = fetchDiscoveryDocument()
         val processor = SchemaProcessor(
-            dtos = discoveryDoc.schemas.values,
+            schemas = discoveryDoc.schemas.values,
             pkg = pkg
         )
         val typeSpecs = processor.process()
@@ -87,6 +87,5 @@ internal class DiscoveryDocumentModelGenerator(
         return client.newCall(request).execute().use { response ->
             discoveryAdapter.fromJson(response.body!!.source())
         } ?: error("Cannot get discovery document")
-
     }
 }

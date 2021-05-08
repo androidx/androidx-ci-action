@@ -15,6 +15,8 @@
  */
 
 plugins {
+    // cannot use version catalog here yet:
+    // https://melix.github.io/blog/2021/03/version-catalogs-faq.html#_can_i_use_a_version_catalog_to_declare_plugin_versions
     kotlin("jvm") version "1.4.31" apply false
     id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
     id("org.jlleitschuh.gradle.ktlint-idea") version "10.0.0"
@@ -34,6 +36,7 @@ subprojects {
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).configureEach {
         kotlinOptions {
             jvmTarget = "1.8"
+            this.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
         }
     }
 }

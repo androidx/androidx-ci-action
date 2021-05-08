@@ -35,19 +35,19 @@ internal data class SchemaDto(
      * https://tools.ietf.org/html/draft-zyp-json-schema-03#section-5.1
      */
     val type: String,
-    val description: String?,
-    val properties: Map<String, PropertyDto>?
+    val description: String? = null,
+    val properties: Map<String, PropertyDto>? = null
 ) {
     fun isObject() = type == "object"
 }
 
 internal data class PropertyDto(
-    val description: String?,
+    val description: String? = null,
     val type: String?,
     @Json(name = "\$ref")
-    val ref: String?,
-    val enum: List<String>?,
-    val enumDescriptions: List<String>?,
-    val items: PropertyDto?,
-    val format: String?
+    val ref: String? = null,
+    val enum: List<String>? = null,
+    val enumDescriptions: List<String>? = null,
+    val items: PropertyDto? = null,
+    val format: String? = null
 )

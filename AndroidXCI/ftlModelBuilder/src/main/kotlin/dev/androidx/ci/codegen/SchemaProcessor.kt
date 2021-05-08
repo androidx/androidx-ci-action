@@ -31,18 +31,18 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
-import java.util.*
+import java.util.Locale
 
 /**
- * Parses schema data transfer objects into the internal model and figures out which schemas
- * need to be generated.
+ * Converts schemas into KotlinPoet's TypeSpecs with some hand tailored customizations for enums and
+ * nullability.
  */
 internal class SchemaProcessor(
-    val dtos: Collection<SchemaDto>,
+    val schemas: Collection<SchemaDto>,
     val pkg: String,
 ) {
     fun process(): List<TypeSpec> {
-        return dtos.filter {
+        return schemas.filter {
             it.isObject()
         }.map { schemaDto ->
             schemaDto.toTypeSpec()
@@ -64,7 +64,7 @@ internal class SchemaProcessor(
                     enumSpec.addEnumConstant(
                         name = enumValue,
                         typeSpec = TypeSpec.anonymousClassBuilder().addKdoc(
-                            propertyDto.enumDescriptions?.getOrNull(index)?.senitize() ?: ""
+                            propertyDto.enumDescriptions?.getOrNull(index)?.sanitize() ?: ""
                         ).build()
                     )
                 }
@@ -104,7 +104,7 @@ internal class SchemaProcessor(
         )
         typeSpec.addTypes(enumSpecs)
         typeSpec.addKdoc(
-            description?.senitize() ?: ""
+            description?.sanitize() ?: ""
         )
         return typeSpec.build()
     }
@@ -120,13 +120,9 @@ internal class SchemaProcessor(
                 name = name,
             )
         ).addKdoc(
-            description?.senitize() ?: ""
+            description?.sanitize() ?: ""
         ).initializer(name)
             .build()
-    }
-
-    private fun PropertyDto.isNullable(name: String): Boolean {
-        return name != "id" && description?.startsWith("Required.") != true
     }
 
     private fun PropertyDto.toTypeName(
@@ -172,5 +168,15 @@ internal class SchemaProcessor(
         )
     }
 
-    private fun String.senitize() = replace("%", "%%")
+    private fun String.sanitize() = replace("%", "%%")
+}
+
+/**
+ * There is no nullability information in discovery documents.
+ * Instead we infer from:
+ * property name (id)
+ * documentation (if it starts with Required)
+ */
+internal fun PropertyDto.isNullable(name: String): Boolean {
+    return name != "id" && description?.startsWith("Required.") != true
 }

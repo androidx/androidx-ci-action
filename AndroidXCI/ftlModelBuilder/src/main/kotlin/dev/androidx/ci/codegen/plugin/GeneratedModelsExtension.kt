@@ -16,13 +16,19 @@
 
 package dev.androidx.ci.codegen.plugin
 
-import org.gradle.api.Project
 import org.gradle.api.provider.Property
 
+/**
+ * Extension to configure the settings for model generation.
+ */
 interface GeneratedModelsExtension {
+    /**
+     * The URL to the discovery file
+     */
     val discoveryFileUrl: Property<String>
+
+    /**
+     * Root package for generated classes
+     */
     val pkg: Property<String>
 }
-
-internal val Project.generatedModelsExt
-    get() = extensions.getByType(GeneratedModelsExtension::class.java)

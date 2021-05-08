@@ -16,6 +16,7 @@
 plugins {
     kotlin("jvm") version "1.4.31"
     `java-gradle-plugin`
+    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
 }
 repositories {
     mavenCentral()
@@ -32,13 +33,12 @@ dependencies {
     implementation(libs.okhttp.core)
     implementation(libs.moshi.kotlin)
     implementation(libs.kotlinpoet)
+    testImplementation(libs.truth)
 }
 
 gradlePlugin {
-    // Add fake plugin, if you don't have any
     plugins.register("androidx-model-builder") {
         id = "androidx-model-builder"
         implementationClass = "dev.androidx.ci.codegen.plugin.GenerateModelsPlugin"
     }
-    // Or provide your implemented plugins
 }
