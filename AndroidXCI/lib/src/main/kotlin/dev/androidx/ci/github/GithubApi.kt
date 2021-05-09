@@ -16,10 +16,9 @@
 
 package dev.androidx.ci.github
 
-import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.github.dto.ArtifactsResponse
-import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
+import dev.androidx.ci.util.MOSHI
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Retrofit
@@ -27,6 +26,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Url
+import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import kotlin.jvm.Throws
@@ -60,14 +60,12 @@ interface GithubApi {
                             .build()
                     )
                 }
-            }.build()
-            val moshi = Moshi.Builder()
-                .add(MetadataKotlinJsonAdapterFactory())
+            }.callTimeout(10, TimeUnit.MINUTES)
                 .build()
             return Retrofit.Builder()
                 .client(client)
                 .baseUrl("${config.endPoint}/repos/${config.owner}/${config.repo}/")
-                .addConverterFactory(MoshiConverterFactory.create(moshi))
+                .addConverterFactory(MoshiConverterFactory.create(MOSHI))
                 .build()
                 .create(GithubApi::class.java)
         }

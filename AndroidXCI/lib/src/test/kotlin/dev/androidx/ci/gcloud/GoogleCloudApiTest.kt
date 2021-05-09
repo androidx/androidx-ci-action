@@ -25,12 +25,18 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
+import org.apache.logging.log4j.kotlin.logger
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
 class GoogleCloudApiTest {
+
+    @Test
+    fun logging() {
+        logger().info("hello")
+    }
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun noAuthentication_checkCorrectContext() {
