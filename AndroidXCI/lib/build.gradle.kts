@@ -32,6 +32,7 @@ dependencies {
     implementation(libs.moshix.metadata)
     implementation(libs.coroutines.core)
     implementation(libs.gcloud.storage)
+    implementation(libs.bundles.log4j)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.truth)

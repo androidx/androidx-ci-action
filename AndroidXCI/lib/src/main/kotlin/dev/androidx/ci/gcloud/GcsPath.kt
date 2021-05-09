@@ -21,7 +21,23 @@ import com.google.cloud.storage.BlobInfo
 /**
  * Represents the unique path of a Google Cloud Storage object.
  */
-data class GcsPath(val path: String) {
+class GcsPath(path: String) {
+    init {
+        check(path.startsWith("gs://")) {
+            "Invalid Google Cloud Storage path: $path"
+        }
+    }
+    val path = path.trim {
+        it == '/'
+    }
+
+    operator fun plus(other: String): GcsPath {
+        val trimmed = other.trim {
+            it == '/'
+        }
+        return GcsPath("$path/$trimmed")
+    }
+
     override fun toString(): String {
         return path
     }

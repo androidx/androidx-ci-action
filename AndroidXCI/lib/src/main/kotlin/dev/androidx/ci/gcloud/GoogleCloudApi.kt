@@ -42,6 +42,12 @@ interface GoogleCloudApi {
         bytes: ByteArray
     ): GcsPath
 
+    suspend fun existingFilePath(
+        relativePath: String
+    ): GcsPath?
+
+    fun getGcsPath(relativePath: String): GcsPath
+
     companion object {
         fun build(
             config: Config.GCloud,
@@ -62,6 +68,8 @@ private class GoogleCloudApiImpl(
         }
     }
 
+    private val rootGcsPath = GcsPath("gs://${config.bucketName}") + config.bucketPath
+
     private val service: Storage = StorageOptions.newBuilder()
         .setCredentials(
             config.credentials
@@ -79,6 +87,17 @@ private class GoogleCloudApiImpl(
         )
         GcsPath.create(blob)
     }
+
+    override suspend fun existingFilePath(relativePath: String): GcsPath? {
+        val artifactBucketPath = makeBucketPath(relativePath)
+        val blobId = BlobId.of(config.bucketName, artifactBucketPath)
+        val blob = service.get(blobId)
+        return blob?.let {
+            GcsPath.create(blob)
+        }
+    }
+
+    override fun getGcsPath(relativePath: String) = rootGcsPath + relativePath
 
     private fun makeBucketPath(relativePath: String) =
         "${config.bucketPath}/$relativePath"
