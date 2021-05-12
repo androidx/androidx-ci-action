@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-plugins {
-    `kotlin-dsl`
-    kotlin("jvm")
-    id("org.jlleitschuh.gradle.ktlint")
-    id("androidx-model-builder")
-}
+package dev.androidx.ci.codegen.plugin
 
-generatedModels {
-    this.pkg.set("dev.androidx.ci.generated.ftl")
-    this.discoveryFileUrl.set("https://testing.googleapis.com/\$discovery/rest?version=v1")
-}
+import org.gradle.api.provider.Property
 
-dependencies {
-    implementation(kotlin("stdlib"))
-    implementation(libs.bundles.retrofit)
-    implementation(libs.moshix.metadata)
-    implementation(libs.coroutines.core)
-    implementation(libs.gcloud.storage)
-    testImplementation(libs.mockwebserver)
-    testImplementation(libs.coroutines.test)
-    testImplementation(libs.truth)
+/**
+ * Extension to configure the settings for model generation.
+ */
+interface GeneratedModelsExtension {
+    /**
+     * The URL to the discovery file
+     */
+    val discoveryFileUrl: Property<String>
+
+    /**
+     * Root package for generated classes
+     */
+    val pkg: Property<String>
 }

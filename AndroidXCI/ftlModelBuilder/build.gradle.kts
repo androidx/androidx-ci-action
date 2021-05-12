@@ -13,26 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
-    `kotlin-dsl`
-    kotlin("jvm")
-    id("org.jlleitschuh.gradle.ktlint")
-    id("androidx-model-builder")
+    kotlin("jvm") version "1.4.31"
+    `java-gradle-plugin`
+    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
+}
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
 }
 
-generatedModels {
-    this.pkg.set("dev.androidx.ci.generated.ftl")
-    this.discoveryFileUrl.set("https://testing.googleapis.com/\$discovery/rest?version=v1")
-}
+group = "dev.androidx.ci"
 
 dependencies {
+    implementation(gradleApi())
+    implementation(kotlin("gradle-plugin-api"))
     implementation(kotlin("stdlib"))
-    implementation(libs.bundles.retrofit)
-    implementation(libs.moshix.metadata)
-    implementation(libs.coroutines.core)
-    implementation(libs.gcloud.storage)
-    testImplementation(libs.mockwebserver)
-    testImplementation(libs.coroutines.test)
+    implementation("org.jlleitschuh.gradle:ktlint-gradle:10.0.0")
+    implementation(libs.okhttp.core)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.kotlinpoet)
     testImplementation(libs.truth)
+}
+
+gradlePlugin {
+    plugins.register("androidx-model-builder") {
+        id = "androidx-model-builder"
+        implementationClass = "dev.androidx.ci.codegen.plugin.GenerateModelsPlugin"
+    }
 }
