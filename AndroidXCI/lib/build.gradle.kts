@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 /*
  * Copyright 2021 The Android Open Source Project
  *
@@ -37,4 +39,8 @@ dependencies {
     testImplementation(libs.mockwebserver)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.truth)
+}
+val compileKotlin: KotlinCompile by tasks
+compileKotlin.kotlinOptions {
+    freeCompilerArgs = listOf("-Xinline-classes")
 }
