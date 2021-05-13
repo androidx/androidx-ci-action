@@ -28,16 +28,35 @@ import dev.androidx.ci.gcloud.GoogleCloudApi
  * This fake is useful for other tests that would interact with GCloud.
  */
 class FakeGoogleCloudApi : GoogleCloudApi {
+    var uploadCount = 0
+        private set
+    private val rootGcsPath = GcsPath("gs://test")
     private val artifacts = mutableMapOf<GcsPath, ByteArray>()
+
+    fun artifacts() = artifacts.toMap()
 
     fun getArtifact(gcsPath: GcsPath) = artifacts[gcsPath]
 
     override suspend fun upload(relativePath: String, bytes: ByteArray): GcsPath {
-        val path = GcsPath.create(
-            bucketName = "local-test",
-            bucketPath = relativePath
-        )
+        uploadCount ++
+        val path = makeGcsPath(relativePath)
         artifacts[path] = bytes
         return path
     }
+
+    override suspend fun existingFilePath(relativePath: String): GcsPath? {
+        val path = makeGcsPath(relativePath)
+        return if (artifacts.containsKey(path)) {
+            path
+        } else {
+            null
+        }
+    }
+
+    private fun makeGcsPath(relativePath: String) = GcsPath.create(
+        bucketName = "local-test",
+        bucketPath = relativePath
+    )
+
+    override fun getGcsPath(relativePath: String): GcsPath = rootGcsPath + relativePath
 }
