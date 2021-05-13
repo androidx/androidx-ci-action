@@ -70,6 +70,10 @@ class FakeFirebaseTestLabApi(
         return testMatrix
     }
 
+    fun deleteTestMatrix(testMatrixId: String) {
+        testMatrices.remove(testMatrixId)
+    }
+
     override suspend fun createTestMatrix(
         projectId: String,
         requestId: String,
