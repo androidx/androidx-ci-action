@@ -39,4 +39,11 @@ class Config {
          */
         val bucketPath: String
     )
+    class FirebaseTestLab(
+        val endPoint: String = "https://testing.googleapis.com/v1/",
+        val credentials: Credentials
+    )
+    class Datastore(
+        val credentials: Credentials,
+    )
 }
