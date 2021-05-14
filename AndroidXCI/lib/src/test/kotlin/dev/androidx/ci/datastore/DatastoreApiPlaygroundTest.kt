@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package dev.androidx.ci.gcloud
+package dev.androidx.ci.datastore
 
-import com.google.common.truth.Truth
+import com.google.cloud.datastore.Entity
+import com.google.cloud.datastore.StringValue
+import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.util.PlaygroundCredentialsRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,41 +26,51 @@ import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 /**
- * This is not a real test. Instead, a utility to play with Google Cloud API.
+ * This is not a real test. Instead, a utility to play with Google Cloud DataStore API.
  *
  * To run it, you'll need Google Cloud Authentication in your environment.
  *
  * export ANDROIDX_GCLOUD_CREDENTIALS="<cloud json key from iam>"
  */
-@RunWith(JUnit4::class)
 @OptIn(ExperimentalCoroutinesApi::class)
-class GoogleCloudApiPlaygroundTest {
+class DatastoreApiPlaygroundTest {
     @get:Rule
     val playgroundCredentialsRule = PlaygroundCredentialsRule()
 
     private val testScope = TestCoroutineScope()
-    @Test
-    fun putItem() = testScope.runBlockingTest {
-        val client = GoogleCloudApi.build(
-            config = Config.GCloud(
-                credentials = playgroundCredentialsRule.credentials,
-                bucketName = "androidx-ftl-test-results",
-                bucketPath = "testing",
+
+    private val datastore by lazy {
+        DatastoreApi.build(
+            Config.Datastore(
+                credentials = playgroundCredentialsRule.credentials
             ),
             context = testScope.coroutineContext
         )
-        val bytes = byteArrayOf(1, 2, 3)
-        val result = client.upload(
-            "unitTest.txt", bytes
+    }
+
+    @Test
+    fun readWrite() = testScope.runBlockingTest {
+        val key = datastore.createKey(
+            kind = "local-test",
+            id = "foo"
         )
-        Truth.assertThat(
-            result
-        ).isEqualTo(
-            GcsPath("gs://androidx-ftl-test-results/testing/unitTest.txt")
+        val entity = Entity.newBuilder()
+            .set("a", "b")
+            .set("c", "dd")
+            .setKey(
+                key
+            )
+            .build()
+        val written = datastore.put(entity)
+        assertThat(
+            written.properties
+        ).containsExactlyEntriesIn(
+            mapOf(
+                "a" to StringValue("b"),
+                "c" to StringValue("dd")
+            )
         )
     }
 }

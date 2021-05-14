@@ -43,8 +43,7 @@ class Config {
         val endPoint: String = "https://testing.googleapis.com/v1/",
         val credentials: Credentials
     )
-    class Firestore(
-        val endPoint: String = "https://firestore.googleapis.com/v1/",
-        val credentials: Credentials
+    class Datastore(
+        val credentials: Credentials,
     )
 }

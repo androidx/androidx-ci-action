@@ -19,6 +19,7 @@ coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", ve
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines"}
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
 gcloud-storage = { module = "com.google.cloud:google-cloud-storage", version = "1.113.16"}
+gcloud-datastore = { module = "com.google.cloud:google-cloud-datastore", version = "1.106.4"}
 log4j-kotlin = { module = "org.apache.logging.log4j:log4j-api-kotlin", version = "1.0.0" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version = "2.14.1"}
 [bundles]

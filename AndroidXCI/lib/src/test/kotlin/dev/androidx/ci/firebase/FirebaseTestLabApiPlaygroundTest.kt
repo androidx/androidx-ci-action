@@ -16,14 +16,12 @@
 
 package dev.androidx.ci.firebase
 
-import com.google.auth.Credentials
-import com.google.auth.oauth2.ServiceAccountCredentials
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.firebase.dto.EnvironmentType
+import dev.androidx.ci.util.PlaygroundCredentialsRule
 import kotlinx.coroutines.runBlocking
-import org.junit.AssumptionViolatedException
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -37,22 +35,15 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 class FirebaseTestLabApiPlaygroundTest {
-    private lateinit var cred: Credentials
     private val projectId = "androidx-dev-prod"
-    @Before
-    fun loadCredentials() {
-        val envValue = System.getenv("ANDROIDX_GCLOUD_CREDENTIALS")
-            ?: throw AssumptionViolatedException("skip test without credentials")
-        cred = ServiceAccountCredentials.fromStream(
-            envValue.byteInputStream(Charsets.UTF_8)
-        )
-    }
+    @get:Rule
+    val playgroundCredentialsRule = PlaygroundCredentialsRule()
 
     @Test
     fun getTestMatrix() = runBlocking<Unit> {
         val ftl = FirebaseTestLabApi.build(
             config = Config.FirebaseTestLab(
-                credentials = cred
+                credentials = playgroundCredentialsRule.credentials
             )
         )
         val matrix = ftl.getTestMatrix(
@@ -68,7 +59,7 @@ class FirebaseTestLabApiPlaygroundTest {
     fun getEnvironmentCatalog() = runBlocking<Unit> {
         val ftl = FirebaseTestLabApi.build(
             config = Config.FirebaseTestLab(
-                credentials = cred
+                credentials = playgroundCredentialsRule.credentials
             )
         )
         val catalog = ftl.getTestEnvironmentCatalog(
