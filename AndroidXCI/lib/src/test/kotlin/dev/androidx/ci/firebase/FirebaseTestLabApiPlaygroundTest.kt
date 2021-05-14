@@ -19,7 +19,7 @@ package dev.androidx.ci.firebase
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.firebase.dto.EnvironmentType
-import dev.androidx.ci.util.PlaygroundCredentialsRule
+import dev.androidx.ci.util.GoogleCloudCredentialsRule
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -37,7 +37,7 @@ import org.junit.runners.JUnit4
 class FirebaseTestLabApiPlaygroundTest {
     private val projectId = "androidx-dev-prod"
     @get:Rule
-    val playgroundCredentialsRule = PlaygroundCredentialsRule()
+    val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 
     @Test
     fun getTestMatrix() = runBlocking<Unit> {

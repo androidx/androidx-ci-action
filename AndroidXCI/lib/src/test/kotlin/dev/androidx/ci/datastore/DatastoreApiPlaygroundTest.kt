@@ -20,7 +20,7 @@ import com.google.cloud.datastore.Entity
 import com.google.cloud.datastore.StringValue
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.config.Config
-import dev.androidx.ci.util.PlaygroundCredentialsRule
+import dev.androidx.ci.util.GoogleCloudCredentialsRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
@@ -37,7 +37,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class DatastoreApiPlaygroundTest {
     @get:Rule
-    val playgroundCredentialsRule = PlaygroundCredentialsRule()
+    val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 
     private val testScope = TestCoroutineScope()
 

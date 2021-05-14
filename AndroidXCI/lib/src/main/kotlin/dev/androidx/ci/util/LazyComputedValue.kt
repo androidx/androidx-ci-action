@@ -16,8 +16,30 @@
 
 package dev.androidx.ci.util
 
-import okio.ByteString.Companion.toByteString
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-fun sha256(input: ByteArray): String {
-    return input.toByteString().sha256().hex()
+@Suppress("UNCHECKED_CAST")
+class LazyComputedValue<T>(
+    val compute: suspend () -> T
+) {
+    private var computed: Any? = NOT_COMPUTED
+    private val mutex = Mutex()
+    suspend fun get(): T {
+        if (computed !== NOT_COMPUTED) {
+            return computed as T
+        }
+        mutex.withLock {
+            if (computed !== NOT_COMPUTED) {
+                return computed as T
+            }
+            return compute().also {
+                computed = it
+            }
+        }
+    }
+
+    companion object {
+        private val NOT_COMPUTED = Any()
+    }
 }
