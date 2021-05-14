@@ -27,6 +27,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Url
+import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import kotlin.jvm.Throws
@@ -60,7 +61,8 @@ interface GithubApi {
                             .build()
                     )
                 }
-            }.build()
+            }.callTimeout(10, TimeUnit.MINUTES)
+                .build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()
