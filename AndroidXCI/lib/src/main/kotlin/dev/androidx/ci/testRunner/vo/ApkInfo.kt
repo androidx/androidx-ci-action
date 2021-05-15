@@ -35,7 +35,7 @@ data class ApkInfo(
         filePath.split('/').last()
     }
 
-    val nameWithoutExtension: String by lazy {
+    val filePathWithoutExtension: String by lazy {
         filePath.split('.').dropLast(1).joinToString("/")
     }
 

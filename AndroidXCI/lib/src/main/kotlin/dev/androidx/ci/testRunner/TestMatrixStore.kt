@@ -34,8 +34,8 @@ import org.apache.logging.log4j.kotlin.logger
 import retrofit2.HttpException
 import java.util.UUID
 /**
- * Maintains test matrices by also adding a caching layer over FTL to avoid re-creating test matrices for the same
- * configuration.
+ * Maintains test matrices by also adding a caching layer over FTL to avoid re-creating test
+ * matrices for the same configuration.
  */
 class TestMatrixStore(
     private val firebaseProjectId: String,
@@ -149,8 +149,10 @@ class TestMatrixStore(
         environmentMatrix = environmentMatrix,
         resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = (resultsGcsPrefix + testRunKey.key.name).path
+                gcsPath = testRunKey.resultGcsPath().path
             )
         )
     )
+
+    private fun TestRun.Id.resultGcsPath() = (resultsGcsPrefix + key.name)
 }

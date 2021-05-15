@@ -31,6 +31,7 @@ generatedModels {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(libs.bundles.retrofit)
+    implementation(libs.moshi.adapters)
     implementation(libs.moshix.metadata)
     implementation(libs.coroutines.core)
     implementation(libs.gcloud.storage)

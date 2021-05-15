@@ -18,7 +18,7 @@ package dev.androidx.ci.gcloud
 
 import com.google.common.truth.Truth
 import dev.androidx.ci.config.Config
-import dev.androidx.ci.util.PlaygroundCredentialsRule
+import dev.androidx.ci.util.GoogleCloudCredentialsRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
@@ -38,7 +38,7 @@ import org.junit.runners.JUnit4
 @OptIn(ExperimentalCoroutinesApi::class)
 class GoogleCloudApiPlaygroundTest {
     @get:Rule
-    val playgroundCredentialsRule = PlaygroundCredentialsRule()
+    val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 
     private val testScope = TestCoroutineScope()
     @Test

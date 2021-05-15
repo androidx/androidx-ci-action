@@ -12,6 +12,7 @@ retrofit-converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", 
 okhttp-core = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp"}
 okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp"}
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
+moshi-adapters = { module = "com.squareup.moshi:moshi-adapters", version.ref = "moshi" }
 moshix-metadata = { module = "dev.zacsweers.moshix:moshi-metadata-reflect", version.ref = "moshix"}
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet"}
 mockwebserver = {module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp"}
