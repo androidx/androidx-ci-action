@@ -1,0 +1,25 @@
+name: 'Run Integration Tests'
+description: 'This action runs integration tests from the outputs of a given workflow run'
+inputs:
+  run-id:
+    description: 'The github run id whose artifacts will be tested'
+    required: true
+  gcp-token:
+    description: 'Google Cloud Platform service account token (in json)'
+    required: true
+  github-token:
+    description: 'Github token that will be used to access github APIs to fetch artifacts'
+    required: true
+  output-folder:
+    description: 'The output folder to download results into'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - run: cd ${{ github.action_path }}/AndroidXCI && ./gradlew :cli:run
+      shell: bash
+      env:
+        ANDROIDX_GITHUB_TOKEN: ${{ inputs.github-token }}
+        ANDROIDX_GCLOUD_CREDENTIALS: ${{ inputs.gcp-token }}
+        ANDROIDX_RUN_ID: ${{ inputs.run-id }}
+        ANDROIDX_OUTPUT_FOLDER: ${{ inputs.output-folder }}
