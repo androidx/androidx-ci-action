@@ -68,6 +68,6 @@ sealed class TestResult(
             )
             .addLast(MetadataKotlinJsonAdapterFactory())
             .build()
-        private val adapter = moshi.adapter(TestResult::class.java).lenient()
+        private val adapter = moshi.adapter(TestResult::class.java).indent("  ").lenient()
     }
 }

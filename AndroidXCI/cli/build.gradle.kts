@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
-enableFeaturePreview("VERSION_CATALOGS")
-include(":lib")
-include(":cli")
-pluginManagement {
-    includeBuild("ftlModelBuilder")
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
+plugins {
+    `kotlin-dsl`
+    kotlin("jvm")
+    id("org.jlleitschuh.gradle.ktlint")
+    `application`
+}
+
+dependencies {
+    implementation(project(":lib"))
+    implementation(kotlin("stdlib"))
+    implementation(libs.coroutines.core)
+    implementation(libs.clikt)
+    implementation(libs.bundles.log4j)
+}
+
+application {
+    mainClass.set("dev.androidx.ci.cli.MainKt")
 }
