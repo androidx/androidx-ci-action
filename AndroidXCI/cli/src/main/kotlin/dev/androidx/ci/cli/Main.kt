@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.core.LoggerContext
 import org.apache.logging.log4j.core.appender.FileAppender
 import org.apache.logging.log4j.core.layout.PatternLayout
+import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
 /**
@@ -39,6 +40,7 @@ private class Cli : CliktCommand() {
             The workflow run id from Github whose artifacts will be used to run tests.
             e.g. github.event.workflow_run.id
         """.trimIndent(),
+        envvar = "ANDROIDX_RUN_ID"
     ).required()
     val githubToken by option(
         help = """
@@ -60,7 +62,8 @@ private class Cli : CliktCommand() {
     val outputFolder by option(
         help = """
             The output folder where results will be downloaded to as well as logs.
-        """.trimIndent()
+        """.trimIndent(),
+        envvar = "ANDROIDX_OUTPUT_FOLDER"
     ).file(canBeFile = false, canBeDir = true).required()
 
     override fun run() {
@@ -76,6 +79,7 @@ private class Cli : CliktCommand() {
             testRunner.runTests()
         }
         println(result.toJson())
+        flushLogs()
         if (result.allTestsPassed) {
             exitProcess(0)
         } else {
@@ -108,6 +112,11 @@ private class Cli : CliktCommand() {
             null
         )
         ctx.updateLoggers(config)
+    }
+
+    private fun flushLogs() {
+        val ctx = LogManager.getContext(false) as LoggerContext
+        ctx.stop(10, TimeUnit.SECONDS)
     }
 }
 
