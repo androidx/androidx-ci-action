@@ -23,7 +23,8 @@ import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 
 sealed class TestResult(
-    val type: Type
+    val type: Type,
+    val prNumber: String?,
 ) {
     abstract val allTestsPassed: Boolean
 

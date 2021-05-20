@@ -18,6 +18,9 @@ package dev.androidx.ci.fake
 
 import dev.androidx.ci.github.GithubApi
 import dev.androidx.ci.github.dto.ArtifactsResponse
+import dev.androidx.ci.github.dto.IssueComment
+import dev.androidx.ci.github.dto.IssueLabel
+import dev.androidx.ci.github.dto.RunInfo
 import okhttp3.ResponseBody
 import okhttp3.internal.http.RealResponseBody
 import okio.Buffer
@@ -25,14 +28,44 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class FakeGithubApi : GithubApi {
-    private val artifacts = mutableMapOf<String, ArtifactsResponse>()
+    private val workflowRuns = mutableMapOf<String, FakeWorkflowRun>()
     private val zipArchives = mutableMapOf<String, ResponseBody>()
+    private val issues = mutableMapOf<String, FakeIssue>()
+
+    fun getComments(
+        issueNumber: String
+    ) = issues[issueNumber]?.comments
+
+    fun getLabels(
+        issueNumber: String
+    ) = issues[issueNumber]?.labels
+
+    fun createIssue(
+        issueNumber: String
+    ) {
+        val issue = FakeIssue(
+            number = issueNumber,
+            labels = emptyList(),
+            comments = emptyList()
+        )
+    }
 
     fun putArtifact(
         runId: String,
         response: ArtifactsResponse
     ) {
-        artifacts[runId] = response
+        val run = workflowRuns[runId] ?: FakeWorkflowRun(
+            id = runId,
+            artifacts = ArtifactsResponse(emptyList()),
+            info = RunInfo(
+                id = runId,
+                name = "test run $runId",
+                url = "https://testing/run/$runId"
+            )
+        )
+        workflowRuns[runId] = run.copy(
+            artifacts = response
+        )
     }
 
     fun putArchive(
@@ -64,10 +97,58 @@ class FakeGithubApi : GithubApi {
     }
 
     override suspend fun artifacts(runId: String): ArtifactsResponse {
-        return artifacts[runId] ?: throwNotFound<ArtifactsResponse>()
+        return workflowRuns[runId]?.artifacts ?: throwNotFound<ArtifactsResponse>()
     }
 
     override suspend fun zipArchive(path: String): ResponseBody {
         return zipArchives[path] ?: throwNotFound<ResponseBody>()
     }
+
+    override suspend fun runInfo(runId: String): RunInfo {
+        return workflowRuns[runId]?.info ?: throwNotFound<RunInfo>()
+    }
+
+    override suspend fun addLabels(issueNumber: String, labels: List<String>): List<IssueLabel> {
+        val issue = issues[issueNumber] ?: throwNotFound<List<IssueLabel>>()
+        val created = labels.map {
+            IssueLabel(
+                url = "https://label/$it",
+                name = it
+            )
+        }
+        issues[issueNumber] = issue.copy(
+            labels = (issue.labels + created).distinct()
+        )
+        return created
+    }
+
+    override suspend fun deleteLabel(issueNumber: String, label: String) {
+        val issue = issues[issueNumber] ?: throwNotFound<List<IssueLabel>>()
+        val existing = issue.labels.firstOrNull {
+            it.name == label
+        } ?: throwNotFound<Unit>()
+        issues[issueNumber] = issue.copy(
+            labels = issue.labels - existing
+        )
+    }
+
+    override suspend fun comment(issueNumber: String, comment: IssueComment): IssueComment {
+        val issue = issues[issueNumber] ?: throwNotFound<List<IssueComment>>()
+        issues[issueNumber] = issue.copy(
+            comments = issue.comments + comment
+        )
+        return comment
+    }
+
+    private data class FakeWorkflowRun(
+        val id: String,
+        val artifacts: ArtifactsResponse,
+        val info: RunInfo,
+    )
+
+    private data class FakeIssue(
+        val number: String,
+        val labels: List<IssueLabel>,
+        val comments : List<IssueComment>
+    )
 }

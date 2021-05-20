@@ -19,12 +19,20 @@ package dev.androidx.ci.github
 import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.github.dto.ArtifactsResponse
+import dev.androidx.ci.github.dto.IssueComment
+import dev.androidx.ci.github.dto.IssueLabel
+import dev.androidx.ci.github.dto.RunInfo
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Url
 import java.util.concurrent.TimeUnit
@@ -48,10 +56,34 @@ interface GithubApi {
     @GET
     suspend fun zipArchive(@Url path: String): ResponseBody
 
+    @GET("actions/runs/{runId}")
+    suspend fun runInfo(@Path("runId") runId: String): RunInfo
+
+    @POST("issues/{issueNumber}/labels")
+    suspend fun addLabels(
+        @Path("issueNumber") issueNumber: String,
+        @Body labels:List<String>
+    ): List<IssueLabel>
+
+    @DELETE("issues/{issueNumber}/labels/{name}")
+    suspend fun deleteLabel(
+        @Path("issueNumber") issueNumber: String,
+        @Path("name") label: String
+    )
+
+    @POST("issues/{issueNumber}/comments")
+    suspend fun comment(
+        @Path("issueNumber") issueNumber: String,
+        @Body comment: IssueComment
+    ): IssueComment
+
+
     companion object {
         fun build(
             config: Config.Github
         ): GithubApi {
+            val logging = HttpLoggingInterceptor()
+            logging.level = HttpLoggingInterceptor.Level.BODY
             val client = OkHttpClient.Builder().apply {
                 this.addInterceptor {
                     it.proceed(
@@ -61,7 +93,7 @@ interface GithubApi {
                             .build()
                     )
                 }
-            }.callTimeout(10, TimeUnit.MINUTES)
+            }.callTimeout(10, TimeUnit.MINUTES).addInterceptor(logging)
                 .build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
@@ -109,6 +141,22 @@ private class ZipEntryScopeImpl(
     }
     override fun close() {
         usable = false
+    }
+}
+
+suspend fun GithubApi.tryDeletingLabel(
+    issueNumber: String,
+    label: String
+) = try {
+    deleteLabel(
+        issueNumber = issueNumber,
+        label = label
+    )
+} catch (httpException: HttpException) {
+    if (httpException.code() == 404) {
+        // ignore, it doesn't have the label anyways
+    } else {
+        throw httpException
     }
 }
 

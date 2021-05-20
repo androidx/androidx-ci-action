@@ -86,8 +86,18 @@ class TestRunner(
      */
     suspend fun runTests(): TestResult {
         logger.trace("start running tests")
+        var statusReporter: StatusReporter? = null
         val result = try {
-            val artifactsResponse = githubApi.artifacts(runId)
+            val runInfo = githubApi.runInfo(runId)
+            logger.info {
+                "Run details: $runInfo"
+            }
+            statusReporter = StatusReporter(
+                githubApi = githubApi,
+                runInfo = runInfo,
+            )
+            statusReporter.onStart()
+            val artifactsResponse = githubApi.artifacts(runInfo.id)
             val allTestMatrices = artifactsResponse.artifacts
                 .filter(githubArtifactFilter)
                 .flatMap { artifact ->
@@ -108,12 +118,19 @@ class TestRunner(
             TestResult.IncompleteRun(th.stackTraceToString())
         }
         logger.trace("done running tests, will upload result to gcloud")
-        val resultJson = result.toJson().toByteArray(Charsets.UTF_8)
-        googleCloudApi.upload(
-            "final-results/$runId/testResult.json",
-            resultJson
-        )
-        outputFolder?.resolve("result.json")?.writeBytes(resultJson)
+
+        try {
+            val resultJson = result.toJson().toByteArray(Charsets.UTF_8)
+            googleCloudApi.upload(
+                "final-results/$runId/testResult.json",
+                resultJson
+            )
+            outputFolder?.resolve("result.json")?.writeBytes(resultJson)
+
+        } catch (th: Throwable) {
+            logger.error("error while uploading results ${th.stackTraceToString()}")
+        }
+        statusReporter?.onFinsh(result)
         return result
     }
 
