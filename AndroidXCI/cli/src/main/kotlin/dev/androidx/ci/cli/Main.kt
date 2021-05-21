@@ -74,8 +74,25 @@ private class Cli : CliktCommand() {
         envvar = "ANDROIDX_OUTPUT_FOLDER"
     ).file(canBeFile = false, canBeDir = true).required()
 
+    val githubRepository by option(
+        help = """
+            The github repository which is running this action.
+            e.g. AndroidX/androidx
+        """.trimIndent(),
+        envvar = "GITHUB_REPOSITORY"
+    ).required()
+
+
+
     override fun run() {
         configureLogger()
+        val repoParts = githubRepository.split("/")
+        check(repoParts.size >= 2) {
+            "invalid github repo: $githubRepository"
+        }
+        println("running $this")
+        val githubOwner = repoParts.first()
+        val githubRepo = repoParts.drop(1).joinToString("/")
         val result = runBlocking {
             val testRunner = TestRunner.create(
                 targetRunId = targetRunId,
@@ -83,7 +100,9 @@ private class Cli : CliktCommand() {
                 githubToken = githubToken,
                 googleCloudCredentials = gcpServiceAccountKey,
                 ioDispatcher = Dispatchers.IO,
-                outputFolder = outputFolder
+                outputFolder = outputFolder,
+                githubOwner = githubOwner,
+                githubRepo = githubRepo
             )
             testRunner.runTests()
         }

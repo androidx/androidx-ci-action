@@ -164,7 +164,9 @@ class TestRunner(
             githubToken: String,
             googleCloudCredentials: String,
             ioDispatcher: CoroutineDispatcher,
-            outputFolder: File?
+            outputFolder: File?,
+            githubOwner: String,
+            githubRepo: String
         ): TestRunner {
             val credentials = ServiceAccountCredentials.fromStream(
                 googleCloudCredentials.byteInputStream(Charsets.UTF_8)
@@ -180,8 +182,8 @@ class TestRunner(
                 ),
                 githubApi = GithubApi.build(
                     Config.Github(
-                        owner = "androidX",
-                        repo = "androidx",
+                        owner = githubOwner,
+                        repo = githubRepo,
                         token = githubToken
                     )
                 ),
