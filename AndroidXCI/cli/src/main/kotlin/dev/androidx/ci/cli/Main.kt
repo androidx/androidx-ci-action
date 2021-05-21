@@ -74,15 +74,12 @@ private class Cli : CliktCommand() {
         envvar = "GITHUB_REPOSITORY"
     ).required()
 
-
-
     override fun run() {
         configureLogger()
         val repoParts = githubRepository.split("/")
         check(repoParts.size >= 2) {
             "invalid github repo: $githubRepository"
         }
-        println("running $this")
         val githubOwner = repoParts.first()
         val githubRepo = repoParts.drop(1).joinToString("/")
         val result = runBlocking {
