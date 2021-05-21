@@ -19,11 +19,11 @@ package dev.androidx.ci.github.dto
 import com.squareup.moshi.Json
 
 data class RunInfo(
-    val id : String,
+    val id: String,
     val name: String,
     val url: String,
     @Json(name = "pull_requests")
-    val pullRequests:List<PullRequest> = emptyList()
+    val pullRequests: List<PullRequest> = emptyList()
 ) {
 
     data class PullRequest(

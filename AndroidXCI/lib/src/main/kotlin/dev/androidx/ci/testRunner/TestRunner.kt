@@ -54,24 +54,29 @@ class TestRunner(
     firebaseTestLabApi: FirebaseTestLabApi,
     firebaseProjectId: String,
     /**
-     * The workflow run id from github
+     * The workflow run id from github whose artifacts will be tested
      */
-    private val runId: String,
+    private val targetRunId: String,
+    /**
+     * The workflow run id from github that is running this TestRunner
+     */
+    hostRunId: String?,
     /**
      * An optional filter to pick which build artifacts should be downloaded.
      */
-    private val githubArtifactFilter: ((ArtifactsResponse.Artifact) -> Boolean) = { true },
+    private val githubArtifactFilter: (ArtifactsResponse.Artifact) -> Boolean = { true },
     /**
      * The directory where results will be saved locally
      */
     private val outputFolder: File? = null,
+
 ) {
     private val logger = logger()
     private val testMatrixStore = TestMatrixStore(
         firebaseProjectId = firebaseProjectId,
         datastoreApi = datastoreApi,
         firebaseTestLabApi = firebaseTestLabApi,
-        resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$runId")
+        resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$targetRunId")
     )
     private val apkStore = ApkStore(googleCloudApi)
     private val testLabController = FirebaseTestLabController(
@@ -80,24 +85,20 @@ class TestRunner(
         testMatrixStore = testMatrixStore
     )
 
+    private val statusReporter = StatusReporter(
+        githubApi = githubApi,
+        targetRunId = targetRunId,
+        hostRunId = hostRunId,
+    )
     /**
      * Runs all the test. This never throws, instead, returns an error result if something goes
      * wrong.
      */
     suspend fun runTests(): TestResult {
-        logger.trace("start running tests")
-        var statusReporter: StatusReporter? = null
+        logger.trace("start running tests for $targetRunId")
         val result = try {
-            val runInfo = githubApi.runInfo(runId)
-            logger.info {
-                "Run details: $runInfo"
-            }
-            statusReporter = StatusReporter(
-                githubApi = githubApi,
-                runInfo = runInfo,
-            )
-            statusReporter.onStart()
-            val artifactsResponse = githubApi.artifacts(runInfo.id)
+            statusReporter.reportStart()
+            val artifactsResponse = githubApi.artifacts(targetRunId)
             val allTestMatrices = artifactsResponse.artifacts
                 .filter(githubArtifactFilter)
                 .flatMap { artifact ->
@@ -112,7 +113,9 @@ class TestRunner(
             testLabController.collectTestResults(
                 matrices = allTestMatrices,
                 pollIntervalMs = TimeUnit.SECONDS.toMillis(10)
-            )
+            ).also {
+                statusReporter.reportFinish(it)
+            }
         } catch (th: Throwable) {
             logger.error("exception in test run", th)
             TestResult.IncompleteRun(th.stackTraceToString())
@@ -122,15 +125,13 @@ class TestRunner(
         try {
             val resultJson = result.toJson().toByteArray(Charsets.UTF_8)
             googleCloudApi.upload(
-                "final-results/$runId/testResult.json",
+                "final-results/$targetRunId/testResult.json",
                 resultJson
             )
             outputFolder?.resolve("result.json")?.writeBytes(resultJson)
-
         } catch (th: Throwable) {
             logger.error("error while uploading results ${th.stackTraceToString()}")
         }
-        statusReporter?.onFinsh(result)
         return result
     }
 
@@ -158,7 +159,8 @@ class TestRunner(
 
     companion object {
         fun create(
-            runId: String,
+            targetRunId: String,
+            hostRunId: String?,
             githubToken: String,
             googleCloudCredentials: String,
             ioDispatcher: CoroutineDispatcher,
@@ -199,7 +201,8 @@ class TestRunner(
                     it.name.contains("artifacts_room")
                 },
                 outputFolder = outputFolder,
-                runId = runId
+                targetRunId = targetRunId,
+                hostRunId = hostRunId,
             )
         }
     }

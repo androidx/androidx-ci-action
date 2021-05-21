@@ -66,22 +66,23 @@ class TestRunnerPlayground {
                     token = githubAuthRule.githubToken
                 )
             ),
-            firebaseTestLabApi = FirebaseTestLabApi.build(
-                config = Config.FirebaseTestLab(
-                    credentials = playgroundCredentialsRule.credentials
-                )
-            ),
-            firebaseProjectId = "androidx-dev-prod",
             datastoreApi = DatastoreApi.build(
                 Config.Datastore(
                     credentials = playgroundCredentialsRule.credentials
                 ),
                 context = Dispatchers.IO
             ),
+            firebaseTestLabApi = FirebaseTestLabApi.build(
+                config = Config.FirebaseTestLab(
+                    credentials = playgroundCredentialsRule.credentials
+                )
+            ),
+            firebaseProjectId = "androidx-dev-prod",
+            targetRunId = runId,
             githubArtifactFilter = {
                 it.name.contains("artifacts_room")
             },
-            runId = runId
+            hostRunId = null
         )
     }
 

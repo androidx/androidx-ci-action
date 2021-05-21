@@ -23,3 +23,4 @@ runs:
         ANDROIDX_GCLOUD_CREDENTIALS: ${{ inputs.gcp-token }}
         ANDROIDX_RUN_ID: ${{ inputs.run-id }}
         ANDROIDX_OUTPUT_FOLDER: ${{ inputs.output-folder }}
+        ANDROIDX_HOST_RUN_ID: ${{ github.run_id }}

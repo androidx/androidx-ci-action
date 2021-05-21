@@ -62,7 +62,7 @@ interface GithubApi {
     @POST("issues/{issueNumber}/labels")
     suspend fun addLabels(
         @Path("issueNumber") issueNumber: String,
-        @Body labels:List<String>
+        @Body labels: List<String>
     ): List<IssueLabel>
 
     @DELETE("issues/{issueNumber}/labels/{name}")
@@ -76,7 +76,6 @@ interface GithubApi {
         @Path("issueNumber") issueNumber: String,
         @Body comment: IssueComment
     ): IssueComment
-
 
     companion object {
         fun build(

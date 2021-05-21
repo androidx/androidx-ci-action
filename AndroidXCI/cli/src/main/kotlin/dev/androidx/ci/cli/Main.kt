@@ -35,13 +35,21 @@ import kotlin.system.exitProcess
  * Command line launcher for test runner.
  */
 private class Cli : CliktCommand() {
-    val runId: String by option(
+    val targetRunId: String by option(
         help = """
             The workflow run id from Github whose artifacts will be used to run tests.
             e.g. github.event.workflow_run.id
         """.trimIndent(),
         envvar = "ANDROIDX_RUN_ID"
     ).required()
+    val hostRunId: String? by option(
+        help = """
+            The workflow run id from Github which is running these tests right now.
+            Will be useful to construct urls for results:
+            e.g. github.run_id
+        """.trimIndent(),
+        envvar = "ANDROIDX_HOST_RUN_ID"
+    )
     val githubToken by option(
         help = """
             Github access token. Can also be set with ANDROIDX_GITHUB_TOKEN environment variable.
@@ -70,7 +78,8 @@ private class Cli : CliktCommand() {
         configureLogger()
         val result = runBlocking {
             val testRunner = TestRunner.create(
-                runId = runId,
+                targetRunId = targetRunId,
+                hostRunId = hostRunId,
                 githubToken = githubToken,
                 googleCloudCredentials = gcpServiceAccountKey,
                 ioDispatcher = Dispatchers.IO,

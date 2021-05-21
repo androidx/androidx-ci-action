@@ -24,7 +24,6 @@ import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 
 sealed class TestResult(
     val type: Type,
-    val prNumber: String?,
 ) {
     abstract val allTestsPassed: Boolean
 

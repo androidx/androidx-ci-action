@@ -149,6 +149,6 @@ class FakeGithubApi : GithubApi {
     private data class FakeIssue(
         val number: String,
         val labels: List<IssueLabel>,
-        val comments : List<IssueComment>
+        val comments: List<IssueComment>
     )
 }

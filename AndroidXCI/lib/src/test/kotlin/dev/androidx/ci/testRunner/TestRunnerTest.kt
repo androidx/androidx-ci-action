@@ -38,10 +38,11 @@ class TestRunnerTest {
     private val testRunner = TestRunner(
         googleCloudApi = fakeBackend.fakeGoogleCloudApi,
         githubApi = fakeBackend.fakeGithubApi,
+        datastoreApi = fakeBackend.datastoreApi,
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
         firebaseProjectId = PROJECT_ID,
-        runId = RUN_ID,
-        datastoreApi = fakeBackend.datastoreApi
+        targetRunId = RUN_ID,
+        hostRunId = null
     )
 
     @Test
