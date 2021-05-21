@@ -18,7 +18,10 @@ package dev.androidx.ci.github
 
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.github.dto.IssueComment
+import dev.androidx.ci.testRunner.StatusReporter
+import dev.androidx.ci.testRunner.vo.TestResult
 import dev.androidx.ci.util.GithubAuthRule
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -50,5 +53,23 @@ class GithubApiPlaygroundTest {
         println(info)
         println(addLabelResponse)
         api.comment(issueNumber, IssueComment(body = "test"))
+    }
+
+    @Test
+    fun statusReport() = runBlocking {
+        val reporter = StatusReporter(
+            githubApi = api,
+            targetRunId = "864409941",
+            hostRunId = null
+        )
+        reporter.reportStart()
+        delay(10_000)
+        reporter.reportFinish(
+            TestResult.CompleteRun(emptyList())
+        )
+        delay(10_000)
+        reporter.reportFinish(
+            TestResult.IncompleteRun("some error")
+        )
     }
 }

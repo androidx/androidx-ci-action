@@ -89,9 +89,9 @@ class StatusReporter(
     enum class StatusLabel(
         val githubName: String
     ) {
-        RUNNING("integration tests: running"),
-        PASSED("integration tests: passed"),
-        FAILED("integration tests: failed");
+        RUNNING("integration tests: \uD83C\uDFC3\u200D♀️"),
+        PASSED("integration tests: \uD83D\uDC4D"),
+        FAILED("integration tests: \uD83D\uDC4E");
 
         fun otherLabels() = values().toList() - this
     }
