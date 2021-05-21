@@ -24,6 +24,7 @@ import com.squareup.moshi.Json
 data class RunInfo(
     val id: String,
     val name: String,
+    @Json(name = "html_url")
     val url: String,
     @Json(name = "head_sha")
     val headSha: String,

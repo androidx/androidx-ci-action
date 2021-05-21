@@ -53,9 +53,10 @@ class FakeGithubApi : GithubApi {
     fun putArtifact(
         runId: String,
         response: ArtifactsResponse
-    ) {
+    ): RunInfo {
         val runInfo = getOrCreateRunInfo(runId)
         artifacts[runInfo.id] = response
+        return runInfo
     }
 
     fun putArchive(
@@ -110,7 +111,7 @@ class FakeGithubApi : GithubApi {
             description = update.description,
             state = update.state,
             targetUrl = update.targetUrl,
-            context = update.targetUrl
+            context = update.context
         )
         val combinedStatuses = (listOf(newStatus) + commitInfo.statuses).distinctBy {
             it.context

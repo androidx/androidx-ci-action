@@ -21,7 +21,7 @@ import kotlinx.coroutines.sync.withLock
 
 @Suppress("UNCHECKED_CAST")
 class LazyComputedValue<T>(
-    val compute: suspend () -> T
+    private val compute: suspend () -> T
 ) {
     private var computed: Any? = NOT_COMPUTED
     private val mutex = Mutex()

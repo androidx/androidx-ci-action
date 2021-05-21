@@ -18,6 +18,7 @@ package dev.androidx.ci.fake
 
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.github.dto.ArtifactsResponse
+import dev.androidx.ci.github.dto.RunInfo
 import java.util.UUID
 import kotlin.random.Random
 
@@ -30,11 +31,11 @@ class FakeBackend(
     randomSeed: Long = -1
 ) {
     private val random = Random(randomSeed)
-    fun createRun(runId: String, artifacts: List<ArtifactsResponse.Artifact>) {
+    fun createRun(runId: String, artifacts: List<ArtifactsResponse.Artifact>): RunInfo {
         val response = ArtifactsResponse(
             artifacts = artifacts
         )
-        fakeGithubApi.putArtifact(runId, response)
+        return fakeGithubApi.putArtifact(runId, response)
     }
 
     fun finishAllTests(
