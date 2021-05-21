@@ -23,7 +23,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 
-class GithubPlaygroundTest {
+class GithubApiPlaygroundTest {
     @get:Rule
     val githubAuthRule = GithubAuthRule()
 
@@ -41,7 +41,11 @@ class GithubPlaygroundTest {
     fun getRunInfo() = runBlocking<Unit> {
         val info = api.runInfo("787303337")
         val issueNumber = info.pullRequests.firstOrNull()?.number ?: return@runBlocking
+        val labels = api.getLabels(issueNumber)
+        println(labels)
+        if (true) return@runBlocking
         api.tryDeletingLabel(issueNumber, "l1")
+
         val addLabelResponse = api.addLabels(issueNumber, listOf("l1", "l4"))
         println(info)
         println(addLabelResponse)

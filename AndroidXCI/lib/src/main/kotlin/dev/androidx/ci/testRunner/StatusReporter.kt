@@ -22,6 +22,9 @@ import dev.androidx.ci.github.tryDeletingLabel
 import dev.androidx.ci.testRunner.vo.TestResult
 import dev.androidx.ci.util.LazyComputedValue
 
+/**
+ * Helper class to report status of test runs.
+ */
 class StatusReporter(
     val githubApi: GithubApi,
     val targetRunId: String,
@@ -64,10 +67,13 @@ class StatusReporter(
     }
 
     private suspend fun setGithubLabel(label: StatusLabel) {
-        // this is ugly as we try to delete all other labels and set this but there does not seem to be an api to do
-        // this w/o potentially affecting other labels.
         runInfo.get().pullRequests.forEach { pullRequest ->
-            label.otherLabels().forEach { label ->
+            val existingLabels = githubApi.getLabels(pullRequest.number)
+            label.otherLabels().filter { otherLabel ->
+                existingLabels.any { existingLabel ->
+                    existingLabel.name == otherLabel.githubName
+                }
+            }.forEach { label ->
                 githubApi.tryDeletingLabel(
                     issueNumber = pullRequest.number,
                     label = label.githubName

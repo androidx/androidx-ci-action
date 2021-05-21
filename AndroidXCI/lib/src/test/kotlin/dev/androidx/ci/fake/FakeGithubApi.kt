@@ -36,9 +36,9 @@ class FakeGithubApi : GithubApi {
         issueNumber: String
     ) = issues[issueNumber]?.comments
 
-    fun getLabels(
+    override suspend fun getLabels(
         issueNumber: String
-    ) = issues[issueNumber]?.labels
+    ) = issues[issueNumber]?.labels ?: throwNotFound<List<IssueLabel>>()
 
     fun createIssue(
         issueNumber: String

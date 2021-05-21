@@ -65,6 +65,11 @@ interface GithubApi {
         @Body labels: List<String>
     ): List<IssueLabel>
 
+    @GET("issues/{issueNumber}/labels")
+    suspend fun getLabels(
+        @Path("issueNumber") issueNumber: String
+    ): List<IssueLabel>
+
     @DELETE("issues/{issueNumber}/labels/{name}")
     suspend fun deleteLabel(
         @Path("issueNumber") issueNumber: String,
