@@ -21,6 +21,8 @@ import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
+import dev.androidx.ci.github.dto.ArtifactsResponse
+import dev.androidx.ci.github.dto.CommitInfo
 import dev.androidx.ci.testRunner.vo.TestResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -40,7 +42,8 @@ class TestRunnerTest {
         githubApi = fakeBackend.fakeGithubApi,
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
         firebaseProjectId = PROJECT_ID,
-        runId = RUN_ID,
+        targetRunId = TARGET_RUN_ID,
+        hostRunId = HOST_RUN_ID,
         datastoreApi = fakeBackend.datastoreApi
     )
 
@@ -53,11 +56,12 @@ class TestRunnerTest {
 
     @Test
     fun emptyArtifacts() = testScope.runBlockingTest {
-        fakeBackend.createRun(runId = "1", artifacts = emptyList())
+        createRuns(artifacts = emptyList())
         val result = testRunner.runTests()
         assertThat(result.allTestsPassed).isTrue()
         check(result is TestResult.CompleteRun)
         assertThat(result.matrices).isEmpty()
+        assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.SUCCESS)
     }
 
     @Test
@@ -65,8 +69,7 @@ class TestRunnerTest {
         val artifact1 = fakeBackend.createArchive(
             "foo.txt", "bar.txt"
         )
-        fakeBackend.createRun(
-            RUN_ID,
+        createRuns(
             listOf(
                 artifact1
             )
@@ -75,6 +78,7 @@ class TestRunnerTest {
         assertThat(result.allTestsPassed).isTrue()
         check(result is TestResult.CompleteRun)
         assertThat(result.matrices).isEmpty()
+        assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.SUCCESS)
     }
 
     @Test
@@ -91,8 +95,7 @@ class TestRunnerTest {
             "biometric-integration-tests-testapp_testapp-debug.apk",
             "biometric-integration-tests-testapp_testapp-release.apk"
         )
-        fakeBackend.createRun(
-            RUN_ID,
+        createRuns(
             listOf(
                 artifact1
             )
@@ -120,6 +123,13 @@ class TestRunnerTest {
             assertThat(it.state).isEqualTo(TestMatrix.State.FINISHED)
             assertThat(it.outcomeSummary).isEqualTo(outcome)
         }
+        assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(
+            if (succeed) {
+                CommitInfo.State.SUCCESS
+            } else {
+                CommitInfo.State.FAILURE
+            }
+        )
     }
 
     @Test
@@ -134,8 +144,7 @@ class TestRunnerTest {
             "nanometrics-integration-tests-testapp_testapp-debug.apk",
             "nanometrics-integration-tests-testapp_testapp-release.apk"
         )
-        fakeBackend.createRun(
-            RUN_ID,
+        createRuns(
             listOf(
                 artifact1,
                 artifact2
@@ -165,6 +174,7 @@ class TestRunnerTest {
             it.outcomeSummary
         }
         assertThat(outcomes).containsExactly(SUCCESS, FAILURE)
+        assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.FAILURE)
     }
 
     @Test
@@ -177,8 +187,7 @@ class TestRunnerTest {
             "nanometrics-integration-tests-testapp_testapp-debug.apk",
             "nanometrics-integration-tests-testapp_testapp-release.apk"
         )
-        fakeBackend.createRun(
-            RUN_ID,
+        createRuns(
             listOf(
                 artifact1
             )
@@ -207,10 +216,25 @@ class TestRunnerTest {
             it.outcomeSummary
         }
         assertThat(outcomes).containsExactly(SUCCESS, FAILURE)
+        assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.FAILURE)
+    }
+
+    /**
+     * Create a tuple of target run and host run
+     */
+    private fun createRuns(artifacts: List<ArtifactsResponse.Artifact>) {
+        fakeBackend.createRun(runId = TARGET_RUN_ID, artifacts = artifacts)
+        fakeBackend.createRun(runId = HOST_RUN_ID, artifacts = emptyList())
+    }
+
+    private suspend fun getRunState(runId: String): CommitInfo.State {
+        val runInfo = fakeBackend.fakeGithubApi.runInfo(runId)
+        return fakeBackend.fakeGithubApi.commitStatus(runInfo.headSha).statuses.first().state
     }
 
     private companion object {
         private const val PROJECT_ID = "testProject"
-        private const val RUN_ID = "1"
+        private const val TARGET_RUN_ID = "1"
+        private const val HOST_RUN_ID = "2"
     }
 }

@@ -54,9 +54,13 @@ class TestRunner(
     firebaseTestLabApi: FirebaseTestLabApi,
     firebaseProjectId: String,
     /**
-     * The workflow run id from github
+     * The workflow run id from github whose artifacts will be tested
      */
-    private val runId: String,
+    private val targetRunId: String,
+    /**
+     * The workflow run id from github which is running this test runner
+     */
+    private val hostRunId: String,
     /**
      * An optional filter to pick which build artifacts should be downloaded.
      */
@@ -71,13 +75,18 @@ class TestRunner(
         firebaseProjectId = firebaseProjectId,
         datastoreApi = datastoreApi,
         firebaseTestLabApi = firebaseTestLabApi,
-        resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$runId")
+        resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$targetRunId")
     )
     private val apkStore = ApkStore(googleCloudApi)
     private val testLabController = FirebaseTestLabController(
         firebaseTestLabApi = firebaseTestLabApi,
         firebaseProjectId = firebaseProjectId,
         testMatrixStore = testMatrixStore
+    )
+    private val statusReporter = StatusReporter(
+        githubApi = githubApi,
+        hostRunId = hostRunId,
+        targetRunId = targetRunId
     )
 
     /**
@@ -87,7 +96,8 @@ class TestRunner(
     suspend fun runTests(): TestResult {
         logger.trace("start running tests")
         val result = try {
-            val artifactsResponse = githubApi.artifacts(runId)
+            statusReporter.reportStart()
+            val artifactsResponse = githubApi.artifacts(targetRunId)
             val allTestMatrices = artifactsResponse.artifacts
                 .filter(githubArtifactFilter)
                 .flatMap { artifact ->
@@ -108,12 +118,17 @@ class TestRunner(
             TestResult.IncompleteRun(th.stackTraceToString())
         }
         logger.trace("done running tests, will upload result to gcloud")
-        val resultJson = result.toJson().toByteArray(Charsets.UTF_8)
-        googleCloudApi.upload(
-            "final-results/$runId/testResult.json",
-            resultJson
-        )
-        outputFolder?.resolve("result.json")?.writeBytes(resultJson)
+        try {
+            val resultJson = result.toJson().toByteArray(Charsets.UTF_8)
+            googleCloudApi.upload(
+                "final-results/$targetRunId/testResult.json",
+                resultJson
+            )
+            outputFolder?.resolve("result.json")?.writeBytes(resultJson)
+            statusReporter.reportEnd(result)
+        } catch (th: Throwable) {
+            logger.error("unexpected error while writing results", th)
+        }
         return result
     }
 
@@ -141,7 +156,8 @@ class TestRunner(
 
     companion object {
         fun create(
-            runId: String,
+            targetRunId: String,
+            hostRunId: String,
             githubToken: String,
             googleCloudCredentials: String,
             ioDispatcher: CoroutineDispatcher,
@@ -184,7 +200,8 @@ class TestRunner(
                     it.name.contains("artifacts_room")
                 },
                 outputFolder = outputFolder,
-                runId = runId
+                targetRunId = targetRunId,
+                hostRunId = hostRunId
             )
         }
     }
