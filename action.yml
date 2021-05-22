@@ -1,9 +1,9 @@
 name: 'Run Integration Tests'
 description: 'This action runs integration tests from the outputs of a given workflow run'
 inputs:
-  run-id: # TODO: migrate to target-run-id once we start versioning AndroidX
-    description: 'The github run id whose artifacts will be tested'
-    required: true
+  target-run-id: 
+    description: 'The github run id whose artifacts will be tested. Defaults to github.event.workflow_run.id'
+    required: false
   gcp-token:
     description: 'Google Cloud Platform service account token (in json)'
     required: true
@@ -21,6 +21,6 @@ runs:
       env:
         ANDROIDX_GITHUB_TOKEN: ${{ inputs.github-token }}
         ANDROIDX_GCLOUD_CREDENTIALS: ${{ inputs.gcp-token }}
-        ANDROIDX_TARGET_RUN_ID: ${{ inputs.run-id }}
+        ANDROIDX_TARGET_RUN_ID: ${{ github.event.workflow_run.id || inputs.run-id }}
         ANDROIDX_HOST_RUN_ID: ${{ github.run_id }}
         ANDROIDX_OUTPUT_FOLDER: ${{ inputs.output-folder }}
