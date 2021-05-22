@@ -81,7 +81,8 @@ class TestRunnerPlayground {
             githubArtifactFilter = {
                 it.name.contains("artifacts_room")
             },
-            runId = runId
+            targetRunId = runId,
+            hostRunId = runId
         )
     }
 
