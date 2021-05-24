@@ -21,6 +21,8 @@ import dev.androidx.ci.config.Config
 import dev.androidx.ci.github.dto.ArtifactsResponse
 import dev.androidx.ci.github.dto.CommitInfo
 import dev.androidx.ci.github.dto.RunInfo
+import dev.androidx.ci.util.Retry
+import dev.androidx.ci.util.RetryCallAdapterFactory
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
@@ -43,30 +45,35 @@ interface GithubApi {
     /**
      * Returns the artifacts in the given run
      */
+    @Retry
     @GET("actions/runs/{runId}/artifacts")
     suspend fun artifacts(@Path("runId") runId: String): ArtifactsResponse
 
     /**
      * Returns the contents of an artifact. Use [zipArchiveStream] to parse the zip file.
      */
+    @Retry
     @GET
     suspend fun zipArchive(@Url path: String): ResponseBody
 
     /**
      * Returns the data about a github workflow run
      */
+    @Retry
     @GET("actions/runs/{runId}")
     suspend fun runInfo(@Path("runId") runId: String): RunInfo
 
     /**
      * Returns the status of a commit.
      */
+    @Retry
     @GET("commits/{ref}/status")
     suspend fun commitStatus(@Path("ref") ref: String): CommitInfo
 
     /**
      * Updates the status for a commit. You can use this endpoint to associate test runs with a particular commit / PR.
      */
+    @Retry // this is repeatable so it is OK to retry
     @POST("statuses/{sha}")
     suspend fun updateCommitStatus(
         @Path("sha") sha: String,
@@ -95,6 +102,7 @@ interface GithubApi {
                 .client(client)
                 .baseUrl("${config.endPoint}/repos/${config.owner}/${config.repo}/")
                 .addConverterFactory(MoshiConverterFactory.create(moshi))
+                .addCallAdapterFactory(RetryCallAdapterFactory.GLOBAL)
                 .build()
                 .create(GithubApi::class.java)
         }

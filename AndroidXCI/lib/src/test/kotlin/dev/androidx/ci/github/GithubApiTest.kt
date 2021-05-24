@@ -40,6 +40,9 @@ class GithubApiTest {
     @Test
     fun artifacts() {
         mockWebServer.enqueue(
+            MockResponse().setResponseCode(505) // fail first, should retry
+        )
+        mockWebServer.enqueue(
             MockResponse().setBody(
                 ARTIFACTS_RESPONSE
             )
