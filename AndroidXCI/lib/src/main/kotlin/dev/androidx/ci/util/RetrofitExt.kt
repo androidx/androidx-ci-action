@@ -16,6 +16,9 @@
 
 package dev.androidx.ci.util
 
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.Request
 import okio.Timeout
 import retrofit2.Call
@@ -28,7 +31,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Target(AnnotationTarget.FUNCTION)
-annotation class Retry(val times: Int)
+annotation class Retry(val times: Int = 3)
 typealias RetryScheduler = (delay: Long, timeUnit: TimeUnit, block: suspend () -> Unit) -> Unit
 
 private class RetryCallAdapter(
@@ -155,6 +158,20 @@ class RetryCallAdapterFactory(
                 delegate = delegate as CallAdapter<Any?, Any?>,
                 retry = annotation.times
             )
+        }
+    }
+
+    companion object {
+        /**
+         * Retry call adapter factory using global scope.
+         *
+         * This is not great normally but is OK for our runner since it does 1 thing and then exists.
+         */
+        val GLOBAL = RetryCallAdapterFactory { time, unit, callback ->
+            GlobalScope.launch {
+                delay(unit.toMillis(time))
+                callback()
+            }
         }
     }
 }

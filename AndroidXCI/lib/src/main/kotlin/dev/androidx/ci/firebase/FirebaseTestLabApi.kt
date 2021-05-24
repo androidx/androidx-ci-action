@@ -21,6 +21,8 @@ import dev.androidx.ci.config.Config
 import dev.androidx.ci.firebase.dto.EnvironmentType
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.util.Retry
+import dev.androidx.ci.util.RetryCallAdapterFactory
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -32,6 +34,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface FirebaseTestLabApi {
+    @Retry
     @GET("projects/{projectId}/testMatrices/{testMatrixId}")
     suspend fun getTestMatrix(
         @Path("projectId") projectId: String,
@@ -45,6 +48,7 @@ interface FirebaseTestLabApi {
         @Body testMatrix: TestMatrix
     ): TestMatrix
 
+    @Retry
     @GET("testEnvironmentCatalog/{environmentType}")
     suspend fun getTestEnvironmentCatalog(
         @Path("environmentType") environmentType: EnvironmentType,
@@ -74,6 +78,7 @@ interface FirebaseTestLabApi {
                 .client(client)
                 .baseUrl(config.endPoint)
                 .addConverterFactory(MoshiConverterFactory.create(moshi).asLenient())
+                .addCallAdapterFactory(RetryCallAdapterFactory.GLOBAL)
                 .build()
                 .create(FirebaseTestLabApi::class.java)
         }
