@@ -19,12 +19,16 @@ package dev.androidx.ci.github
 import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.github.dto.ArtifactsResponse
+import dev.androidx.ci.github.dto.CommitInfo
+import dev.androidx.ci.github.dto.RunInfo
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Url
 import java.util.concurrent.TimeUnit
@@ -47,6 +51,27 @@ interface GithubApi {
      */
     @GET
     suspend fun zipArchive(@Url path: String): ResponseBody
+
+    /**
+     * Returns the data about a github workflow run
+     */
+    @GET("actions/runs/{runId}")
+    suspend fun runInfo(@Path("runId") runId: String): RunInfo
+
+    /**
+     * Returns the status of a commit.
+     */
+    @GET("commits/{ref}/status")
+    suspend fun commitStatus(@Path("ref") ref: String): CommitInfo
+
+    /**
+     * Updates the status for a commit. You can use this endpoint to associate test runs with a particular commit / PR.
+     */
+    @POST("statuses/{sha}")
+    suspend fun updateCommitStatus(
+        @Path("sha") sha: String,
+        @Body update: CommitInfo.Update
+    ): CommitInfo.Status
 
     companion object {
         fun build(
