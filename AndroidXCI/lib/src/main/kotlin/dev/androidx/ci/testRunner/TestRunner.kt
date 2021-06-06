@@ -20,6 +20,7 @@ import com.google.auth.oauth2.ServiceAccountCredentials
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
+import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.github.GithubApi
 import dev.androidx.ci.github.dto.ArtifactsResponse
@@ -52,6 +53,7 @@ class TestRunner(
     private val githubApi: GithubApi,
     datastoreApi: DatastoreApi,
     firebaseTestLabApi: FirebaseTestLabApi,
+    toolsResultApi: ToolsResultApi,
     firebaseProjectId: String,
     /**
      * The workflow run id from github whose artifacts will be tested
@@ -75,6 +77,7 @@ class TestRunner(
         firebaseProjectId = firebaseProjectId,
         datastoreApi = datastoreApi,
         firebaseTestLabApi = firebaseTestLabApi,
+        toolsResultApi = toolsResultApi,
         resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$targetRunId")
     )
     private val apkStore = ApkStore(googleCloudApi)
@@ -104,7 +107,10 @@ class TestRunner(
                     logger.info { "will upload apks for $artifact" }
                     val uploadedApks = uploadApksToGoogleCloud(artifact)
                     logger.info { "will start tests for these apks: $uploadedApks" }
-                    testLabController.pairAndStartTests(uploadedApks).also { testMatrices ->
+                    testLabController.pairAndStartTests(
+                        apks = uploadedApks,
+                        placeholderApk = apkStore.getPlaceholderApk()
+                    ).also { testMatrices ->
                         logger.info { "started all tests for $testMatrices" }
                     }
                 }
@@ -195,6 +201,11 @@ class TestRunner(
                         credentials = credentials
                     ),
                     context = ioDispatcher
+                ),
+                toolsResultApi = ToolsResultApi.build(
+                    config = Config.ToolsResult(
+                        credentials = credentials
+                    )
                 ),
                 githubArtifactFilter = {
                     it.name.contains("artifacts_room")

@@ -63,4 +63,11 @@ class ApkStoreTest {
         assertThat(gcpApi.artifacts()).hasSize(3)
         assertThat(newName.gcsPath).isNotEqualTo(uploaded.gcsPath)
     }
+
+    @Test
+    fun placeholderApk() = runBlocking<Unit> {
+        val placeholderApk = apkStore.getPlaceholderApk()
+        assertThat(gcpApi.uploadCount).isEqualTo(1)
+        assertThat(gcpApi.artifacts()[placeholderApk.gcsPath]).isNotNull()
+    }
 }

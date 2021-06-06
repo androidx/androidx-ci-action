@@ -19,6 +19,7 @@ package dev.androidx.ci.testRunner
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
+import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.github.GithubApi
 import dev.androidx.ci.util.GithubAuthRule
@@ -49,7 +50,7 @@ class TestRunnerPlayground {
 
     @Before
     fun initRunner() {
-        val runId = "821097113"
+        val runId = "909092033"
         testRunner = TestRunner(
             googleCloudApi = GoogleCloudApi.build(
                 Config.GCloud(
@@ -68,6 +69,11 @@ class TestRunnerPlayground {
             ),
             firebaseTestLabApi = FirebaseTestLabApi.build(
                 config = Config.FirebaseTestLab(
+                    credentials = playgroundCredentialsRule.credentials
+                )
+            ),
+            toolsResultApi = ToolsResultApi.build(
+                config = Config.ToolsResult(
                     credentials = playgroundCredentialsRule.credentials
                 )
             ),

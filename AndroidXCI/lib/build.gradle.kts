@@ -24,8 +24,18 @@ plugins {
 }
 
 generatedModels {
-    this.pkg.set("dev.androidx.ci.generated.ftl")
-    this.discoveryFileUrl.set("https://testing.googleapis.com/\$discovery/rest?version=v1")
+    this.models.set(
+        listOf(
+            dev.androidx.ci.codegen.plugin.GeneratedModelInfo(
+                discoveryFileUrl = "https://testing.googleapis.com/\$discovery/rest?version=v1",
+                pkg = "dev.androidx.ci.generated.ftl"
+            ),
+            dev.androidx.ci.codegen.plugin.GeneratedModelInfo(
+                discoveryFileUrl = "https://toolresults.googleapis.com/\$discovery/rest?version=v1beta3",
+                pkg = "dev.androidx.ci.generated.testResults"
+            )
+        )
+    )
 }
 
 dependencies {
@@ -41,7 +51,36 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.truth)
 }
+/**
+ * Copy the empty apk into our build which will be used for library integration tests.
+ * Unfortunately, FTL always requires a test apks, hence we need this fake one.
+ */
+val copyDestDir = project.layout.buildDirectory.dir("placeholderApk")
+val copyPlaceholderApkTask = tasks.register("copyPlaceholderApk", Copy::class.java) {
+    val assembleTask = rootProject.project("placeholderapp").tasks.named(
+        "packageDebug"
+    )
+    from(assembleTask.get().outputs.files) {
+        include("*.apk")
+    }
+    into(copyDestDir)
+    rename {
+        "placeholderApp.apk"
+    }
+}
 val compileKotlin: KotlinCompile by tasks
+tasks.named("processResources").configure {
+    dependsOn(copyPlaceholderApkTask)
+}
+java {
+    sourceSets {
+        main {
+            resources.srcDir(
+                copyDestDir
+            )
+        }
+    }
+}
 compileKotlin.kotlinOptions {
     freeCompilerArgs = listOf("-Xinline-classes")
 }

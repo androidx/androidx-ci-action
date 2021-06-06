@@ -33,6 +33,7 @@ class FirebaseTestLabControllerTest {
             firebaseProjectId = fakeBackend.firebaseProjectId,
             datastoreApi = fakeBackend.datastoreApi,
             firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
+            toolsResultApi = fakeBackend.fakeToolsResultApi,
             resultsGcsPrefix = GcsPath("gs://test-results")
         )
     )
@@ -43,20 +44,22 @@ class FirebaseTestLabControllerTest {
         val app1TestApk = createUploadedApk("app1-androidTest.apk")
         val app2Apk = createUploadedApk("app2.apk")
         val app2TestApk = createUploadedApk("app2-androidTest.apk")
+        val placeholderApk = createUploadedApk("placeholder.apk")
+        val noAppTestApk = createUploadedApk("no-app-apk-androidTest.apk")
         val apks = listOf(
             app1TestApk,
             createUploadedApk("foo.apk"),
             createUploadedApk("bar.apk"),
             app1Apk,
             app2Apk,
-            createUploadedApk("no-app-apk-androidTest.apk"),
+            noAppTestApk,
             app2TestApk,
         )
         val testMatrices = firebaseTestLabApi.pairAndStartTests(
-            apks
+            apks = apks,
+            placeholderApk = placeholderApk
         )
-        // only test for app ones.
-        assertThat(testMatrices).hasSize(2)
+        assertThat(testMatrices).hasSize(3)
         val appApkPaths = testMatrices.mapNotNull {
             it.testSpecification.androidInstrumentationTest?.let {
                 it.appApk!!.gcsPath to it.testApk.gcsPath
@@ -67,7 +70,8 @@ class FirebaseTestLabControllerTest {
         ).containsExactlyElementsIn(
             listOf(
                 app1Apk.gcsPath.path to app1TestApk.gcsPath.path,
-                app2Apk.gcsPath.path to app2TestApk.gcsPath.path
+                app2Apk.gcsPath.path to app2TestApk.gcsPath.path,
+                placeholderApk.gcsPath.path to noAppTestApk.gcsPath.path
             )
         )
     }

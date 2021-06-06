@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 enableFeaturePreview("VERSION_CATALOGS")
 include(":lib")
 include(":cli")
+include(":placeholderapp")
 pluginManagement {
     includeBuild("ftlModelBuilder")
     repositories {
         gradlePluginPortal()
         mavenCentral()
+        google()
     }
 }

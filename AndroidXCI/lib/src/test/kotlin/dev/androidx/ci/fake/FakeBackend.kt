@@ -26,6 +26,7 @@ class FakeBackend(
     val fakeGithubApi: FakeGithubApi = FakeGithubApi(),
     val fakeGoogleCloudApi: FakeGoogleCloudApi = FakeGoogleCloudApi(),
     val fakeFirebaseTestLabApi: FakeFirebaseTestLabApi = FakeFirebaseTestLabApi(),
+    val fakeToolsResultApi: FakeToolsResultApi = FakeToolsResultApi(),
     val datastoreApi: FakeDatastore = FakeDatastore(),
     val firebaseProjectId: String = "project1",
     randomSeed: Long = -1

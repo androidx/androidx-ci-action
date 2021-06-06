@@ -44,8 +44,7 @@ class GenerateModelsPlugin : Plugin<Project> {
 
         generateModelsTaskProvider.configure { task ->
             task.description = "Generate models"
-            task.discoveryFileUrl.set(extension.discoveryFileUrl)
-            task.pkg.set(extension.pkg)
+            task.models.set(extension.models)
             task.sourceOutDir.set(
                 target.layout.buildDirectory.dir("generatedModels")
             )

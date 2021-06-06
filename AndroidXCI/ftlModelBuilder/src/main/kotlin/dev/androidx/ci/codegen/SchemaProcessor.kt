@@ -50,28 +50,35 @@ internal class SchemaProcessor(
     }
 
     private fun SchemaDto.toTypeSpec(): TypeSpec {
-        // each enum for properties is created as a sub class
-        val enumSpecs = this.properties?.mapNotNull { (name, propertyDto) ->
-            val enum = propertyDto.enum
-            if (enum != null && enum.isNotEmpty()) {
-                // build an enum for this
-                val enumClassName = ClassName(
-                    packageName = pkg,
-                    simpleNames = arrayOf(id, name.capitalize(Locale.US))
+        fun PropertyDto.enums(
+            name: String
+        ): List<Triple<PropertyDto, String, List<String>>> {
+            return if (enum != null && enum.isNotEmpty()) {
+                listOf(
+                    Triple(this, name, enum)
                 )
-                val enumSpec = TypeSpec.enumBuilder(enumClassName)
-                enum.forEachIndexed { index, enumValue ->
-                    enumSpec.addEnumConstant(
-                        name = enumValue,
-                        typeSpec = TypeSpec.anonymousClassBuilder().addKdoc(
-                            propertyDto.enumDescriptions?.getOrNull(index)?.sanitize() ?: ""
-                        ).build()
-                    )
-                }
-                enumSpec.build()
             } else {
-                null
+                emptyList()
+            } + items?.enums("${name}Item").orEmpty()
+        }
+        val enumSpecs = this.properties?.flatMap { propertyEntry ->
+            propertyEntry.value.enums(propertyEntry.key)
+        }?.map { (propertyDto, name, values) ->
+            // build an enum for this
+            val enumClassName = ClassName(
+                packageName = pkg,
+                simpleNames = arrayOf(id, name.capitalize(Locale.US))
+            )
+            val enumSpec = TypeSpec.enumBuilder(enumClassName)
+            values.forEachIndexed { index, enumValue ->
+                enumSpec.addEnumConstant(
+                    name = enumValue,
+                    typeSpec = TypeSpec.anonymousClassBuilder().addKdoc(
+                        propertyDto.enumDescriptions?.getOrNull(index)?.sanitize() ?: ""
+                    ).build()
+                )
             }
+            enumSpec.build()
         } ?: emptyList()
         val propertySpecs = this.properties?.map { (name, propertyDto) ->
             propertyDto.toPropertySpec(
@@ -145,7 +152,7 @@ internal class SchemaProcessor(
                     componentType.toTypeName(
                         schema = schema,
                         name = "${name}Item"
-                    )
+                    ).copy(nullable = false)
                 )
             }
             "boolean" -> BOOLEAN

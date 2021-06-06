@@ -47,10 +47,10 @@ class FirebaseTestLabController(
         )
         logger.info { "received catalog: $catalog" }
         val defaultModel = catalog.androidDeviceCatalog?.models?.first { model ->
-            model?.tags?.contains("default") == true
+            model.tags?.contains("default") == true
         } ?: error("Cannot find default model in test device catalog:  $catalog")
         val defaultVersion = catalog.androidDeviceCatalog.versions?.first { version ->
-            version?.tags?.contains("default") == true
+            version.tags?.contains("default") == true
         } ?: error("Cannot find default version in test device catalog: $catalog")
         EnvironmentMatrix(
             androidDeviceList = AndroidDeviceList(
@@ -137,7 +137,10 @@ class FirebaseTestLabController(
     /**
      * Matches given APKs by name as test apk and app apk and starts tests for them
      */
-    suspend fun pairAndStartTests(apks: List<UploadedApk>): List<TestMatrix> {
+    suspend fun pairAndStartTests(
+        apks: List<UploadedApk>,
+        placeholderApk: UploadedApk
+    ): List<TestMatrix> {
         val pairs = apks.mapNotNull { uploadedApk ->
             val isTestApk = uploadedApk.apkInfo.filePath.endsWith(TEST_APK_SUFFIX)
             if (isTestApk) {
@@ -149,7 +152,8 @@ class FirebaseTestLabController(
                 if (appApk != null) {
                     appApk to uploadedApk
                 } else {
-                    null
+                    logger.info("using placeholder app apk for $uploadedApk")
+                    placeholderApk to uploadedApk
                 }
             } else {
                 null

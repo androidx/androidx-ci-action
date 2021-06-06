@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-package dev.androidx.ci.codegen.plugin
-
-import org.gradle.api.provider.ListProperty
-import java.io.Serializable
-
-/**
- * Extension to configure the settings for model generation.
- */
-interface GeneratedModelsExtension {
-    val models: ListProperty<GeneratedModelInfo>
+plugins {
+    id("com.android.application") version("7.0.0-beta03")
 }
 
-data class GeneratedModelInfo(
-    /**
-     * The URL to the discovery file
-     */
-    val discoveryFileUrl: String,
+android {
+    compileSdk = 30
+    buildToolsVersion = "30.0.3"
 
-    /**
-     * Root package for generated classes
-     */
-    val pkg: String
-) : Serializable
+    defaultConfig {
+        applicationId = "dev.androidx.ci.emptyapp"
+        minSdk = 14
+        targetSdk = 30
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+}
