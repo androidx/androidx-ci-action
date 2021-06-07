@@ -19,6 +19,7 @@ package dev.androidx.ci.testRunner
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.UploadedApk
+import dev.androidx.ci.util.LazyComputedValue
 import org.apache.logging.log4j.kotlin.logger
 
 /**
@@ -31,6 +32,18 @@ class ApkStore(
     private val googleCloudApi: GoogleCloudApi,
 ) {
     private val logger = logger()
+
+    private val placeholderApk = LazyComputedValue<UploadedApk> {
+        val bytes = ApkStore::class.java.getResource("/placeholderApp.apk")?.openStream()?.use {
+            it.readAllBytes()
+        }
+        checkNotNull(bytes) {
+            "Cannot read placeholder apk from resources"
+        }
+        uploadApk("placeholderApp.apk", bytes)
+    }
+
+    suspend fun getPlaceholderApk() = placeholderApk.get()
 
     suspend fun uploadApk(
         name: String,

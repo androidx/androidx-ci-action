@@ -46,4 +46,8 @@ class Config {
     class Datastore(
         val credentials: Credentials,
     )
+    class ToolsResult(
+        val endPoint: String = "https://toolresults.googleapis.com/toolresults/v1beta3/",
+        val credentials: Credentials
+    )
 }

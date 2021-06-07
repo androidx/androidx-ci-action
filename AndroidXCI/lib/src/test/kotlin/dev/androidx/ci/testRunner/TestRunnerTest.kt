@@ -41,6 +41,7 @@ class TestRunnerTest {
         googleCloudApi = fakeBackend.fakeGoogleCloudApi,
         githubApi = fakeBackend.fakeGithubApi,
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
+        toolsResultApi = fakeBackend.fakeToolsResultApi,
         firebaseProjectId = PROJECT_ID,
         targetRunId = TARGET_RUN_ID,
         hostRunId = HOST_RUN_ID,
@@ -217,6 +218,32 @@ class TestRunnerTest {
         }
         assertThat(outcomes).containsExactly(SUCCESS, FAILURE)
         assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.FAILURE)
+    }
+
+    @Test
+    fun libraryIntegrationTest() = testScope.runBlockingTest {
+        val artifact = fakeBackend.createArchive(
+            "room-room-runtime_room-runtime-debug-androidTest.apk"
+        )
+        createRuns(
+            listOf(
+                artifact
+            )
+        )
+        val runTests = async {
+            testRunner.runTests()
+        }
+        runCurrent()
+        val testMatrices = fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()
+        assertThat(testMatrices).hasSize(1)
+        fakeBackend.finishTest(
+            testMatrixId = testMatrices.first().testMatrixId!!,
+            outcome = SUCCESS
+        )
+        val result = runTests.await()
+        assertThat(
+            result.allTestsPassed
+        ).isTrue()
     }
 
     /**

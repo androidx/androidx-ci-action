@@ -18,6 +18,7 @@ package dev.androidx.ci.testRunner
 
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
+import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
@@ -26,6 +27,7 @@ import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
+import dev.androidx.ci.generated.ftl.ToolResultsHistory
 import dev.androidx.ci.testRunner.dto.TestRun
 import dev.androidx.ci.testRunner.dto.toEntity
 import dev.androidx.ci.testRunner.dto.toTestRun
@@ -41,10 +43,14 @@ class TestMatrixStore(
     private val firebaseProjectId: String,
     private val datastoreApi: DatastoreApi,
     private val firebaseTestLabApi: FirebaseTestLabApi,
+    toolsResultApi: ToolsResultApi,
     private val resultsGcsPrefix: GcsPath,
 ) {
     private val logger = logger()
-
+    private val toolsResultStore = ToolsResultStore(
+        firebaseProjectId = firebaseProjectId,
+        toolsResultApi = toolsResultApi
+    )
     /**
      * Creates a TestMatrix for the given configuration or returns an existing one if we've run the same test with the
      * same APKs and environment configuration.
@@ -127,7 +133,7 @@ class TestMatrixStore(
      * Creates a new [TestMatrix] with the given configuration.
      * This [TestMatrix] is pushed to the FTL API to trigger a create.
      */
-    private fun createNewTestMatrix(
+    private suspend fun createNewTestMatrix(
         testRunKey: TestRun.Id,
         environmentMatrix: EnvironmentMatrix,
         appApk: UploadedApk,
@@ -150,6 +156,12 @@ class TestMatrixStore(
         resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
                 gcsPath = testRunKey.resultGcsPath().path
+            ),
+            toolResultsHistory = ToolResultsHistory(
+                projectId = firebaseProjectId,
+                historyId = toolsResultStore.getHistoryId(
+                    testApk.apkInfo.fileNameWithoutExtension
+                )
             )
         )
     )

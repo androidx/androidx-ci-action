@@ -19,7 +19,7 @@ package dev.androidx.ci.codegen.plugin
 import dev.androidx.ci.codegen.DiscoveryDocumentModelGenerator
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.provider.Property
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
@@ -31,10 +31,7 @@ import org.gradle.api.tasks.TaskAction
 @CacheableTask
 internal abstract class GenerateModelsTask : DefaultTask() {
     @get:Input
-    abstract val discoveryFileUrl: Property<String>
-
-    @get:Input
-    abstract val pkg: Property<String>
+    abstract val models: ListProperty<GeneratedModelInfo>
 
     @get:OutputDirectory
     abstract val sourceOutDir: DirectoryProperty
@@ -43,10 +40,12 @@ internal abstract class GenerateModelsTask : DefaultTask() {
     fun generateModels() {
         val outDir = sourceOutDir.asFile.get()
         outDir.deleteRecursively()
-        DiscoveryDocumentModelGenerator(
-            outDir = outDir,
-            discoveryUrl = discoveryFileUrl.get(),
-            pkg = pkg.get()
-        ).generate()
+        models.get().forEach { input ->
+            DiscoveryDocumentModelGenerator(
+                outDir = outDir,
+                discoveryUrl = input.discoveryFileUrl,
+                pkg = input.pkg
+            ).generate()
+        }
     }
 }

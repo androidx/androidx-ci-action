@@ -2,6 +2,7 @@ AndroidXCI/build
 AndroidXCI/lib/build
 AndroidXCI/cli/build
 AndroidXCI/ftlModelBuilder/build
+AndroidXCI/placeholderapp/build
 AndroidXCI/.idea
 **/.idea/**
 **/.gradle/**
