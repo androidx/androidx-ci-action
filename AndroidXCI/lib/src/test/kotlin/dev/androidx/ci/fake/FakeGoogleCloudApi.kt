@@ -18,6 +18,7 @@ package dev.androidx.ci.fake
 
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
+import java.io.File
 
 /**
  * A simple implementation of [GoogleCloudApi] for testing and verification.
@@ -42,6 +43,12 @@ class FakeGoogleCloudApi : GoogleCloudApi {
         val path = makeGcsPath(relativePath)
         artifacts[path] = bytes
         return path
+    }
+
+    override suspend fun download(gcsPath: GcsPath, target: File, filter: (String) -> Boolean) {
+        target.resolve("downloadedFile.txt").writeText(
+            gcsPath.path, Charsets.UTF_8
+        )
     }
 
     override suspend fun existingFilePath(relativePath: String): GcsPath? {

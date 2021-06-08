@@ -21,7 +21,9 @@ import dev.androidx.ci.config.Config
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
+import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
+import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.github.GithubApi
 import dev.androidx.ci.github.dto.ArtifactsResponse
 import dev.androidx.ci.github.zipArchiveStream
@@ -123,14 +125,45 @@ class TestRunner(
             logger.error("exception in test run", th)
             TestResult.IncompleteRun(th.stackTraceToString())
         }
-        logger.trace("done running tests, will upload result to gcloud")
+        logger.trace("done running tests, will upload result to gcloud and download artifacts")
         try {
             val resultJson = result.toJson().toByteArray(Charsets.UTF_8)
             googleCloudApi.upload(
                 "final-results/$targetRunId/testResult.json",
                 resultJson
             )
-            outputFolder?.resolve("result.json")?.writeBytes(resultJson)
+            outputFolder?.resolve(RESULT_JSON_FILE_NAME)?.writeBytes(resultJson)
+            // download test artifacts
+            if (result is TestResult.CompleteRun && outputFolder != null) {
+                logger.info("will download test artifacts")
+                coroutineScope {
+                    val artifactDownloads = result.matrices.map { testMatrix ->
+                        async {
+                            logger.info {
+                                "Downloading artifacts for ${testMatrix.testMatrixId}"
+                            }
+                            val downloadFolder = localResultFolderFor(
+                                matrix = testMatrix,
+                                outputFolder = outputFolder
+                            ).also {
+                                it.mkdirs()
+                            }
+                            googleCloudApi.download(
+                                gcsPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath),
+                                target = downloadFolder,
+                                filter = { name ->
+                                    // these are logs per test, they are plenty in numbers so lets not download them
+                                    !name.contains("test_cases")
+                                }
+                            )
+                            logger.info {
+                                "Downloaded artifacts for ${testMatrix.testMatrixId} into $downloadFolder"
+                            }
+                        }
+                    }
+                    artifactDownloads.awaitAll()
+                }
+            }
             statusReporter.reportEnd(result)
         } catch (th: Throwable) {
             logger.error("unexpected error while writing results", th)
@@ -161,6 +194,7 @@ class TestRunner(
     }
 
     companion object {
+        const val RESULT_JSON_FILE_NAME = "result.json"
         fun create(
             targetRunId: String,
             hostRunId: String,
@@ -214,6 +248,16 @@ class TestRunner(
                 targetRunId = targetRunId,
                 hostRunId = hostRunId
             )
+        }
+
+        /**
+         * Specifies an output folder for the given test matrix where its artifacts will be downloaded into.
+         */
+        fun localResultFolderFor(
+            matrix: TestMatrix,
+            outputFolder: File
+        ): File {
+            return outputFolder.resolve("testMatrices/${matrix.testMatrixId}")
         }
     }
 }

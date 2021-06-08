@@ -27,7 +27,7 @@ sealed class TestResult(
 ) {
     abstract val allTestsPassed: Boolean
 
-    class CompleteRun(
+    data class CompleteRun(
         val matrices: List<TestMatrix>
     ) : TestResult(Type.COMPLETE_RUN) {
         override val allTestsPassed: Boolean by lazy {
@@ -37,7 +37,7 @@ sealed class TestResult(
         }
     }
 
-    class IncompleteRun(
+    data class IncompleteRun(
         val stacktrace: String
     ) : TestResult(Type.INCOMPLETE_RUN) {
         override val allTestsPassed: Boolean
@@ -69,5 +69,7 @@ sealed class TestResult(
             .addLast(MetadataKotlinJsonAdapterFactory())
             .build()
         private val adapter = moshi.adapter(TestResult::class.java).indent("  ").lenient()
+
+        fun fromJson(json: String) = adapter.fromJson(json)
     }
 }
