@@ -22,6 +22,7 @@ import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageOptions
 import dev.androidx.ci.config.Config
 import kotlinx.coroutines.withContext
+import java.io.File
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -41,6 +42,18 @@ interface GoogleCloudApi {
         relativePath: String,
         bytes: ByteArray
     ): GcsPath
+
+    /**
+     * Downloads the given [gcsPath] into the given [target].
+     *
+     * If the [gcsPath] is a blob, it will be downloaded to [target].
+     * If the [gcsPath] is a prefix, everything inside it will be downloaded into [target].
+     */
+    suspend fun download(
+        gcsPath: GcsPath,
+        target: File,
+        filter: (String) -> Boolean
+    )
 
     /**
      * Returns a GcsPath for an object if it exists
@@ -71,7 +84,9 @@ private class GoogleCloudApiImpl(
         }
     }
 
-    private val rootGcsPath = GcsPath("gs://${config.bucketName}") + config.bucketPath
+    private val gcspPathPrefix = "gs://${config.bucketName}"
+
+    private val rootGcsPath = GcsPath(gcspPathPrefix) + config.bucketPath
 
     private val service: Storage = StorageOptions.newBuilder()
         .setCredentials(
@@ -90,6 +105,42 @@ private class GoogleCloudApiImpl(
         GcsPath.create(blob)
     }
 
+    override suspend fun download(
+        gcsPath: GcsPath,
+        target: File,
+        filter: (String) -> Boolean
+    ) {
+        val blobId = gcsPath.blobId
+        val blob = service.get(blobId)
+        if (blob != null) {
+            // single file
+            check(!target.isDirectory) {
+                "trying to download a blob file into a folder ?"
+            }
+            blob.downloadTo(target.toPath())
+            return
+        }
+        // probably a folder, list them
+        var page = service.list(
+            config.bucketName,
+            Storage.BlobListOption.prefix(blobId.name)
+        )
+        while (page != null) {
+            page.iterateAll().filter {
+                filter(it.name)
+            }.forEach { fileBlob ->
+                val relativePath = fileBlob.name.substringAfter(
+                    blobId.name + "/"
+                )
+                val targetFile = target.resolve(relativePath).also {
+                    it.parentFile.mkdirs()
+                }
+                fileBlob.downloadTo(targetFile.toPath())
+            }
+            page = page.nextPage
+        }
+    }
+
     override suspend fun existingFilePath(relativePath: String): GcsPath? {
         val blobId = createBlobId(relativePath)
         val blob = service.get(blobId)
@@ -98,12 +149,21 @@ private class GoogleCloudApiImpl(
         }
     }
 
-    private fun createBlobId(relativePath: String): BlobId? {
+    private fun createBlobId(relativePath: String): BlobId {
         val artifactBucketPath = makeBucketPath(relativePath)
         return BlobId.of(config.bucketName, artifactBucketPath)
     }
 
     override fun getGcsPath(relativePath: String) = rootGcsPath + relativePath
+
+    private val GcsPath.blobId: BlobId
+        get() {
+            check(path.startsWith(rootGcsPath.path)) {
+                "Invalid gcs path, cannot get bucket: $this does not start with ${config.bucketName}"
+            }
+            val relativePath = path.substring(rootGcsPath.path.length + 1)
+            return createBlobId(relativePath)
+        }
 
     private fun makeBucketPath(relativePath: String) =
         "${config.bucketPath}/$relativePath"

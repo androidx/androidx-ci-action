@@ -23,36 +23,48 @@ import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
 import dev.androidx.ci.github.dto.ArtifactsResponse
 import dev.androidx.ci.github.dto.CommitInfo
+import dev.androidx.ci.testRunner.TestRunner.Companion.RESULT_JSON_FILE_NAME
 import dev.androidx.ci.testRunner.vo.TestResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 class TestRunnerTest {
+    @get:Rule
+    val tmpFolder = TemporaryFolder()
     private val testScope = TestCoroutineScope()
     private val fakeBackend = FakeBackend()
-    private val testRunner = TestRunner(
-        googleCloudApi = fakeBackend.fakeGoogleCloudApi,
-        githubApi = fakeBackend.fakeGithubApi,
-        firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
-        toolsResultApi = fakeBackend.fakeToolsResultApi,
-        firebaseProjectId = PROJECT_ID,
-        targetRunId = TARGET_RUN_ID,
-        hostRunId = HOST_RUN_ID,
-        datastoreApi = fakeBackend.datastoreApi
-    )
+    private val outputFolder by lazy {
+        tmpFolder.newFolder()
+    }
+    private val testRunner by lazy {
+        TestRunner(
+            googleCloudApi = fakeBackend.fakeGoogleCloudApi,
+            githubApi = fakeBackend.fakeGithubApi,
+            firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
+            toolsResultApi = fakeBackend.fakeToolsResultApi,
+            firebaseProjectId = PROJECT_ID,
+            targetRunId = TARGET_RUN_ID,
+            hostRunId = HOST_RUN_ID,
+            datastoreApi = fakeBackend.datastoreApi,
+            outputFolder = outputFolder
+        )
+    }
 
     @Test
     fun badRunId() = testScope.runBlockingTest {
         val result = testRunner.runTests()
         assertThat(result.type).isEqualTo(TestResult.Type.INCOMPLETE_RUN)
         assertThat(result.allTestsPassed).isFalse()
+        assertOutputFolderContents(result)
     }
 
     @Test
@@ -63,6 +75,7 @@ class TestRunnerTest {
         check(result is TestResult.CompleteRun)
         assertThat(result.matrices).isEmpty()
         assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.SUCCESS)
+        assertOutputFolderContents(result)
     }
 
     @Test
@@ -80,6 +93,7 @@ class TestRunnerTest {
         check(result is TestResult.CompleteRun)
         assertThat(result.matrices).isEmpty()
         assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.SUCCESS)
+        assertOutputFolderContents(result)
     }
 
     @Test
@@ -131,6 +145,7 @@ class TestRunnerTest {
                 CommitInfo.State.FAILURE
             }
         )
+        assertOutputFolderContents(result)
     }
 
     @Test
@@ -176,6 +191,7 @@ class TestRunnerTest {
         }
         assertThat(outcomes).containsExactly(SUCCESS, FAILURE)
         assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.FAILURE)
+        assertOutputFolderContents(result)
     }
 
     @Test
@@ -218,6 +234,7 @@ class TestRunnerTest {
         }
         assertThat(outcomes).containsExactly(SUCCESS, FAILURE)
         assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(CommitInfo.State.FAILURE)
+        assertOutputFolderContents(result)
     }
 
     @Test
@@ -244,6 +261,24 @@ class TestRunnerTest {
         assertThat(
             result.allTestsPassed
         ).isTrue()
+        assertOutputFolderContents(result)
+    }
+
+    private fun assertOutputFolderContents(result: TestResult) {
+        assertThat(
+            TestResult.fromJson(outputFolder.resolve(RESULT_JSON_FILE_NAME).readText(Charsets.UTF_8))
+        ).isEqualTo(result)
+        // if it is a complete run, we should have some results pulled
+        if (result is TestResult.CompleteRun) {
+            result.matrices.forEach { testMatrix ->
+                // for each matrix, find something
+                val resultFolder = TestRunner.localResultFolderFor(
+                    matrix = testMatrix,
+                    outputFolder = outputFolder
+                )
+                assertThat(resultFolder.isDirectory).isTrue()
+            }
+        }
     }
 
     /**

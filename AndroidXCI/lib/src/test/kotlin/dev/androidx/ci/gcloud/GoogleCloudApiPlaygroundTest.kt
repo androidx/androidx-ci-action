@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -39,6 +40,9 @@ import org.junit.runners.JUnit4
 class GoogleCloudApiPlaygroundTest {
     @get:Rule
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
+
+    @get:Rule
+    val tmpFolder = TemporaryFolder()
 
     private val testScope = TestCoroutineScope()
     @Test
@@ -60,5 +64,28 @@ class GoogleCloudApiPlaygroundTest {
         ).isEqualTo(
             GcsPath("gs://androidx-ftl-test-results/testing/unitTest.txt")
         )
+    }
+
+    @Test
+    fun downloadFolder() = testScope.runBlockingTest {
+        val folder = tmpFolder.newFolder()
+        val client = GoogleCloudApi.build(
+            config = Config.GCloud(
+                credentials = playgroundCredentialsRule.credentials,
+                bucketName = "androidx-ftl-test-results",
+                bucketPath = "github-ci-action"
+            ),
+            context = testScope.coroutineContext
+        )
+        val path = GcsPath(
+            "gs://androidx-ftl-test-results/github-ci-action/ftl/821097113"
+        )
+        client.download(
+            path,
+            folder
+        ) {
+            !it.contains("test_cases")
+        }
+        println("donwloaded")
     }
 }
