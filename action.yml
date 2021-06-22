@@ -16,7 +16,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # dist.yml script swaps the SRC with DIST when building distribution
+    #SRC
     - run: cd ${{ github.action_path }}/AndroidXCI && ./gradlew :cli:run
+    #DIST- run: ${{ github.action_path }}/dist/bin/cli
       shell: bash
       env:
         ANDROIDX_GITHUB_TOKEN: ${{ inputs.github-token }}

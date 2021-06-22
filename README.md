@@ -5,6 +5,11 @@ This repository contains custom post-workflow actions for AndroidX.
 Even though it is public, it is not intended to be used in repositories
 other than [AndroidX/androidx](https://github.com/androidX/androidx).
 
+## Releasing
+Each time a tag is pushed for `latest` or `v*`; a distrubtion build is
+prepared in CI that will be pushed at `dist-<tagname>` tag.
+See `dist.yml` build action for details.
+
 Copyright:
 
     Copyright 2020 Google LLC
