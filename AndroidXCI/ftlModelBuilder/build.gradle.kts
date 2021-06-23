@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 plugins {
-    kotlin("jvm") version "1.4.31"
     `java-gradle-plugin`
+    `kotlin-dsl`
     id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
 }
 repositories {

@@ -17,7 +17,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  */
 
 plugins {
-    `kotlin-dsl`
     kotlin("jvm")
     id("org.jlleitschuh.gradle.ktlint")
     id("androidx-model-builder")
