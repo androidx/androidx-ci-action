@@ -58,7 +58,9 @@ jobs:
           git add .github
 
           # replace src build command with dist
-          sed '/\#SRC/!b;n;d' action.yml| sed 's/\#DIST//'| sed '/SRC/d' > action.yml
+          REPLACE_TOKEN="#REPLACE_NEXT_LINE"
+          sed -i "/$REPLACE_TOKEN/{n;d}" action.yml
+          sed -i "s/$REPLACE_TOKEN//g" action.yml
           git add action.yml
 
           # copy install into dist folder
