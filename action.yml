@@ -16,6 +16,8 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # dist.yml will parse the marker below and replace the next line
+    #REPLACE_NEXT_LINE- run: ${{ github.action_path }}/dist/bin/cli
     - run: cd ${{ github.action_path }}/AndroidXCI && ./gradlew :cli:run
       shell: bash
       env:

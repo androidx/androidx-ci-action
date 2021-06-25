@@ -15,7 +15,6 @@
  */
 
 plugins {
-    `kotlin-dsl`
     kotlin("jvm")
     id("org.jlleitschuh.gradle.ktlint")
     `application`
