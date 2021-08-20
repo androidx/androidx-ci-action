@@ -195,6 +195,13 @@ class TestRunner(
 
     companion object {
         const val RESULT_JSON_FILE_NAME = "result.json"
+        private val ALLOWED_ARTIFACTS = listOf(
+            "artifacts_activity",
+            "artifacts_fragment",
+            "artifacts_lifecycle",
+            "artifacts_navigation",
+            "artifacts_room"
+        )
         fun create(
             targetRunId: String,
             hostRunId: String,
@@ -241,8 +248,10 @@ class TestRunner(
                         credentials = credentials
                     )
                 ),
-                githubArtifactFilter = {
-                    it.name.contains("artifacts_room")
+                githubArtifactFilter = { artifact ->
+                    ALLOWED_ARTIFACTS.any {
+                        artifact.name.contains(it)
+                    }
                 },
                 outputFolder = outputFolder,
                 targetRunId = targetRunId,
