@@ -96,15 +96,17 @@ class NestedZipArtifactParserTest {
         }
         assertThat(
             entries
-        ).containsExactlyElementsIn(listOf(
-            "foo.txt" to bytes_1,
-            "app.apk" to bytes_2,
-            "nested_1_1" to bytes_3_1,
-            "nested_2_1" to bytes_4_1,
-            "nested_2_2_1" to bytes_4_2_1,
-            "nested_2_2_2" to bytes_4_2_2,
-            "nested_2_3" to bytes_4_3
-        ).map { it.first to it.second.signature() })
+        ).containsExactlyElementsIn(
+            listOf(
+                "foo.txt" to bytes_1,
+                "app.apk" to bytes_2,
+                "nested_1_1" to bytes_3_1,
+                "nested_2_1" to bytes_4_1,
+                "nested_2_2_1" to bytes_4_2_1,
+                "nested_2_2_2" to bytes_4_2_2,
+                "nested_2_3" to bytes_4_3
+            ).map { it.first to it.second.signature() }
+        )
     }
 
     private fun ByteArray.signature() = this.decodeToString()
