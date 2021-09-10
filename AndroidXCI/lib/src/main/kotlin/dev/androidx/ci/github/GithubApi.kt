@@ -113,19 +113,41 @@ interface GithubApi {
  * Opens a stream for the given path and returns a sequence of Zip entries that can be skipped or
  * read.
  */
-suspend fun GithubApi.zipArchiveStream(path: String): Sequence<ZipEntryScope> {
+suspend fun GithubApi.zipArchiveStream(
+    path: String,
+    unwrapNestedZipEntries: Boolean = false
+): Sequence<ZipEntryScope> {
     return zipArchive(path).use {
         val zipInputStream = ZipInputStream(it.byteStream().buffered())
-        sequence {
-            do {
-                val next = zipInputStream.nextEntry
-                if (next != null) {
-                    ZipEntryScopeImpl(zipInputStream, next).use {
-                        yield(it)
-                    }
+        zipInputStream.asSequence(unwrapNestedZipEntries = unwrapNestedZipEntries)
+    }
+}
+
+private fun ZipInputStream.asSequence(
+    unwrapNestedZipEntries: Boolean
+): Sequence<ZipEntryScope> {
+    val sequence = sequence {
+        do {
+            val next = nextEntry
+            if (next != null) {
+                ZipEntryScopeImpl(this@asSequence, next).use {
+                    yield(it)
                 }
-            } while (next != null)
+            }
+        } while (next != null)
+    }
+    return if (unwrapNestedZipEntries) {
+        sequence.flatMap {
+            if (it.entry.name.endsWith(".zip")) {
+                ZipInputStream(it.bytes.inputStream()).asSequence(
+                    unwrapNestedZipEntries = true
+                )
+            } else {
+                sequenceOf(it)
+            }
         }
+    } else {
+        sequence
     }
 }
 

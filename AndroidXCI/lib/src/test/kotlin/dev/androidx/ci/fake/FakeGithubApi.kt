@@ -74,19 +74,6 @@ class FakeGithubApi : GithubApi {
         zipArchives[path] = responseBody
     }
 
-    private fun createZipFile(
-        entries: List<Pair<String, ByteArray>>
-    ): Buffer {
-        val buff = Buffer()
-        ZipOutputStream(buff.outputStream()).use { zip ->
-            entries.forEach { (name, contents) ->
-                zip.putNextEntry(ZipEntry(name))
-                zip.write(contents)
-            }
-        }
-        return buff
-    }
-
     override suspend fun artifacts(runId: String): ArtifactsResponse {
         return artifacts[runId] ?: throwNotFound<ArtifactsResponse>()
     }
@@ -122,4 +109,17 @@ class FakeGithubApi : GithubApi {
         )
         return newStatus
     }
+}
+
+public fun createZipFile(
+    entries: List<Pair<String, ByteArray>>
+): Buffer {
+    val buff = Buffer()
+    ZipOutputStream(buff.outputStream()).use { zip ->
+        entries.forEach { (name, contents) ->
+            zip.putNextEntry(ZipEntry(name))
+            zip.write(contents)
+        }
+    }
+    return buff
 }

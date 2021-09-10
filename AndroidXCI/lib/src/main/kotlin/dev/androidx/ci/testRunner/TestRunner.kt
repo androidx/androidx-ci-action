@@ -173,8 +173,10 @@ class TestRunner(
 
     private suspend fun uploadApksToGoogleCloud(artifact: ArtifactsResponse.Artifact): List<UploadedApk> {
         return coroutineScope {
-            val uploads = githubApi.zipArchiveStream(artifact.archiveDownloadUrl)
-                .filter {
+            val uploads = githubApi.zipArchiveStream(
+                    path = artifact.archiveDownloadUrl,
+                    unwrapNestedZipEntries = true
+                ).filter {
                     it.entry.name.endsWith(".apk")
                 }.map {
                     uploadApkToGcsAsync(it.entry, it.bytes)
