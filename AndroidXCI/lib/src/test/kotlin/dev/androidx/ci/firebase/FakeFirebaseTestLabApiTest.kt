@@ -20,6 +20,7 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeFirebaseTestLabApi
 import dev.androidx.ci.firebase.dto.EnvironmentType
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
@@ -107,5 +108,29 @@ class FakeFirebaseTestLabApiTest {
             )
 
         ).isEqualTo(catalog)
+    }
+
+    @Test
+    fun getApkDetails() = runBlockingTest {
+        val fileRef1 = FileReference(
+            gcsPath = "gs://foo/bar.apk"
+        )
+        val fileRef2 = FileReference(
+            gcsPath = "gs://foo/baz.apk"
+        )
+        val pkg1 = fakeApi.getApkDetails(
+            fileRef1
+        ).apkDetail?.apkManifest?.packageName
+        assertThat(pkg1).isEqualTo("androidx.fake.pkg0")
+        val pkg2 = fakeApi.getApkDetails(
+            fileRef2
+        ).apkDetail?.apkManifest?.packageName
+        assertThat(pkg2).isEqualTo("androidx.fake.pkg1")
+        val pkg1Dupe = fakeApi.getApkDetails(
+            FileReference(
+                gcsPath = fileRef1.gcsPath
+            )
+        ).apkDetail?.apkManifest?.packageName
+        assertThat(pkg1Dupe).isEqualTo(pkg1)
     }
 }

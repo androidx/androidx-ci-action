@@ -48,7 +48,7 @@ class ToolsResultApiPlaygroundTest {
             firebaseProjectId = projectId,
             toolsResultApi = api
         )
-        val historyId = store.getHistoryId("work-work-runtime_work-runtime-debug-androidTest")
+        val historyId = store.getHistoryId("androidx.compose.testutils.test")
         println(historyId)
     }
 }

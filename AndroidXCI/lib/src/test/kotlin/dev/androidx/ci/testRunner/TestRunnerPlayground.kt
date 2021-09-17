@@ -50,7 +50,7 @@ class TestRunnerPlayground {
 
     @Before
     fun initRunner() {
-        val runId = "909092033"
+        val runId = "1243675283"
         testRunner = TestRunner(
             googleCloudApi = GoogleCloudApi.build(
                 Config.GCloud(
@@ -85,7 +85,7 @@ class TestRunnerPlayground {
                 context = Dispatchers.IO
             ),
             githubArtifactFilter = {
-                it.name.contains("artifacts_room")
+                it.name.contains("artifacts_navigation")
             },
             targetRunId = runId,
             hostRunId = runId

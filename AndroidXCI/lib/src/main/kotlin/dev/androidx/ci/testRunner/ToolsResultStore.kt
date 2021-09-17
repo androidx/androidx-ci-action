@@ -32,27 +32,30 @@ class ToolsResultStore(
     private val logger = logger()
     private val cache = mutableMapOf<String, LazyComputedValue<String>>()
     suspend fun getHistoryId(
-        name: String
+        pkg: String
     ): String {
-        logger.info {
-            "finding history id for $name"
+        check(pkg != "dev.androidx.ci.emptyapp") {
+            "Package should not be the placeholder app"
         }
-        return cache.getOrPut(name) {
+        logger.info {
+            "finding history id for $pkg"
+        }
+        return cache.getOrPut(pkg) {
             LazyComputedValue {
-                getOrCreateHistory(name).also {
+                getOrCreateHistory(pkg).also {
                     logger.info {
-                        "history id for $name is $it"
+                        "history id for $pkg is $it"
                     }
                 }
             }
         }.get()
     }
 
-    private suspend fun getOrCreateHistory(name: String): String {
+    private suspend fun getOrCreateHistory(pkg: String): String {
         // there might be many, choose the first one
         toolsResultApi.getHistories(
             projectId = firebaseProjectId,
-            name = name
+            name = pkg
         ).histories?.firstOrNull()?.let {
             logger.info {
                 "found history id in existing histories: $it"
@@ -63,8 +66,8 @@ class ToolsResultStore(
         }
         // create a new one
         val history = History(
-            name = name,
-            displayName = name,
+            name = pkg,
+            displayName = pkg,
             testPlatform = History.TestPlatform.android,
         )
         logger.info {

@@ -138,33 +138,41 @@ class TestMatrixStore(
         environmentMatrix: EnvironmentMatrix,
         appApk: UploadedApk,
         testApk: UploadedApk
-    ) = TestMatrix(
-        projectId = firebaseProjectId,
-        flakyTestAttempts = 2,
-        testSpecification = TestSpecification(
-            disableVideoRecording = true,
-            androidInstrumentationTest = AndroidInstrumentationTest(
-                appApk = FileReference(
-                    gcsPath = appApk.gcsPath.path
-                ),
-                testApk = FileReference(
-                    gcsPath = testApk.gcsPath.path
-                )
+    ): TestMatrix {
+        val packageName = firebaseTestLabApi.getApkDetails(
+            FileReference(
+                gcsPath = testApk.gcsPath.path
             )
-        ),
-        environmentMatrix = environmentMatrix,
-        resultStorage = ResultStorage(
-            googleCloudStorage = GoogleCloudStorage(
-                gcsPath = testRunKey.resultGcsPath().path
+        ).apkDetail?.apkManifest?.packageName ?: error("Cannot find package name for $testApk")
+        val historyId = toolsResultStore.getHistoryId(
+            packageName
+        )
+        return TestMatrix(
+            projectId = firebaseProjectId,
+            flakyTestAttempts = 2,
+            testSpecification = TestSpecification(
+                disableVideoRecording = true,
+                androidInstrumentationTest = AndroidInstrumentationTest(
+                    appApk = FileReference(
+                        gcsPath = appApk.gcsPath.path
+                    ),
+                    testApk = FileReference(
+                        gcsPath = testApk.gcsPath.path
+                    )
+                )
             ),
-            toolResultsHistory = ToolResultsHistory(
-                projectId = firebaseProjectId,
-                historyId = toolsResultStore.getHistoryId(
-                    testApk.apkInfo.fileNameWithoutExtension
+            environmentMatrix = environmentMatrix,
+            resultStorage = ResultStorage(
+                googleCloudStorage = GoogleCloudStorage(
+                    gcsPath = testRunKey.resultGcsPath().path
+                ),
+                toolResultsHistory = ToolResultsHistory(
+                    projectId = firebaseProjectId,
+                    historyId = historyId
                 )
             )
         )
-    )
+    }
 
     private fun TestRun.Id.resultGcsPath() = (resultsGcsPrefix + key.name)
 }

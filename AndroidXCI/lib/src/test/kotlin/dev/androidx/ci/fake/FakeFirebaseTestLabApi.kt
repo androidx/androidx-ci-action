@@ -19,6 +19,10 @@ package dev.androidx.ci.fake
 import com.squareup.moshi.Moshi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.dto.EnvironmentType
+import dev.androidx.ci.generated.ftl.ApkDetail
+import dev.androidx.ci.generated.ftl.ApkManifest
+import dev.androidx.ci.generated.ftl.FileReference
+import dev.androidx.ci.generated.ftl.GetApkDetailsResponse
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
@@ -34,6 +38,7 @@ class FakeFirebaseTestLabApi(
 ) : FirebaseTestLabApi {
     private val testMatrices = mutableMapOf<String, TestMatrix>()
     private var environmentCatalog: TestEnvironmentCatalog? = null
+    private val apkToPkgMap = mutableMapOf<String, String>()
 
     /**
      * Read the catalog from a recorded request
@@ -94,5 +99,22 @@ class FakeFirebaseTestLabApi(
         projectId: String
     ): TestEnvironmentCatalog {
         return environmentCatalog ?: realEnvironmentCatalog
+    }
+
+    override suspend fun getApkDetails(fileReference: FileReference): GetApkDetailsResponse {
+        val packageName = apkToPkgMap.getOrPut(fileReference.gcsPath!!) {
+            "$FAKE_PKG_PREFIX${apkToPkgMap.size}"
+        }
+        return GetApkDetailsResponse(
+            apkDetail = ApkDetail(
+                apkManifest = ApkManifest(
+                    packageName = packageName
+                )
+            )
+        )
+    }
+
+    companion object {
+        const val FAKE_PKG_PREFIX = "androidx.fake.pkg"
     }
 }
