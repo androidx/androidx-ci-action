@@ -77,7 +77,7 @@ class FirebaseTestLabControllerTest {
     }
 
     private fun createUploadedApk(
-        name: String
+        name: String,
     ) = UploadedApk(
         gcsPath = GcsPath("gs://apk/$name"),
         apkInfo = ApkInfo(

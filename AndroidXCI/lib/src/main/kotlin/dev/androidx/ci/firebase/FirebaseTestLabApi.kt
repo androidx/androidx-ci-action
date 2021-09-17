@@ -19,6 +19,8 @@ package dev.androidx.ci.firebase
 import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.firebase.dto.EnvironmentType
+import dev.androidx.ci.generated.ftl.FileReference
+import dev.androidx.ci.generated.ftl.GetApkDetailsResponse
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.util.Retry
@@ -54,6 +56,12 @@ interface FirebaseTestLabApi {
         @Path("environmentType") environmentType: EnvironmentType,
         @Query("projectId") projectId: String,
     ): TestEnvironmentCatalog
+
+    @Retry
+    @POST("applicationDetailService/getApkDetails")
+    suspend fun getApkDetails(
+        @Body fileReference: FileReference
+    ): GetApkDetailsResponse
 
     companion object {
         fun build(
