@@ -108,6 +108,9 @@ private class Cli : CliktCommand() {
         if (result.allTestsPassed) {
             exitProcess(0)
         } else {
+            println("================= FAILURE LOG =================")
+            println(result.failureLog)
+            println("===============================================")
             exitProcess(1)
         }
     }
