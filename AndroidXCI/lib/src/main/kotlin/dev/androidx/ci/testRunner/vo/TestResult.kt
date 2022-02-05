@@ -27,6 +27,8 @@ sealed class TestResult(
 ) {
     abstract val allTestsPassed: Boolean
 
+    abstract val failureLog: String
+
     data class CompleteRun(
         val matrices: List<TestMatrix>
     ) : TestResult(Type.COMPLETE_RUN) {
@@ -35,6 +37,16 @@ sealed class TestResult(
                 it.outcomeSummary != SUCCESS
             }
         }
+        override val failureLog: String
+            get() = buildString {
+                val failed = matrices.filter {
+                    it.outcomeSummary != SUCCESS
+                }
+                append("${failed.size} of ${matrices.size} failed")
+                failed.forEach { failure ->
+                    appendLine("Matrix: ${failure.testMatrixId}: URL: ${failure.resultStorage.resultsUrl}")
+                }
+            }
     }
 
     data class IncompleteRun(
@@ -42,6 +54,11 @@ sealed class TestResult(
     ) : TestResult(Type.INCOMPLETE_RUN) {
         override val allTestsPassed: Boolean
             get() = false
+        override val failureLog: String
+            get() = buildString {
+                appendLine("FTL failed with an exception:")
+                appendLine(stacktrace)
+            }
     }
 
     fun toJson() = adapter.toJson(this)

@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("com.android.application") version("7.0.0-beta03")
+    id("com.android.application") version("7.0.0")
 }
 
 android {
