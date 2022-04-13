@@ -50,16 +50,17 @@ class FirebaseTestLabController(
         val defaultModel = catalog.androidDeviceCatalog?.models?.first { model ->
             model.tags?.contains("default") == true
         } ?: error("Cannot find default model in test device catalog:  $catalog")
-        val defaultModelVersion = defaultModel.supportedVersionIds?.maxByOrNull {
-            it.toIntOrNull() ?: -1
-        } ?: error("Cannot find supported version for $defaultModel in test device catalog: $catalog")
+        val defaultModelVersion = defaultModel.supportedVersionIds
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.maxOrNull()
+            ?: error("Cannot find supported version for $defaultModel in test device catalog: $catalog")
         EnvironmentMatrix(
             androidDeviceList = AndroidDeviceList(
                 androidDevices = listOf(
                     AndroidDevice(
                         locale = "en",
                         androidModelId = defaultModel.id,
-                        androidVersionId = defaultModelVersion,
+                        androidVersionId = defaultModelVersion.toString(),
                         orientation = "portrait"
                     )
                 )
