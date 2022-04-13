@@ -17,7 +17,9 @@
 package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import dev.androidx.ci.fake.FakeBackend
+import dev.androidx.ci.firebase.dto.EnvironmentType
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -74,6 +76,27 @@ class FirebaseTestLabControllerTest {
                 placeholderApk.gcsPath.path to noAppTestApk.gcsPath.path
             )
         )
+    }
+
+    @Test
+    fun testDefaultEnvironment() {
+        runBlocking {
+            val environmentMatrix = firebaseTestLabApi.getEnvironmentMatrix()
+            val androidDevice = environmentMatrix.androidDeviceList?.androidDevices?.first()
+                ?: error("No android device found in the environment")
+            val catalog = fakeBackend.fakeFirebaseTestLabApi.getTestEnvironmentCatalog(
+                environmentType = EnvironmentType.ANDROID,
+                projectId = "-"
+            )
+            val validEnvironment = catalog.androidDeviceCatalog?.models?.any { model ->
+                model.id == androidDevice.androidModelId && (
+                    model.supportedVersionIds?.contains(androidDevice.androidVersionId) ?: false
+                    )
+            }
+            assertWithMessage(
+                "Default device ($androidDevice) should be in the catalog"
+            ).that(validEnvironment).isTrue()
+        }
     }
 
     private fun createUploadedApk(

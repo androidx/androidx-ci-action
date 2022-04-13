@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.testRunner
 
+import com.google.common.annotations.VisibleForTesting
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.dto.EnvironmentType
 import dev.androidx.ci.generated.ftl.AndroidDevice
@@ -49,16 +50,17 @@ class FirebaseTestLabController(
         val defaultModel = catalog.androidDeviceCatalog?.models?.first { model ->
             model.tags?.contains("default") == true
         } ?: error("Cannot find default model in test device catalog:  $catalog")
-        val defaultVersion = catalog.androidDeviceCatalog.versions?.first { version ->
-            version.tags?.contains("default") == true
-        } ?: error("Cannot find default version in test device catalog: $catalog")
+        val defaultModelVersion = defaultModel.supportedVersionIds
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.maxOrNull()
+            ?: error("Cannot find supported version for $defaultModel in test device catalog: $catalog")
         EnvironmentMatrix(
             androidDeviceList = AndroidDeviceList(
                 androidDevices = listOf(
                     AndroidDevice(
                         locale = "en",
                         androidModelId = defaultModel.id,
-                        androidVersionId = defaultVersion.id,
+                        androidVersionId = defaultModelVersion.toString(),
                         orientation = "portrait"
                     )
                 )
@@ -67,6 +69,9 @@ class FirebaseTestLabController(
             logger.info { "default matrix:$it" }
         }
     }
+
+    @VisibleForTesting
+    internal suspend fun getEnvironmentMatrix() = environmentMatrix.get()
 
     /**
      * Enqueues a [TestMatrix] to run the test for the given APKs in the default environment.
