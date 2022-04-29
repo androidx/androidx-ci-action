@@ -26,4 +26,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: repo
-          path: ${{ GITHUB_WORKSPACE }}/AndroidXCI/build/repo
+          path: ${{ env.GITHUB_WORKSPACE }}/AndroidXCI/build/repo
