@@ -20,6 +20,7 @@ plugins {
     kotlin("jvm")
     id("org.jlleitschuh.gradle.ktlint")
     id("androidx-model-builder")
+    id("maven-publish")
 }
 
 generatedModels {
@@ -82,4 +83,12 @@ java {
 }
 compileKotlin.kotlinOptions {
     freeCompilerArgs = listOf("-Xinline-classes")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
 }

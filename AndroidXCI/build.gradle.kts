@@ -22,9 +22,6 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint-idea") version "10.0.0"
 }
 
-group = "dev.androidx.build.ci"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
     google()
@@ -35,6 +32,8 @@ subprojects {
         mavenCentral()
         google()
     }
+    group = "dev.androidx.build.ci"
+    version = "1.0-SNAPSHOT"
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).configureEach {
         kotlinOptions {
             jvmTarget = "1.8"
