@@ -22,6 +22,7 @@ import dev.androidx.ci.firebase.dto.EnvironmentType
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.AndroidDeviceList
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.TestResult
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -40,12 +41,14 @@ class FirebaseTestLabController(
 ) {
     private val logger = logger()
 
-    private val environmentMatrix = LazyComputedValue {
-        logger.info { "finding default environment matrix" }
-        val catalog = firebaseTestLabApi.getTestEnvironmentCatalog(
+    private val testCatalog = LazyComputedValue {
+        firebaseTestLabApi.getTestEnvironmentCatalog(
             environmentType = EnvironmentType.ANDROID,
             projectId = firebaseProjectId
         )
+    }
+
+    private val defaultDevicePicker = { catalog: TestEnvironmentCatalog ->
         logger.info { "received catalog: $catalog" }
         val defaultModel = catalog.androidDeviceCatalog?.models?.first { model ->
             model.tags?.contains("default") == true
@@ -54,35 +57,43 @@ class FirebaseTestLabController(
             ?.mapNotNull { it.toIntOrNull() }
             ?.maxOrNull()
             ?: error("Cannot find supported version for $defaultModel in test device catalog: $catalog")
-        EnvironmentMatrix(
-            androidDeviceList = AndroidDeviceList(
-                androidDevices = listOf(
-                    AndroidDevice(
-                        locale = "en",
-                        androidModelId = defaultModel.id,
-                        androidVersionId = defaultModelVersion.toString(),
-                        orientation = "portrait"
-                    )
-                )
+        listOf(
+            AndroidDevice(
+                locale = "en",
+                androidModelId = defaultModel.id,
+                androidVersionId = defaultModelVersion.toString(),
+                orientation = "portrait"
             )
-        ).also {
-            logger.info { "default matrix:$it" }
-        }
+        )
     }
 
+    private suspend fun DevicePicker.buildEnvironmentMatrix(): EnvironmentMatrix {
+        return testCatalog.get().let(this)
+            .createEnvironmentMatrix()
+    }
+
+    private fun List<AndroidDevice>.createEnvironmentMatrix() = EnvironmentMatrix(
+        androidDeviceList = AndroidDeviceList(
+            androidDevices = this
+        )
+    )
+
     @VisibleForTesting
-    internal suspend fun getEnvironmentMatrix() = environmentMatrix.get()
+    internal suspend fun getDefaultEnvironmentMatrix(): EnvironmentMatrix {
+        return testCatalog.get().let(defaultDevicePicker).createEnvironmentMatrix()
+    }
 
     /**
      * Enqueues a [TestMatrix] to run the test for the given APKs in the default environment.
      *
      * Note that, if same exact test was run before, its results will be re-used.
      */
-    private suspend fun submitTest(
+    suspend fun submitTest(
         appApk: UploadedApk,
-        testApk: UploadedApk
+        testApk: UploadedApk,
+        devicePicker: DevicePicker? = null
     ): TestMatrix {
-        val environmentMatrix = environmentMatrix.get()
+        val environmentMatrix = (devicePicker ?: defaultDevicePicker).buildEnvironmentMatrix()
         logger.info {
             "submitting tests for app: $appApk / test: $testApk"
         }
@@ -144,7 +155,8 @@ class FirebaseTestLabController(
      */
     suspend fun pairAndStartTests(
         apks: List<UploadedApk>,
-        placeholderApk: UploadedApk
+        placeholderApk: UploadedApk,
+        devicePicker: DevicePicker? = null
     ): List<TestMatrix> {
         val pairs = apks.mapNotNull { uploadedApk ->
             val isTestApk = uploadedApk.apkInfo.filePath.endsWith(TEST_APK_SUFFIX)
@@ -167,7 +179,8 @@ class FirebaseTestLabController(
         return pairs.map {
             submitTest(
                 appApk = it.first,
-                testApk = it.second
+                testApk = it.second,
+                devicePicker = devicePicker
             )
         }
     }

@@ -81,7 +81,7 @@ class FirebaseTestLabControllerTest {
     @Test
     fun testDefaultEnvironment() {
         runBlocking {
-            val environmentMatrix = firebaseTestLabApi.getEnvironmentMatrix()
+            val environmentMatrix = firebaseTestLabApi.getDefaultEnvironmentMatrix()
             val androidDevice = environmentMatrix.androidDeviceList?.androidDevices?.first()
                 ?: error("No android device found in the environment")
             val catalog = fakeBackend.fakeFirebaseTestLabApi.getTestEnvironmentCatalog(
