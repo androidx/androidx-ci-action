@@ -81,17 +81,17 @@ class TestResultDownloader(
     }
 
 
-    class DownloadedTestResults(
+    data class DownloadedTestResults(
         val rootFolder: File,
-        val mergedTestResults: File? = null,
+        val mergedTestResults: List<File>,
         val instrumentationResults: List<File>,
         val logFiles: List<File>
     ) {
         companion object {
             fun buildFrom(folder: File): DownloadedTestResults {
-                val mergedResult = folder.walkTopDown().filter {
+                val mergedResults = folder.walkTopDown().filter {
                     it.name.endsWith("test_results_merged.xml")
-                }.firstOrNull()
+                }
                 val instrumentationResultFiles = folder.walkBottomUp().filter {
                     it.name == " instrumentation.results"
                 }
@@ -100,7 +100,7 @@ class TestResultDownloader(
                 }
                 return DownloadedTestResults(
                     rootFolder = folder,
-                    mergedTestResults = mergedResult,
+                    mergedTestResults = mergedResults.toList(),
                     instrumentationResults = instrumentationResultFiles.toList(),
                     logFiles = logFiles.toList()
                 )

@@ -44,7 +44,7 @@ class TestRun(
      * if we've already run the exact same test.
      */
     companion object {
-        private const val KIND = "TestRun"
+        private const val KIND = "AOSP-TestRun"
         private val adapter by lazy {
             val type = Types.newParameterizedType(
                 Map::class.java,

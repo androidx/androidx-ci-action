@@ -83,6 +83,11 @@ class FirebaseTestLabController(
         return testCatalog.get().let(defaultDevicePicker).createEnvironmentMatrix()
     }
 
+    @VisibleForTesting
+    internal suspend fun getCatalog(): TestEnvironmentCatalog {
+        return testCatalog.get()
+    }
+
     /**
      * Enqueues a [TestMatrix] to run the test for the given APKs in the default environment.
      *

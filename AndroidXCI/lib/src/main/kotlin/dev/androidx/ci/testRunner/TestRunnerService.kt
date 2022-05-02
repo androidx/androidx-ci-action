@@ -16,12 +16,14 @@
 
 package dev.androidx.ci.testRunner
 
+import com.google.auth.Credentials
 import com.google.auth.oauth2.ServiceAccountCredentials
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GoogleCloudApi
+import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.testRunner.vo.TestResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -46,12 +48,27 @@ class TestRunnerService(
         resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$gcsResultPath")
     )
     private val apkStore = ApkStore(googleCloudApi)
-    private val testLabController = FirebaseTestLabController(
+    val testLabController = FirebaseTestLabController(
         firebaseTestLabApi = firebaseTestLabApi,
         firebaseProjectId = firebaseProjectId,
         testMatrixStore = testMatrixStore
     )
 
+    suspend fun runTest(
+        testApk: File,
+        appApk: File? = null,
+        localDownloadFolder: File,
+        devices: List<AndroidDevice>
+    ): Pair<TestResult, List<TestResultDownloader.DownloadedTestResults>> {
+        return runTest(
+            testApk = testApk,
+            appApk = appApk,
+            localDownloadFolder = localDownloadFolder,
+            devicePicker = {
+                devices
+            }
+        )
+    }
     suspend fun runTest(
         testApk: File,
         appApk: File? = null,
@@ -99,7 +116,7 @@ class TestRunnerService(
             /**
              * service account file contents
              */
-            googleCloudCredentials: String,
+            credentials: Credentials,
             /**
              * Firebase project id
              */
@@ -118,9 +135,6 @@ class TestRunnerService(
             gcsResultPath: String,
             ioDispatcher: CoroutineDispatcher = Dispatchers.IO
         ): TestRunnerService {
-            val credentials = ServiceAccountCredentials.fromStream(
-                googleCloudCredentials.byteInputStream(Charsets.UTF_8)
-            )
             return TestRunnerService(
                 googleCloudApi = GoogleCloudApi.build(
                     Config.GCloud(
