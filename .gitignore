@@ -8,3 +8,4 @@ AndroidXCI/.idea
 **/.gradle/**
 !**/.idea/codeStyleSettings.xml
 !**/.idea/copyright
+**/local.properties

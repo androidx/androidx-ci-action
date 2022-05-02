@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
     // cannot use version catalog here yet:
     // https://melix.github.io/blog/2021/03/version-catalogs-faq.html#_can_i_use_a_version_catalog_to_declare_plugin_versions
@@ -22,14 +21,20 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint-idea") version "10.0.0"
 }
 
-group = "dev.androidx.build.ci"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
     google()
 }
 
+val githubRunId = project.providers.environmentVariable("GITHUB_RUN_ID")
+val publishVersion = githubRunId.orElse("").map {
+    if (it == "") {
+        "1.0-SNAPSHOT"
+    } else {
+        "1.0.$it"
+    }
+}
+val publishRepo = project.layout.buildDirectory.dir("repo")
 subprojects {
     repositories {
         mavenCentral()
@@ -39,6 +44,22 @@ subprojects {
         kotlinOptions {
             jvmTarget = "1.8"
             this.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+        }
+    }
+    pluginManager.withPlugin("maven-publish") {
+        group = "dev.androidx.build.ci"
+        version = publishVersion.get()
+        extensions.configure(PublishingExtension::class) {
+            publications {
+                create<MavenPublication>("maven") {
+                    from(components["java"])
+                }
+                repositories {
+                    maven {
+                        url = uri(publishRepo)
+                    }
+                }
+            }
         }
     }
 }

@@ -20,6 +20,7 @@ plugins {
     kotlin("jvm")
     id("org.jlleitschuh.gradle.ktlint")
     id("androidx-model-builder")
+    id("maven-publish")
 }
 
 generatedModels {
