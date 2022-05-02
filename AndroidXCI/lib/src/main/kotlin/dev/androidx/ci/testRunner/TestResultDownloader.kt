@@ -32,7 +32,7 @@ class TestResultDownloader(
     suspend fun downloadTestResults(
         outputFolder: File,
         result: TestResult
-    ): DownloadedTestResult? {
+    ): List<DownloadedTestResults> {
         if (outputFolder.exists()) {
             outputFolder.deleteRecursively()
         }
@@ -46,7 +46,7 @@ class TestResultDownloader(
         // download test artifacts
         if (result is TestResult.CompleteRun) {
             logger.info("will download test artifacts")
-            coroutineScope {
+            return coroutineScope {
                 val artifactDownloads = result.matrices.map { testMatrix ->
                     async {
                         logger.info {
@@ -69,33 +69,36 @@ class TestResultDownloader(
                         logger.info {
                             "Downloaded artifacts for ${testMatrix.testMatrixId} into $downloadFolder"
                         }
+                        DownloadedTestResults.buildFrom(
+                            downloadFolder
+                        )
                     }
                 }
                 artifactDownloads.awaitAll()
             }
-            return DownloadedTestResult.buildFrom(outputFolder)
         }
-        return null
+        return emptyList()
     }
 
-    class DownloadedTestResult(
+
+    class DownloadedTestResults(
         val rootFolder: File,
-        val mergedTestResults: File,
+        val mergedTestResults: File? = null,
         val instrumentationResults: List<File>,
         val logFiles: List<File>
     ) {
         companion object {
-            fun buildFrom(folder: File): DownloadedTestResult {
+            fun buildFrom(folder: File): DownloadedTestResults {
                 val mergedResult = folder.walkTopDown().filter {
                     it.name.endsWith("test_results_merged.xml")
-                }.firstOrNull() ?: error("Cannot find merged results in $folder")
+                }.firstOrNull()
                 val instrumentationResultFiles = folder.walkBottomUp().filter {
                     it.name == " instrumentation.results"
                 }
                 val logFiles = folder.walkBottomUp().filter {
                     it.name == "logcat"
                 }
-                return DownloadedTestResult(
+                return DownloadedTestResults(
                     rootFolder = folder,
                     mergedTestResults = mergedResult,
                     instrumentationResults = instrumentationResultFiles.toList(),

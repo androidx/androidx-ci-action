@@ -57,7 +57,7 @@ class TestRunnerService(
         appApk: File? = null,
         devicePicker: DevicePicker? = null,
         localDownloadFolder: File
-    ): Pair<TestResult, TestResultDownloader.DownloadedTestResult?> {
+    ): Pair<TestResult, List<TestResultDownloader.DownloadedTestResults>> {
         logger.trace { "Running tests for testApk: $testApk appApk: $appApk" }
         val result = try {
             val uploadedTestApk = apkStore.uploadApk(testApk.name, testApk.readBytes())
