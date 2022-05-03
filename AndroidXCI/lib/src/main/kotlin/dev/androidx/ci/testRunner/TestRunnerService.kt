@@ -17,7 +17,6 @@
 package dev.androidx.ci.testRunner
 
 import com.google.auth.Credentials
-import com.google.auth.oauth2.ServiceAccountCredentials
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
@@ -94,14 +93,7 @@ class TestRunnerService(
             logger.error("exception in test run", th)
             TestResult.IncompleteRun(th.stackTraceToString())
         }
-        if (result is TestResult.CompleteRun) {
-            result.matrices
-        }
         logger.trace { "Done running tests for $testApk / $appApk" }
-        if (localDownloadFolder.exists()) {
-            localDownloadFolder.deleteRecursively()
-        }
-        localDownloadFolder.mkdirs()
         val downloadResult = TestResultDownloader(
             googleCloudApi = googleCloudApi
         ).downloadTestResults(
