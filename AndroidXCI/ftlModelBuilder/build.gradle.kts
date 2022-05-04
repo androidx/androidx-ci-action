@@ -16,11 +16,7 @@
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
-    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
-}
-repositories {
-    mavenCentral()
-    gradlePluginPortal()
+    alias(libs.plugins.ktlintGradle)
 }
 
 group = "dev.androidx.ci"
