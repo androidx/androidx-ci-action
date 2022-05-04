@@ -22,9 +22,11 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.config.Config
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -34,7 +36,7 @@ class GoogleCloudApiTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun noAuthentication_checkCorrectContext() {
-        val testScope = TestCoroutineScope()
+        val testScope = TestScope()
         val api = GoogleCloudApi.build(
             context = testScope.coroutineContext,
             config = Config.GCloud(
@@ -43,9 +45,8 @@ class GoogleCloudApiTest {
                 bucketPath = "testing",
             )
         )
-        testScope.runBlockingTest {
-            pauseDispatcher()
-            val result = async {
+        testScope.runTest {
+            val result = async(SupervisorJob()) {
                 api.upload(
                     "foo/bar",
                     byteArrayOf(1, 2, 3, 4)

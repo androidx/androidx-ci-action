@@ -20,8 +20,8 @@ import com.google.common.truth.Truth
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.util.GoogleCloudCredentialsRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -44,9 +44,9 @@ class GoogleCloudApiPlaygroundTest {
     @get:Rule
     val tmpFolder = TemporaryFolder()
 
-    private val testScope = TestCoroutineScope()
+    private val testScope = TestScope()
     @Test
-    fun putItem() = testScope.runBlockingTest {
+    fun putItem() = testScope.runTest {
         val client = GoogleCloudApi.build(
             config = Config.GCloud(
                 credentials = playgroundCredentialsRule.credentials,
@@ -67,7 +67,7 @@ class GoogleCloudApiPlaygroundTest {
     }
 
     @Test
-    fun downloadFolder() = testScope.runBlockingTest {
+    fun downloadFolder() = testScope.runTest {
         val folder = tmpFolder.newFolder()
         val client = GoogleCloudApi.build(
             config = Config.GCloud(

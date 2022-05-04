@@ -1,12 +1,12 @@
 [versions]
 retrofit = "2.9.0"
 okhttp = "4.9.1"
-moshi = "1.12.0"
-moshix = "0.10.0"
-kotlin = "1.5.30"
+moshi = "1.13.0"
+moshix = "0.17.1"
+kotlin = "1.6.21"
 kotlinpoet = "1.8.0"
 ktlint = "10.0.0"
-coroutines = "1.4.3"
+coroutines = "1.6.1"
 truth = "1.1.2"
 [libraries]
 retrofit-core = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }

@@ -27,7 +27,7 @@ import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -39,7 +39,7 @@ class FakeFirebaseTestLabApiTest {
     private val fakeApi = FakeFirebaseTestLabApi()
 
     @Test
-    fun addMatrix() = runBlockingTest {
+    fun addMatrix() = runTest {
         val matrix = TestMatrix(
             resultStorage = ResultStorage(
                 googleCloudStorage = GoogleCloudStorage("gs://fake-path")
@@ -74,7 +74,7 @@ class FakeFirebaseTestLabApiTest {
     }
 
     @Test
-    fun getNonExistingMatrix() = runBlockingTest {
+    fun getNonExistingMatrix() = runTest {
         val result = kotlin.runCatching {
             fakeApi.getTestMatrix(
                 projectId = "none",
@@ -88,7 +88,7 @@ class FakeFirebaseTestLabApiTest {
     }
 
     @Test
-    fun getRealEnvCatalog() = runBlockingTest {
+    fun getRealEnvCatalog() = runTest {
         val catalog = fakeApi.getTestEnvironmentCatalog(
             environmentType = EnvironmentType.ANDROID,
             projectId = "foo"
@@ -98,7 +98,7 @@ class FakeFirebaseTestLabApiTest {
     }
 
     @Test
-    fun setEnvironmentCatalog() = runBlockingTest {
+    fun setEnvironmentCatalog() = runTest {
         val catalog = TestEnvironmentCatalog()
         fakeApi.setTestEnvironmentCatalog(catalog)
         assertThat(
@@ -111,7 +111,7 @@ class FakeFirebaseTestLabApiTest {
     }
 
     @Test
-    fun getApkDetails() = runBlockingTest {
+    fun getApkDetails() = runTest {
         val fileRef1 = FileReference(
             gcsPath = "gs://foo/bar.apk"
         )

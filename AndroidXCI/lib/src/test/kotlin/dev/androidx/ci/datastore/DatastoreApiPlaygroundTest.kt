@@ -22,8 +22,8 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.util.GoogleCloudCredentialsRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
@@ -39,7 +39,7 @@ class DatastoreApiPlaygroundTest {
     @get:Rule
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 
-    private val testScope = TestCoroutineScope()
+    private val testScope = TestScope()
 
     private val datastore by lazy {
         DatastoreApi.build(
@@ -51,7 +51,7 @@ class DatastoreApiPlaygroundTest {
     }
 
     @Test
-    fun readWrite() = testScope.runBlockingTest {
+    fun readWrite() = testScope.runTest {
         val key = datastore.createKey(
             kind = "local-test",
             id = "foo"
