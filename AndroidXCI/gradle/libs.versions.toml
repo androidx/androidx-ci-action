@@ -3,7 +3,9 @@ retrofit = "2.9.0"
 okhttp = "4.9.1"
 moshi = "1.12.0"
 moshix = "0.10.0"
+kotlin = "1.5.30"
 kotlinpoet = "1.8.0"
+ktlint = "10.0.0"
 coroutines = "1.4.3"
 truth = "1.1.2"
 [libraries]
@@ -29,3 +31,8 @@ clikt = { module = "com.github.ajalt.clikt:clikt", version = "3.2.0"}
 retrofit = ["retrofit-core", "retrofit-converter-moshi", "okhttp-core", "okhttp-logging"]
 
 log4j = ["log4j-kotlin", "log4j-core"]
+[plugins]
+kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+ktlintIdea = { id = "org.jlleitschuh.gradle.ktlint-idea", version.ref = "ktlint" }
+ktlintGradle = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }

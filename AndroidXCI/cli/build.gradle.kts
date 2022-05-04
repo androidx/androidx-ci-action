@@ -15,9 +15,9 @@
  */
 
 plugins {
-    kotlin("jvm")
-    id("org.jlleitschuh.gradle.ktlint")
-    `application`
+    alias(libs.plugins.kotlinJvm)
+    alias(libs.plugins.ktlint)
+    application
 }
 
 dependencies {
