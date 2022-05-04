@@ -48,15 +48,12 @@ object FTLTestDevices {
         sdk = "19"
     )
 
-
-
-    private fun AndroidDevice(id:String, sdk:String) = AndroidDevice(
+    private fun AndroidDevice(id: String, sdk: String) = AndroidDevice(
         locale = "en",
         androidModelId = id,
         androidVersionId = sdk,
         orientation = "portrait"
     )
-
 
     //    All Google Devices:
     //    AmatiTvEmulator / [29]
@@ -80,6 +77,4 @@ object FTLTestDevices {
     //    Nexus7 / [19, 21, 22]
     //    flo / [19]
     //    lt02wifi / [19]
-
-
 }

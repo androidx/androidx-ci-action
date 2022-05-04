@@ -23,6 +23,7 @@ import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.AndroidDevice
+import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.testRunner.vo.TestResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -53,12 +54,28 @@ class TestRunnerService(
         testMatrixStore = testMatrixStore
     )
 
+    /**
+     * Runs the test for the given [testApk] [appApk] pair.
+     *
+     * To optimize cacheability, a new TestMatrix will be created for each device.
+     *
+     * @param testApk The test apk which has the instrumentation tests
+     * @param appApk The application under test. Can be `null` for library tests
+     * @param localDownloadFolder A local directory into which the test run outputs (logcat, result
+     * xml etc) should be downloaded. This folder will be cleaned so it shouldn't be shared with
+     * other tasks.
+     * @param devices List of [AndroidDevice]s to run the test on. See [FTLTestDevices] for a set of
+     * common devices.
+     *
+     * @return A [TestRunResponse] that includes the [TestMatrix] list as well as links to each
+     * downloaded artifact.
+     */
     suspend fun runTest(
         testApk: File,
         appApk: File? = null,
         localDownloadFolder: File,
         devices: List<AndroidDevice>
-    ): Pair<TestResult, List<TestResultDownloader.DownloadedTestResults>> {
+    ): TestRunResponse {
         return runTest(
             testApk = testApk,
             appApk = appApk,
@@ -68,12 +85,29 @@ class TestRunnerService(
             }
         )
     }
+
+    /**
+     * Runs the test for the given [testApk] [appApk] pair.
+     *
+     * To optimize cacheability, a new TestMatrix will be created for each device chosen by the
+     * [devicePicker].
+     *
+     * @param testApk The test apk which has the instrumentation tests
+     * @param appApk The application under test. Can be `null` for library tests
+     * @param localDownloadFolder A local directory into which the test run outputs (logcat, result
+     * xml etc) should be downloaded. This folder will be cleaned so it shouldn't be shared with
+     * other tasks.
+     * @param devicePicker A block that can return desired devices from a [TestEnvironmentCatalog].
+     *
+     * @return A [TestRunResponse] that includes the [TestMatrix] list as well as links to each
+     * downloaded artifact.
+     */
     suspend fun runTest(
         testApk: File,
         appApk: File? = null,
+        localDownloadFolder: File,
         devicePicker: DevicePicker? = null,
-        localDownloadFolder: File
-    ): Pair<TestResult, List<TestResultDownloader.DownloadedTestResults>> {
+    ): TestRunResponse {
         logger.trace { "Running tests for testApk: $testApk appApk: $appApk" }
         val result = try {
             val uploadedTestApk = apkStore.uploadApk(testApk.name, testApk.readBytes())
@@ -106,7 +140,10 @@ class TestRunnerService(
             outputFolder = localDownloadFolder,
             result = result
         )
-        return result to downloadResult
+        return TestRunResponse(
+            testResult = result,
+            downloads = downloadResult
+        )
     }
 
     companion object {
@@ -161,6 +198,17 @@ class TestRunnerService(
                 ),
                 gcsResultPath = gcsResultPath
             )
+        }
+    }
+
+    data class TestRunResponse(
+        val testResult: TestResult,
+        val downloads: List<TestResultDownloader.DownloadedTestResults>
+    ) {
+        fun downloadsFor(
+            testMatrixId: String
+        ) = downloads.find {
+            it.testMatrixId == testMatrixId
         }
     }
 }

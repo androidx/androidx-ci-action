@@ -108,7 +108,7 @@ class FirebaseTestLabController(
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
-            "submitting tests for app: $appApk / test: $testApk on ${devices}"
+            "submitting tests for app: $appApk / test: $testApk on $devices"
         }
         return devices.map {
             testMatrixStore.getOrCreateTestMatrix(

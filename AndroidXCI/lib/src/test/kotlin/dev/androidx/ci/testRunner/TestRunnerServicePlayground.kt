@@ -16,8 +16,6 @@
 
 package dev.androidx.ci.testRunner
 
-import dev.androidx.ci.firebase.FirebaseTestLabApi
-import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.util.GoogleCloudCredentialsRule
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -41,7 +39,6 @@ class TestRunnerServicePlayground {
         )
     }
 
-
     @Test
     fun manual() {
         val apkPath = File(
@@ -52,14 +49,13 @@ class TestRunnerServicePlayground {
                 testApk = apkPath,
                 appApk = null,
                 devicePicker = {
-                               listOf(
-                                   FTLTestDevices.PIXEL6_31,
-                                   FTLTestDevices.NEXUS5_19
-                               )
+                    listOf(
+                        FTLTestDevices.NEXUS5_19
+                    )
                 },
-                localDownloadFolder = File("/Users/yboyar/src/androidx-ci-action/local3")
+                localDownloadFolder = File("/Users/yboyar/src/androidx-ci-action/AndroidXCI/real-test-out")
             )
-            println(l3.second)
+            println(l3.downloads)
         }
     }
 
@@ -75,11 +71,12 @@ class TestRunnerServicePlayground {
                         it.startsWith("1")
                     } ?: false
                 }?.forEach {
-                    println("""
+                    println(
+                        """
                         ${it.id} / ${it.supportedVersionIds} / ${it.form}
-                    """.trimIndent())
+                        """.trimIndent()
+                    )
                 }
-
         }
     }
 }

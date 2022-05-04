@@ -70,7 +70,8 @@ class TestResultDownloader(
                             "Downloaded artifacts for ${testMatrix.testMatrixId} into $downloadFolder"
                         }
                         DownloadedTestResults.buildFrom(
-                            downloadFolder
+                            testMatrixId = testMatrix.testMatrixId!!,
+                            folder = downloadFolder
                         )
                     }
                 }
@@ -80,25 +81,32 @@ class TestResultDownloader(
         return emptyList()
     }
 
-
     data class DownloadedTestResults(
+        val testMatrixId: String,
         val rootFolder: File,
         val mergedTestResults: List<File>,
         val instrumentationResults: List<File>,
         val logFiles: List<File>
     ) {
         companion object {
-            fun buildFrom(folder: File): DownloadedTestResults {
+            /**
+             * Collects the test results from the download folder
+             */
+            internal fun buildFrom(
+                testMatrixId: String,
+                folder: File
+            ): DownloadedTestResults {
                 val mergedResults = folder.walkTopDown().filter {
                     it.name.endsWith("test_results_merged.xml")
                 }
                 val instrumentationResultFiles = folder.walkBottomUp().filter {
-                    it.name == " instrumentation.results"
+                    it.name == "instrumentation.results"
                 }
                 val logFiles = folder.walkBottomUp().filter {
                     it.name == "logcat"
                 }
                 return DownloadedTestResults(
+                    testMatrixId = testMatrixId,
                     rootFolder = folder,
                     mergedTestResults = mergedResults.toList(),
                     instrumentationResults = instrumentationResultFiles.toList(),
