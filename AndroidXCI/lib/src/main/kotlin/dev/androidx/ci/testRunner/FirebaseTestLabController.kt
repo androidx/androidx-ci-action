@@ -72,6 +72,10 @@ class FirebaseTestLabController(
             .createEnvironmentMatrix()
     }
 
+    private suspend fun DevicePicker.pickDevices(): List<AndroidDevice> {
+        return testCatalog.get().let(this)
+    }
+
     private fun List<AndroidDevice>.createEnvironmentMatrix() = EnvironmentMatrix(
         androidDeviceList = AndroidDeviceList(
             androidDevices = this
@@ -89,24 +93,30 @@ class FirebaseTestLabController(
     }
 
     /**
-     * Enqueues a [TestMatrix] to run the test for the given APKs in the default environment.
+     * Enqueues [TestMatrix]es to run the tests for the given APKs on the devices picked by
+     * [devicePicker]. Note that, for each device, a new [TestMatrix] to optimize cacheability.
      *
      * Note that, if same exact test was run before, its results will be re-used.
+     *
+     * @param devicePicker The [DevicePicker] that will decide on which [AndroidDevice]s to
+     * use to run the tests.
      */
-    suspend fun submitTest(
+    suspend fun submitTests(
         appApk: UploadedApk,
         testApk: UploadedApk,
         devicePicker: DevicePicker? = null
-    ): TestMatrix {
-        val environmentMatrix = (devicePicker ?: defaultDevicePicker).buildEnvironmentMatrix()
+    ): List<TestMatrix> {
+        val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
-            "submitting tests for app: $appApk / test: $testApk"
+            "submitting tests for app: $appApk / test: $testApk on ${devices}"
         }
-        return testMatrixStore.getOrCreateTestMatrix(
-            appApk = appApk,
-            testApk = testApk,
-            environmentMatrix = environmentMatrix
-        )
+        return devices.map {
+            testMatrixStore.getOrCreateTestMatrix(
+                appApk = appApk,
+                testApk = testApk,
+                environmentMatrix = listOf(it).createEnvironmentMatrix()
+            )
+        }
     }
 
     /**
@@ -181,8 +191,8 @@ class FirebaseTestLabController(
                 null
             }
         }
-        return pairs.map {
-            submitTest(
+        return pairs.flatMap {
+            submitTests(
                 appApk = it.first,
                 testApk = it.second,
                 devicePicker = devicePicker

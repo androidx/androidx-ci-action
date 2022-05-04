@@ -18,6 +18,7 @@ package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
+import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -100,6 +101,47 @@ class TestRunnerServiceTest {
             val (testResult, downloads) = testRun.await()
             assertThat(downloads).hasSize(1)
             assertThat(testResult.allTestsPassed).isTrue()
+        }
+    }
+
+    @Test
+    fun runOnTwoDevices() {
+        val libraryTest = tmpFolder.newFile("library-test.apk").also {
+            it.writeText("library-test")
+        }
+        val targetDevices = listOf(
+            FTLTestDevices.PIXEL6_31, FTLTestDevices.NEXUS5_19
+        )
+        testScope.runBlockingTest {
+            val testRun = async {
+                testRunnerService.runTest(
+                    testApk = libraryTest,
+                    localDownloadFolder = tmpFolder.newFolder(),
+                    devicePicker = {
+                        targetDevices
+                    }
+                )
+            }
+            testScope.runCurrent()
+            assertThat(
+                testRun.isActive
+            ).isTrue()
+            val testMatrices = fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()
+            assertThat(testMatrices).hasSize(2)
+            fakeBackend.finishTest(testMatrices[0].testMatrixId!!, FAILURE)
+            fakeBackend.finishTest(testMatrices[1].testMatrixId!!, SUCCESS)
+            advanceUntilIdle()
+            assertThat(testRun.isCompleted).isTrue()
+            val (testResult, downloads) = testRun.await()
+            assertThat(downloads).hasSize(2)
+            assertThat(testResult.allTestsPassed).isFalse()
+            val devices = testMatrices.flatMap {
+                (it.environmentMatrix.androidDeviceList?.androidDevices ?: emptyList()).also {
+                    // make sure each invocation has only 1 device
+                    assertThat(it).hasSize(1)
+                }
+            }
+            assertThat(devices).containsExactlyElementsIn(targetDevices)
         }
     }
 

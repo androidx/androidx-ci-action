@@ -80,13 +80,19 @@ class TestRunnerService(
             val uploadedAppApk = appApk?.let {
                 apkStore.uploadApk(appApk.name, appApk.readBytes())
             } ?: apkStore.getPlaceholderApk()
-            val testMatrix = testLabController.submitTest(
+            logger.trace { "Will submit tests to the test lab" }
+            val testMatrices = testLabController.submitTests(
                 appApk = uploadedAppApk,
                 testApk = uploadedTestApk,
                 devicePicker = devicePicker
             )
+            logger.trace {
+                """
+                Created ${testMatrices.size} test matrices. Will poll them until they complete.
+                """.trimIndent()
+            }
             testLabController.collectTestResults(
-                matrices = listOf(testMatrix),
+                matrices = testMatrices,
                 pollIntervalMs = TimeUnit.SECONDS.toMillis(10)
             )
         } catch (th: Throwable) {
