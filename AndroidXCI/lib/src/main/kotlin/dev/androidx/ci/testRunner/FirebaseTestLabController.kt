@@ -119,6 +119,19 @@ class FirebaseTestLabController(
         }
     }
 
+    suspend fun collectTestResultsByTestMatrixIds(
+        testMatrixIds: List<String>,
+        pollIntervalMs: Long
+    ): TestResult = collectTestResults(
+        matrices = testMatrixIds.map { testMatrixId ->
+            firebaseTestLabApi.getTestMatrix(
+                projectId = firebaseProjectId,
+                testMatrixId = testMatrixId
+            )
+        },
+        pollIntervalMs = pollIntervalMs
+    )
+
     /**
      * Collects the results for the given list of TestMatrices.
      *

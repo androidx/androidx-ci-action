@@ -24,12 +24,14 @@ import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
+import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.TestResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.logging.log4j.kotlin.logger
 import java.io.File
+import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
 class TestRunnerService(
@@ -87,6 +89,53 @@ class TestRunnerService(
         )
     }
 
+    suspend fun enqueueTests(
+        testApk: File,
+        appApk: File? = null,
+        localDownloadFolder: File,
+        devicePicker: DevicePicker? = null,
+    ): TestEnqueueResponse {
+        logger.trace { "Running tests for testApk: $testApk appApk: $appApk" }
+        val uploadedTestApk = apkStore.uploadApk(testApk.name, testApk.readBytes())
+        val uploadedAppApk = appApk?.let {
+            apkStore.uploadApk(appApk.name, appApk.readBytes())
+        } ?: apkStore.getPlaceholderApk()
+        logger.trace { "Will submit tests to the test lab" }
+        val testMatrices = testLabController.submitTests(
+            appApk = uploadedAppApk,
+            testApk = uploadedTestApk,
+            devicePicker = devicePicker
+        )
+        logger.trace { "Enqueued ${testMatrices.size} matrices" }
+        return TestEnqueueResponse.create(testMatrices)
+    }
+
+    suspend fun getTestResults(
+        enqueueResponses: List<TestEnqueueResponse>,
+        localDownloadFolder: File,
+        pollIntervalMs: Long = TimeUnit.SECONDS.toMillis(10)
+    ): TestRunResponse {
+        val testMatrixIds = enqueueResponses.flatMap {
+            it.testMatrixIds
+        }
+        logger.trace { "Will collect results for ${testMatrixIds.size} matrices" }
+        val result = testLabController.collectTestResultsByTestMatrixIds(
+            testMatrixIds = testMatrixIds,
+            pollIntervalMs = pollIntervalMs
+        )
+        logger.trace { "All test matrices complete. Downloading outputs." }
+        val downloadResult = TestResultDownloader(
+            googleCloudApi = googleCloudApi
+        ).downloadTestResults(
+            outputFolder = localDownloadFolder,
+            result = result
+        )
+        return TestRunResponse(
+            testResult = result,
+            downloads = downloadResult
+        )
+    }
+
     /**
      * Runs the test for the given [testApk] [appApk] pair.
      *
@@ -110,41 +159,13 @@ class TestRunnerService(
         devicePicker: DevicePicker? = null,
     ): TestRunResponse {
         logger.trace { "Running tests for testApk: $testApk appApk: $appApk" }
-        val result = try {
-            val uploadedTestApk = apkStore.uploadApk(testApk.name, testApk.readBytes())
-            val uploadedAppApk = appApk?.let {
-                apkStore.uploadApk(appApk.name, appApk.readBytes())
-            } ?: apkStore.getPlaceholderApk()
-            logger.trace { "Will submit tests to the test lab" }
-            val testMatrices = testLabController.submitTests(
-                appApk = uploadedAppApk,
-                testApk = uploadedTestApk,
-                devicePicker = devicePicker
-            )
-            logger.trace {
-                """
-                Created ${testMatrices.size} test matrices. Will poll them until they complete.
-                """.trimIndent()
-            }
-            testLabController.collectTestResults(
-                matrices = testMatrices,
-                pollIntervalMs = TimeUnit.SECONDS.toMillis(10)
-            )
-        } catch (th: Throwable) {
-            logger.error("exception in test run", th)
-            TestResult.IncompleteRun(th.stackTraceToString())
-        }
-        logger.trace { "Done running tests for $testApk / $appApk" }
-        val downloadResult = TestResultDownloader(
-            googleCloudApi = googleCloudApi
-        ).downloadTestResults(
-            outputFolder = localDownloadFolder,
-            result = result
+        val enqueue = enqueueTests(
+            testApk = testApk,
+            appApk = appApk,
+            localDownloadFolder = localDownloadFolder,
+            devicePicker = devicePicker
         )
-        return TestRunResponse(
-            testResult = result,
-            downloads = downloadResult
-        )
+        return getTestResults(listOf(enqueue), localDownloadFolder = localDownloadFolder)
     }
 
     companion object {
@@ -173,7 +194,7 @@ class TestRunnerService(
              * If enabled, HTTP requests will also be logged. Keep in mind, they might include
              * sensitive data.
              */
-            logHttpCalls: Boolean = false,
+            logHttpCalls: Boolean = true,
             ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
         ): TestRunnerService {
             val httpLogLevel = if (logHttpCalls) {
@@ -222,6 +243,20 @@ class TestRunnerService(
             testMatrixId: String
         ) = downloads.find {
             it.testMatrixId == testMatrixId
+        }
+    }
+
+    data class TestEnqueueResponse(
+        val testMatrixIds: List<String>
+    ) : Serializable {
+        companion object {
+            fun create(
+                testMatices: List<TestMatrix>
+            ) = TestEnqueueResponse(
+                testMatrixIds = testMatices.map { checkNotNull(it.testMatrixId) {
+                    "Invalid test matrix without id!!! ${testMatices}"
+                } }
+            )
         }
     }
 }
