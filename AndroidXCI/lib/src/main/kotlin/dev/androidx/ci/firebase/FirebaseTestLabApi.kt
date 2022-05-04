@@ -25,6 +25,7 @@ import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
+import dev.androidx.ci.util.withLog4J
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -78,7 +79,10 @@ interface FirebaseTestLabApi {
                 it.proceed(
                     newBuilder.build()
                 )
-            }.build()
+            }.withLog4J(
+                level = config.httpLogLevel,
+                klass = FirebaseTestLabApi::class
+            ).build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()

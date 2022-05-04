@@ -35,7 +35,8 @@ class TestRunnerServicePlayground {
             firebaseProjectId = "androidx-dev-prod",
             bucketName = "androidx-ftl-aosp-bucket-2",
             bucketPath = "localRuns",
-            gcsResultPath = "yigit"
+            gcsResultPath = "yigit",
+            logHttpCalls = true
         )
     }
 
@@ -50,7 +51,7 @@ class TestRunnerServicePlayground {
                 appApk = null,
                 devicePicker = {
                     listOf(
-                        FTLTestDevices.NEXUS5_19
+                        FTLTestDevices.PIXEL_3
                     )
                 },
                 localDownloadFolder = File("/Users/yboyar/src/androidx-ci-action/AndroidXCI/real-test-out")

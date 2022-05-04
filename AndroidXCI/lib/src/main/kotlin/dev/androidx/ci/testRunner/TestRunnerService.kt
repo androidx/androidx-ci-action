@@ -27,6 +27,7 @@ import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.testRunner.vo.TestResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.logging.log4j.kotlin.logger
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -168,8 +169,18 @@ class TestRunnerService(
              * GCP path to put the results into
              */
             gcsResultPath: String,
-            ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+            /**
+             * If enabled, HTTP requests will also be logged. Keep in mind, they might include
+             * sensitive data.
+             */
+            logHttpCalls: Boolean = false,
+            ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
         ): TestRunnerService {
+            val httpLogLevel = if (logHttpCalls) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
             return TestRunnerService(
                 googleCloudApi = GoogleCloudApi.build(
                     Config.GCloud(
@@ -187,13 +198,15 @@ class TestRunnerService(
                 ),
                 toolsResultApi = ToolsResultApi.build(
                     config = Config.ToolsResult(
-                        credentials = credentials
+                        credentials = credentials,
+                        httpLogLevel = httpLogLevel
                     )
                 ),
                 firebaseProjectId = firebaseProjectId,
                 firebaseTestLabApi = FirebaseTestLabApi.build(
                     config = Config.FirebaseTestLab(
-                        credentials = credentials
+                        credentials = credentials,
+                        httpLogLevel = httpLogLevel
                     )
                 ),
                 gcsResultPath = gcsResultPath

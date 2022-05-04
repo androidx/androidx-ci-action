@@ -22,6 +22,7 @@ import dev.androidx.ci.generated.testResults.History
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
+import dev.androidx.ci.util.withLog4J
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -64,7 +65,10 @@ interface ToolsResultApi {
                 it.proceed(
                     newBuilder.build()
                 )
-            }.build()
+            }.withLog4J(
+                level = config.httpLogLevel,
+                klass = ToolsResultApi::class
+            ).build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()

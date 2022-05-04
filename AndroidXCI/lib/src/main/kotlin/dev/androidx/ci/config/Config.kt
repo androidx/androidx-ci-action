@@ -17,6 +17,7 @@
 package dev.androidx.ci.config
 
 import com.google.auth.Credentials
+import okhttp3.logging.HttpLoggingInterceptor
 
 /**
  * Common configuration for TestRunner.
@@ -41,13 +42,15 @@ class Config {
     )
     class FirebaseTestLab(
         val endPoint: String = "https://testing.googleapis.com/v1/",
-        val credentials: Credentials
+        val credentials: Credentials,
+        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE
     )
     class Datastore(
         val credentials: Credentials,
     )
     class ToolsResult(
         val endPoint: String = "https://toolresults.googleapis.com/toolresults/v1beta3/",
-        val credentials: Credentials
+        val credentials: Credentials,
+        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE
     )
 }
