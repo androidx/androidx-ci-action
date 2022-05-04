@@ -22,8 +22,10 @@ import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -32,7 +34,7 @@ import org.junit.rules.TemporaryFolder
 class TestRunnerServiceTest {
     @get:Rule
     val tmpFolder = TemporaryFolder()
-    private val testScope = TestCoroutineScope()
+    private val testScope = TestScope()
     private val fakeBackend = FakeBackend()
 
     private val testRunnerService by lazy {
@@ -51,7 +53,7 @@ class TestRunnerServiceTest {
         val libraryTest = tmpFolder.newFile("library-test.apk").also {
             it.writeText("library-test")
         }
-        testScope.runBlockingTest {
+        testScope.runTest {
             val testRun = async {
                 testRunnerService.runTest(
                     testApk = libraryTest,
@@ -81,7 +83,7 @@ class TestRunnerServiceTest {
         val appUnderTest = tmpFolder.newFile("appUnderTest.apk").also {
             it.writeText("app")
         }
-        testScope.runBlockingTest {
+        testScope.runTest {
             val testRun = async {
                 testRunnerService.runTest(
                     testApk = testApp,
@@ -112,7 +114,7 @@ class TestRunnerServiceTest {
         val targetDevices = listOf(
             FTLTestDevices.PIXEL6_31, FTLTestDevices.NEXUS5_19
         )
-        testScope.runBlockingTest {
+        testScope.runTest {
             val testRun = async {
                 testRunnerService.runTest(
                     testApk = libraryTest,
