@@ -22,7 +22,6 @@ plugins {
     id("androidx-model-builder")
     id("maven-publish")
 }
-
 generatedModels {
     this.models.set(
         listOf(
@@ -55,6 +54,8 @@ dependencies {
  * Copy the empty apk into our build which will be used for library integration tests.
  * Unfortunately, FTL always requires a test apks, hence we need this fake one.
  */
+// specify dependency so that we can access the packageDebug task from the placeholder.
+evaluationDependsOn(":placeholderapp")
 val copyDestDir = project.layout.buildDirectory.dir("placeholderApk")
 val copyPlaceholderApkTask = tasks.register("copyPlaceholderApk", Copy::class.java) {
     val assembleTask = rootProject.project("placeholderapp").tasks.named(

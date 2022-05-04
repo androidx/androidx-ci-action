@@ -27,8 +27,10 @@ import dev.androidx.ci.testRunner.TestRunner.Companion.RESULT_JSON_FILE_NAME
 import dev.androidx.ci.testRunner.vo.TestResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -40,7 +42,7 @@ import org.junit.runners.JUnit4
 class TestRunnerTest {
     @get:Rule
     val tmpFolder = TemporaryFolder()
-    private val testScope = TestCoroutineScope()
+    private val testScope = TestScope()
     private val fakeBackend = FakeBackend()
     private val outputFolder by lazy {
         tmpFolder.newFolder()
@@ -60,7 +62,7 @@ class TestRunnerTest {
     }
 
     @Test
-    fun badRunId() = testScope.runBlockingTest {
+    fun badRunId() = testScope.runTest {
         val result = testRunner.runTests()
         assertThat(result.type).isEqualTo(TestResult.Type.INCOMPLETE_RUN)
         assertThat(result.allTestsPassed).isFalse()
@@ -68,7 +70,7 @@ class TestRunnerTest {
     }
 
     @Test
-    fun emptyArtifacts() = testScope.runBlockingTest {
+    fun emptyArtifacts() = testScope.runTest {
         createRuns(artifacts = emptyList())
         val result = testRunner.runTests()
         assertThat(result.allTestsPassed).isTrue()
@@ -79,7 +81,7 @@ class TestRunnerTest {
     }
 
     @Test
-    fun noApks() = testScope.runBlockingTest {
+    fun noApks() = testScope.runTest {
         val artifact1 = fakeBackend.createArchive(
             "foo.txt", "bar.txt"
         )
@@ -104,7 +106,7 @@ class TestRunnerTest {
 
     private fun singleTest(
         succeed: Boolean
-    ) = testScope.runBlockingTest {
+    ) = testScope.runTest {
         val artifact1 = fakeBackend.createArchive(
             "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
             "biometric-integration-tests-testapp_testapp-debug.apk",
@@ -149,7 +151,7 @@ class TestRunnerTest {
     }
 
     @Test
-    fun multipleTestsOnMultipleArtifacts_oneFailure() = testScope.runBlockingTest {
+    fun multipleTestsOnMultipleArtifacts_oneFailure() = testScope.runTest {
         val artifact1 = fakeBackend.createArchive(
             "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
             "biometric-integration-tests-testapp_testapp-debug.apk",
@@ -195,7 +197,7 @@ class TestRunnerTest {
     }
 
     @Test
-    fun multipleTestsOnSingleArtifact() = testScope.runBlockingTest {
+    fun multipleTestsOnSingleArtifact() = testScope.runTest {
         val artifact1 = fakeBackend.createArchive(
             "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
             "biometric-integration-tests-testapp_testapp-debug.apk",
@@ -238,7 +240,7 @@ class TestRunnerTest {
     }
 
     @Test
-    fun libraryIntegrationTest() = testScope.runBlockingTest {
+    fun libraryIntegrationTest() = testScope.runTest {
         val artifact = fakeBackend.createArchive(
             "room-room-runtime_room-runtime-debug-androidTest.apk"
         )
