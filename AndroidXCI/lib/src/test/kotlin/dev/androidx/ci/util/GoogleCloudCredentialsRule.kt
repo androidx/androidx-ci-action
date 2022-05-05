@@ -16,8 +16,6 @@
 
 package dev.androidx.ci.util
 
-import com.google.auth.Credentials
-import com.google.auth.oauth2.GoogleCredentials
 import com.google.auth.oauth2.ServiceAccountCredentials
 import org.junit.AssumptionViolatedException
 import org.junit.rules.TestRule
