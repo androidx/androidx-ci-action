@@ -192,7 +192,8 @@ class TestRunner(
                     Config.GCloud(
                         credentials = credentials,
                         bucketName = "androidx-ftl-test-results",
-                        bucketPath = "github-ci-action"
+                        bucketPath = "github-ci-action",
+                        gcpProjectId = credentials.projectId
                     ),
                     context = ioDispatcher
                 ),
@@ -212,7 +213,8 @@ class TestRunner(
                 datastoreApi = DatastoreApi.build(
                     Config.Datastore(
                         credentials = credentials,
-                        testRunObjectKind = "TestRun"
+                        testRunObjectKind = "TestRun",
+                        gcpProjectId = credentials.projectId,
                     ),
                     context = ioDispatcher
                 ),

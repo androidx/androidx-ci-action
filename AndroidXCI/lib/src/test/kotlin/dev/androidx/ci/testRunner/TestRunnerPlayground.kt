@@ -56,7 +56,8 @@ class TestRunnerPlayground {
                 Config.GCloud(
                     credentials = playgroundCredentialsRule.credentials,
                     bucketName = "androidx-ftl-test-results",
-                    bucketPath = "github-ci-action"
+                    bucketPath = "github-ci-action",
+                    gcpProjectId = playgroundCredentialsRule.credentials.projectId
                 ),
                 context = Dispatchers.IO
             ),
@@ -81,7 +82,8 @@ class TestRunnerPlayground {
             datastoreApi = DatastoreApi.build(
                 Config.Datastore(
                     credentials = playgroundCredentialsRule.credentials,
-                    testRunObjectKind = Config.Datastore.PLAYGROUND_OBJECT_KIND
+                    testRunObjectKind = Config.Datastore.PLAYGROUND_OBJECT_KIND,
+                    gcpProjectId = playgroundCredentialsRule.credentials.projectId
                 ),
                 context = Dispatchers.IO
             ),

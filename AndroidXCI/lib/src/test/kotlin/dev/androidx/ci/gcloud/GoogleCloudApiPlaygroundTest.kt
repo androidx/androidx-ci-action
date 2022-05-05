@@ -52,6 +52,7 @@ class GoogleCloudApiPlaygroundTest {
                 credentials = playgroundCredentialsRule.credentials,
                 bucketName = "androidx-ftl-test-results",
                 bucketPath = "testing",
+                gcpProjectId = playgroundCredentialsRule.credentials.projectId
             ),
             context = testScope.coroutineContext
         )
@@ -73,7 +74,8 @@ class GoogleCloudApiPlaygroundTest {
             config = Config.GCloud(
                 credentials = playgroundCredentialsRule.credentials,
                 bucketName = "androidx-ftl-test-results",
-                bucketPath = "github-ci-action"
+                bucketPath = "github-ci-action",
+                gcpProjectId = playgroundCredentialsRule.credentials.projectId
             ),
             context = testScope.coroutineContext
         )

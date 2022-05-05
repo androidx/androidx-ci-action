@@ -17,6 +17,7 @@
 package dev.androidx.ci.util
 
 import com.google.auth.Credentials
+import com.google.auth.oauth2.GoogleCredentials
 import com.google.auth.oauth2.ServiceAccountCredentials
 import org.junit.AssumptionViolatedException
 import org.junit.rules.TestRule
@@ -27,7 +28,7 @@ import org.junit.runners.model.Statement
  * A common rule to read Github token from environment variables for local testing.
  */
 class GoogleCloudCredentialsRule : TestRule {
-    lateinit var credentials: Credentials
+    lateinit var credentials: ServiceAccountCredentials
         private set
 
     private fun loadCredentials() {

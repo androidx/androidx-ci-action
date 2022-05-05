@@ -45,7 +45,8 @@ class DatastoreApiPlaygroundTest {
         DatastoreApi.build(
             Config.Datastore(
                 credentials = playgroundCredentialsRule.credentials,
-                testRunObjectKind = Config.Datastore.GITHUB_OBJECT_KIND
+                testRunObjectKind = Config.Datastore.GITHUB_OBJECT_KIND,
+                gcpProjectId = playgroundCredentialsRule.credentials.projectId
             ),
             context = testScope.coroutineContext
         )

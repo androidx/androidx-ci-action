@@ -43,6 +43,7 @@ class GoogleCloudApiTest {
                 credentials = NoCredentials.getInstance(),
                 bucketName = "non-existing-bucket",
                 bucketPath = "testing",
+                gcpProjectId = "no-project"
             )
         )
         testScope.runTest {
@@ -72,6 +73,7 @@ class GoogleCloudApiTest {
                     credentials = NoCredentials.getInstance(),
                     bucketName = "bucketname",
                     bucketPath = "badbucketpath/",
+                    gcpProjectId = "no-project"
                 )
             )
         }
