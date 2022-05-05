@@ -58,20 +58,11 @@ class TestRunnerService(
     )
 
     /**
-     * Runs the test for the given [testApk] [appApk] pair.
+     * Runs the test for the given [testApk] [appApk] pair by invoking [scheduleTests] followed by
+     * [getTestResults]. See their documentation for details.
      *
-     * To optimize cacheability, a new TestMatrix will be created for each device.
-     *
-     * @param testApk The test apk which has the instrumentation tests
-     * @param appApk The application under test. Can be `null` for library tests
-     * @param localDownloadFolder A local directory into which the test run outputs (logcat, result
-     * xml etc) should be downloaded. This folder will be cleaned so it shouldn't be shared with
-     * other tasks.
-     * @param devices List of [AndroidDevice]s to run the test on. See [FTLTestDevices] for a set of
-     * common devices.
-     *
-     * @return A [TestRunResponse] that includes the [TestMatrix] list as well as links to each
-     * downloaded artifact.
+     * @see scheduleTests
+     * @see getTestResults
      */
     suspend fun runTest(
         testApk: File,
@@ -89,13 +80,37 @@ class TestRunnerService(
         )
     }
 
-    suspend fun enqueueTests(
+    /**
+     * Schedules the tests for the given devices.
+     *
+     * @see scheduleTests for details.
+     */
+    suspend fun scheduleTests(
         testApk: File,
         appApk: File? = null,
-        localDownloadFolder: File,
+        devices: List<AndroidDevice>
+    ): ScheduledFtlTests = scheduleTests(
+        testApk = testApk,
+        appApk = appApk,
+        devicePicker = { devices }
+    )
+    /**
+     * Schedules test runs on FirebaseTestLab for the given testApk / appApk pair.
+     * Note that this method will return before test executions are complete.
+     *
+     * @param testApk The test apk which has the instrumentation tests
+     * @param appApk The application under test. Can be `null` for library tests
+     * @param devicePicker A block that can return desired devices from a [TestEnvironmentCatalog].
+     *
+     * @return A [ScheduledFtlTests] that includes the information about the tests that are
+     * scheduled. You can later use the [getTestResults] API to collect results.
+     */
+    suspend fun scheduleTests(
+        testApk: File,
+        appApk: File? = null,
         devicePicker: DevicePicker? = null,
-    ): TestEnqueueResponse {
-        logger.trace { "Running tests for testApk: $testApk appApk: $appApk" }
+    ): ScheduledFtlTests {
+        logger.trace { "Scheduling tests for testApk: $testApk appApk: $appApk" }
         val uploadedTestApk = apkStore.uploadApk(testApk.name, testApk.readBytes())
         val uploadedAppApk = appApk?.let {
             apkStore.uploadApk(appApk.name, appApk.readBytes())
@@ -107,17 +122,33 @@ class TestRunnerService(
             devicePicker = devicePicker
         )
         logger.trace { "Enqueued ${testMatrices.size} matrices" }
-        return TestEnqueueResponse.create(testMatrices)
+        return ScheduledFtlTests.create(testMatrices)
     }
 
+    /**
+     * Queries the Firebase Test Lab API to get the results of the [scheduledTests].
+     * It will also download the outputs of the test into the given [localDownloadFolder]. You
+     * can access downloaded artifacts via [TestRunResponse.downloads].
+     *
+     *
+     * @param scheduledTests The list of [ScheduledFtlTests] that are obtained from [scheduledTests]
+     * @param localDownloadFolder A local folder into which the results will be downloaded. Note
+     * that the contents of the folder will be cleared.
+     * @param pollIntervalMs FirebaseTestLab does not provide an API to observe results, hence this
+     * method will poll one of the pending [TestMatrix]es in the given interval, until all of them
+     * are complete.
+     *
+     * @return a [TestRunResponse] that includes all of the [TestMatrix] information along with the
+     * downloaded artifacts.
+     */
     suspend fun getTestResults(
-        enqueueResponses: List<TestEnqueueResponse>,
+        scheduledTests: List<ScheduledFtlTests>,
         localDownloadFolder: File,
         pollIntervalMs: Long = TimeUnit.SECONDS.toMillis(10)
     ): TestRunResponse {
-        val testMatrixIds = enqueueResponses.flatMap {
+        val testMatrixIds = scheduledTests.flatMap {
             it.testMatrixIds
-        }
+        }.distinct()
         logger.trace { "Will collect results for ${testMatrixIds.size} matrices" }
         val result = testLabController.collectTestResultsByTestMatrixIds(
             testMatrixIds = testMatrixIds,
@@ -137,20 +168,11 @@ class TestRunnerService(
     }
 
     /**
-     * Runs the test for the given [testApk] [appApk] pair.
+     * Runs the test for the given [testApk] [appApk] pair by invoking [scheduleTests] followed by
+     * [getTestResults]. See their documentation for details.
      *
-     * To optimize cacheability, a new TestMatrix will be created for each device chosen by the
-     * [devicePicker].
-     *
-     * @param testApk The test apk which has the instrumentation tests
-     * @param appApk The application under test. Can be `null` for library tests
-     * @param localDownloadFolder A local directory into which the test run outputs (logcat, result
-     * xml etc) should be downloaded. This folder will be cleaned so it shouldn't be shared with
-     * other tasks.
-     * @param devicePicker A block that can return desired devices from a [TestEnvironmentCatalog].
-     *
-     * @return A [TestRunResponse] that includes the [TestMatrix] list as well as links to each
-     * downloaded artifact.
+     * @see scheduleTests
+     * @see getTestResults
      */
     suspend fun runTest(
         testApk: File,
@@ -159,10 +181,9 @@ class TestRunnerService(
         devicePicker: DevicePicker? = null,
     ): TestRunResponse {
         logger.trace { "Running tests for testApk: $testApk appApk: $appApk" }
-        val enqueue = enqueueTests(
+        val enqueue = scheduleTests(
             testApk = testApk,
             appApk = appApk,
-            localDownloadFolder = localDownloadFolder,
             devicePicker = devicePicker
         )
         return getTestResults(listOf(enqueue), localDownloadFolder = localDownloadFolder)
@@ -244,18 +265,49 @@ class TestRunnerService(
         ) = downloads.find {
             it.testMatrixId == testMatrixId
         }
+
+        fun testMatrixFor(
+            testMatrixId: String
+        ): TestMatrix? = (testResult as TestResult.CompleteRun).matrices.find {
+            it.testMatrixId == testMatrixId
+        }
     }
 
-    data class TestEnqueueResponse(
-        val testMatrixIds: List<String>
+    /**
+     * A [Serializable] class that holds the information for a set of [TestMatrix]es that are
+     * scheduled in Firebase Test Lab.
+     *
+     * You can later use this object to get the results of those tests.
+     */
+    data class ScheduledFtlTests(
+        /**
+         * List of test matrix ids that are scheduled to run
+         */
+        val testMatrixIds: List<String>,
+        /**
+         * Number of tests that are new
+         */
+        val newTests: Int,
+        /**
+         * Number of tests where we used a previously scheduled run
+         */
+        val cachedTests: Int,
     ) : Serializable {
         companion object {
             fun create(
                 testMatices: List<TestMatrix>
-            ) = TestEnqueueResponse(
-                testMatrixIds = testMatices.map { checkNotNull(it.testMatrixId) {
-                    "Invalid test matrix without id!!! ${testMatices}"
-                } }
+            ) = ScheduledFtlTests(
+                testMatrixIds = testMatices.map {
+                    checkNotNull(it.testMatrixId) {
+                        "Invalid test matrix without id!!! $testMatices"
+                    }
+                },
+                newTests = testMatices.count {
+                    it.outcomeSummary == null
+                },
+                cachedTests = testMatices.count {
+                    it.outcomeSummary != null
+                }
             )
         }
     }

@@ -20,6 +20,8 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
+import dev.androidx.ci.testRunner.FTLTestDevices.NEXUS5_19
+import dev.androidx.ci.testRunner.FTLTestDevices.PIXEL6_31
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
@@ -112,7 +114,7 @@ class TestRunnerServiceTest {
             it.writeText("library-test")
         }
         val targetDevices = listOf(
-            FTLTestDevices.PIXEL6_31, FTLTestDevices.NEXUS5_19
+            PIXEL6_31, NEXUS5_19
         )
         testScope.runTest {
             val testRun = async {
@@ -144,6 +146,79 @@ class TestRunnerServiceTest {
                 }
             }
             assertThat(devices).containsExactlyElementsIn(targetDevices)
+        }
+    }
+
+    @Test
+    fun scheduleAndCollect() {
+        val testApp = tmpFolder.newFile("test.apk").also {
+            it.writeText("tests")
+        }
+        val appUnderTest = tmpFolder.newFile("appUnderTest.apk").also {
+            it.writeText("app")
+        }
+        testScope.runTest {
+            val scheduled = testRunnerService.scheduleTests(
+                testApk = testApp,
+                appApk = appUnderTest,
+                devices = listOf(PIXEL6_31)
+            )
+            assertThat(fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()).hasSize(1)
+            assertThat(scheduled.cachedTests).isEqualTo(0)
+            assertThat(scheduled.newTests).isEqualTo(1)
+            val pixel6TestMatrixId = scheduled.testMatrixIds.single()
+
+            // finish it
+            val result = async {
+                testRunnerService.getTestResults(
+                    scheduledTests = listOf(scheduled),
+                    localDownloadFolder = tmpFolder.newFolder()
+                )
+            }
+            runCurrent()
+            assertThat(result.isActive).isTrue()
+            // finish the test
+            fakeBackend.finishTest(pixel6TestMatrixId, SUCCESS)
+            advanceUntilIdle()
+            assertThat(result.await().testResult.allTestsPassed).isTrue()
+
+            // now re-submit 2 tests. 1 should be new, 1 should be re-used
+            val schedule2 = testRunnerService.scheduleTests(
+                testApk = testApp,
+                appApk = appUnderTest,
+                devices = listOf(PIXEL6_31, NEXUS5_19)
+            )
+            // only 1 new test matrix
+            assertThat(fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()).hasSize(2)
+            assertThat(
+                schedule2.newTests
+            ).isEqualTo(1)
+            assertThat(
+                schedule2.cachedTests
+            ).isEqualTo(1)
+            val nexus5TestMatrixId = (schedule2.testMatrixIds - scheduled.testMatrixIds).single()
+            val result2 = async {
+                testRunnerService.getTestResults(
+                    scheduledTests = listOf(schedule2),
+                    localDownloadFolder = tmpFolder.newFolder()
+                )
+            }
+            runCurrent()
+            // now, this time, fail the test
+            fakeBackend.finishTest(
+                testMatrixId = nexus5TestMatrixId,
+                outcome = FAILURE
+            )
+            advanceUntilIdle()
+            result2.await().let { response ->
+                assertThat(response.testResult.allTestsPassed).isFalse()
+                assertThat(response.testMatrixFor(pixel6TestMatrixId)?.outcomeSummary)
+                    .isEqualTo(SUCCESS)
+                assertThat(response.testMatrixFor(nexus5TestMatrixId)?.outcomeSummary)
+                    .isEqualTo(FAILURE)
+                assertThat(response.downloadsFor(nexus5TestMatrixId)).isNotNull()
+                assertThat(response.downloadsFor(pixel6TestMatrixId)).isNotNull()
+            }
         }
     }
 
