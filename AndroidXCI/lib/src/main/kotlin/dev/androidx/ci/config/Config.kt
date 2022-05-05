@@ -38,7 +38,8 @@ class Config {
         /**
          * The relative path in the bucket to put values
          */
-        val bucketPath: String
+        val bucketPath: String,
+        val gcpProjectId: String,
     )
     class FirebaseTestLab(
         val endPoint: String = "https://testing.googleapis.com/v1/",
@@ -47,7 +48,8 @@ class Config {
     )
     class Datastore(
         val credentials: Credentials,
-        val testRunObjectKind: String
+        val testRunObjectKind: String,
+        val gcpProjectId: String,
     ) {
         companion object {
             val GITHUB_OBJECT_KIND = "TestRun"

@@ -17,6 +17,8 @@
 package dev.androidx.ci.testRunner
 
 import com.google.auth.Credentials
+import com.squareup.moshi.Json
+import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.config.Config.Datastore.Companion.AOSP_OBJECT_KIND
 import dev.androidx.ci.datastore.DatastoreApi
@@ -27,9 +29,13 @@ import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.TestResult
+import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.logging.HttpLoggingInterceptor
+import okio.buffer
+import okio.sink
+import okio.source
 import org.apache.logging.log4j.kotlin.logger
 import java.io.File
 import java.io.Serializable
@@ -246,14 +252,16 @@ class TestRunnerService internal constructor(
                     Config.GCloud(
                         credentials = credentials,
                         bucketName = bucketName,
-                        bucketPath = bucketPath
+                        bucketPath = bucketPath,
+                        gcpProjectId = firebaseProjectId,
                     ),
                     context = ioDispatcher
                 ),
                 datastoreApi = DatastoreApi.build(
                     Config.Datastore(
                         credentials = credentials,
-                        testRunObjectKind = AOSP_OBJECT_KIND
+                        testRunObjectKind = AOSP_OBJECT_KIND,
+                        gcpProjectId = firebaseProjectId,
                     ),
                     context = ioDispatcher
                 ),
@@ -312,17 +320,51 @@ class TestRunnerService internal constructor(
         /**
          * List of test matrix ids that are scheduled to run
          */
+        @Json(name = "testMatrixIds")
         val testMatrixIds: List<String>,
         /**
          * Number of tests that are new
          */
+        @Json(name = "newTests")
         val newTests: Int,
         /**
          * Number of tests where we used a previously scheduled run
          */
+        @Json(name = "cachedTests")
         val cachedTests: Int,
-    ) : Serializable {
+    ) {
+        fun writeToFile(file: File) = writeToFile(
+            file = file,
+            scheduledTests = this
+        )
         companion object {
+            private val jsonAdapter = Moshi.Builder().add(
+                MetadataKotlinJsonAdapterFactory()
+            ).build().adapter(ScheduledFtlTests::class.java)
+
+            fun writeToFile(file: File, scheduledTests: ScheduledFtlTests) {
+                file.parentFile.mkdirs()
+                file.sink(
+                    append = false
+                ).buffer().use {
+                    jsonAdapter.toJson(it, scheduledTests)
+                }
+            }
+
+            fun readFromFile(file: File): ScheduledFtlTests {
+                require(file.exists()) {
+                    "File ${file.absolutePath} does not exist"
+                }
+                return file.source().buffer().use {
+                    jsonAdapter.fromJson(it)
+                } ?: error(
+                    """
+                    Unable to load ScheduledFtlTests from ${file.absolutePath}
+                    File contents: ${file.readText(Charsets.UTF_8)}
+                    """.trimIndent()
+                )
+            }
+
             internal fun create(
                 testMatrices: List<TestMatrix>
             ) = ScheduledFtlTests(

@@ -70,6 +70,7 @@ private class DatastoreApiImpl(
     private val service by lazy {
         DatastoreOptions.newBuilder()
             .setCredentials(config.credentials)
+            .setProjectId(config.gcpProjectId)
             .build().service
     }
 

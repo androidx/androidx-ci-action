@@ -91,6 +91,8 @@ private class GoogleCloudApiImpl(
     private val service: Storage = StorageOptions.newBuilder()
         .setCredentials(
             config.credentials
+        ).setProjectId(
+            config.gcpProjectId
         ).build().service
 
     override suspend fun upload(
