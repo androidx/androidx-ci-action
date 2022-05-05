@@ -19,4 +19,9 @@ package dev.androidx.ci.testRunner
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 
+/**
+ * Helper function that can pick [AndroidDevice]s based on a [TestEnvironmentCatalog].
+ * Often times, you can use the [FTLTestDevices] but if you want to have a more generic selection
+ * logic (e.g. pick certain sdk levels), you can implement this interface.
+ */
 typealias DevicePicker = (TestEnvironmentCatalog) -> List<AndroidDevice>

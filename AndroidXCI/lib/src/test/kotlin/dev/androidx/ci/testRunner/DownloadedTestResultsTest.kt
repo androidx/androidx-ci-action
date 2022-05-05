@@ -28,7 +28,7 @@ class DownloadedTestResultsTest {
 
     @Test
     fun emptyFolder() {
-        val downloads = TestResultDownloader.DownloadedTestResults.buildFrom(
+        val downloads = DownloadedTestResults.buildFrom(
             testMatrixId = "abc",
             folder = tmpFolder.newFolder()
         )
@@ -56,7 +56,7 @@ class DownloadedTestResultsTest {
                 }
             }
         }
-        val downloads = TestResultDownloader.DownloadedTestResults.buildFrom(
+        val downloads = DownloadedTestResults.buildFrom(
             testMatrixId = "abc",
             folder = rootFolder
         )

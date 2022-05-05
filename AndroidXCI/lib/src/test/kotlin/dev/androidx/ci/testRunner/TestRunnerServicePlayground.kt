@@ -22,6 +22,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.io.File
+import java.util.Locale
 
 class TestRunnerServicePlayground {
     @get:Rule
@@ -51,7 +52,7 @@ class TestRunnerServicePlayground {
                 appApk = null,
                 devicePicker = {
                     listOf(
-                        FTLTestDevices.PIXEL_3
+                        FTLTestDevices.PIXEL2_API_26_VIRTUAL
                     )
                 },
                 localDownloadFolder = File("/Users/yboyar/src/androidx-ci-action/AndroidXCI/real-test-out")
@@ -60,24 +61,34 @@ class TestRunnerServicePlayground {
         }
     }
 
+    /**
+     * Handy class to regenerate [FTLTestDevices].
+     */
     @Test
     fun buildCommonDevices() {
         runBlocking {
-            testRunnerService.testLabController.getCatalog()
+            val ftlDevicesCode = testRunnerService.testLabController.getCatalog()
                 .androidDeviceCatalog
                 ?.models
-                ?.filter {
-//                    it.manufacturer == "Google"
-                    it.supportedVersionIds?.any {
-                        it.startsWith("1")
-                    } ?: false
-                }?.forEach {
-                    println(
-                        """
-                        ${it.id} / ${it.supportedVersionIds} / ${it.form}
-                        """.trimIndent()
-                    )
-                }
+                ?.flatMap { model ->
+                    if (model.manufacturer?.lowercase(Locale.US) == "google" ||
+                        model.id.startsWith("Nexus") ||
+                        model.id.startsWith("Pixel")
+                    ) {
+                        model.supportedVersionIds?.map { sdk ->
+                            """
+                            val ${model.id.uppercase(Locale.US)}_API_${sdk}_${model.form} = AndroidDevice(
+                                id = "${model.id}",
+                                sdk = "$sdk"
+                            )
+                            """.trimIndent()
+                        } ?: emptyList()
+                    } else {
+                        emptyList()
+                    }
+                }?.joinToString("\n")
+
+            println(ftlDevicesCode)
         }
     }
 }

@@ -44,7 +44,6 @@ class TestRun(
      * if we've already run the exact same test.
      */
     companion object {
-        private const val KIND = "AOSP-TestRun"
         private val adapter by lazy {
             val type = Types.newParameterizedType(
                 Map::class.java,
@@ -74,7 +73,7 @@ class TestRun(
                 )
             )
             val sha = sha256(json.toByteArray(Charsets.UTF_8))
-            return Id(datastoreApi.createKey(KIND, sha))
+            return Id(datastoreApi.createKey(datastoreApi.testRunObjectKind, sha))
         }
     }
 }

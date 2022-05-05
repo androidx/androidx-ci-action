@@ -76,7 +76,7 @@ class TestMatrixStore(
             return it
         }
         logger.trace {
-            "No test run history for  $testRunId, creating anew one."
+            "No test run history for $testRunId, creating anew one."
         }
         val newTestMatrix = firebaseTestLabApi.createTestMatrix(
             projectId = firebaseProjectId,

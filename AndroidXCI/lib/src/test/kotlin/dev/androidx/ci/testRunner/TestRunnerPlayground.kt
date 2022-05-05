@@ -80,7 +80,8 @@ class TestRunnerPlayground {
             firebaseProjectId = "androidx-dev-prod",
             datastoreApi = DatastoreApi.build(
                 Config.Datastore(
-                    credentials = playgroundCredentialsRule.credentials
+                    credentials = playgroundCredentialsRule.credentials,
+                    testRunObjectKind = Config.Datastore.PLAYGROUND_OBJECT_KIND
                 ),
                 context = Dispatchers.IO
             ),

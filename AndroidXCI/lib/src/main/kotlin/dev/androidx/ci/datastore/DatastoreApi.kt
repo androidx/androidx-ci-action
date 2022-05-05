@@ -29,6 +29,8 @@ import kotlin.coroutines.CoroutineContext
  * Interface for Datastore communications so that we can also fake it in tests.
  */
 interface DatastoreApi {
+    // Default object kind that is used to group datastore objects.
+    val testRunObjectKind: String
     /**
      * Creates a key for the datastore item
      */
@@ -64,6 +66,7 @@ private class DatastoreApiImpl(
     config: Config.Datastore,
     private val context: CoroutineContext
 ) : DatastoreApi {
+    override val testRunObjectKind: String = config.testRunObjectKind
     private val service by lazy {
         DatastoreOptions.newBuilder()
             .setCredentials(config.credentials)

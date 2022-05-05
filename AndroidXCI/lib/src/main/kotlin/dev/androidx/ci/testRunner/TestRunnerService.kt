@@ -18,6 +18,7 @@ package dev.androidx.ci.testRunner
 
 import com.google.auth.Credentials
 import dev.androidx.ci.config.Config
+import dev.androidx.ci.config.Config.Datastore.Companion.AOSP_OBJECT_KIND
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
@@ -34,13 +35,19 @@ import java.io.File
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
-class TestRunnerService(
+/**
+ * A service class that can enqueue tests on the FirebaseTestLab. Usually, you want 1 instance of
+ * this that is shared between all of your test runs.
+ *
+ * You should use [TestRunnerService.create] to get an instance of this class.
+ */
+class TestRunnerService internal constructor(
     private val googleCloudApi: GoogleCloudApi,
     datastoreApi: DatastoreApi,
     firebaseTestLabApi: FirebaseTestLabApi,
     toolsResultApi: ToolsResultApi,
     firebaseProjectId: String,
-    gcsResultPath: String, // should be unique per run, otherwise it will turn into a giant folder
+    gcsResultPath: String
 ) {
     private val logger = logger()
     private val testMatrixStore = TestMatrixStore(
@@ -208,15 +215,26 @@ class TestRunnerService(
              */
             bucketPath: String,
             /**
-             * GCP path to put the results into
+             * GCP path to put the results into. Re-using the same path might result in a very
+             * big object in GCP so it might make sense to use a single path per initialization.
+             * (e.g. a timestamp followed by a random suffix).
              */
             gcsResultPath: String,
             /**
              * If enabled, HTTP requests will also be logged. Keep in mind, they might include
              * sensitive data.
              */
-            logHttpCalls: Boolean = true,
+            logHttpCalls: Boolean = false,
+            /**
+             * The coroutine dispatcher to use for IO operations. Defaults to [Dispatchers.IO].
+             */
             ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+            /**
+             * The "kind" for objects that are kept in Datastore, defaults to [AOSP_OBJECT_KIND].
+             * You may want to modify this if you want to use the same GCP account for isolated
+             * test runs.
+             */
+            testRunDataStoreObjectKind: String = AOSP_OBJECT_KIND
         ): TestRunnerService {
             val httpLogLevel = if (logHttpCalls) {
                 HttpLoggingInterceptor.Level.BODY
@@ -234,7 +252,8 @@ class TestRunnerService(
                 ),
                 datastoreApi = DatastoreApi.build(
                     Config.Datastore(
-                        credentials = credentials
+                        credentials = credentials,
+                        testRunObjectKind = AOSP_OBJECT_KIND
                     ),
                     context = ioDispatcher
                 ),
@@ -256,9 +275,19 @@ class TestRunnerService(
         }
     }
 
+    /**
+     * Data class to hold the result for a group of invocations.
+     */
     data class TestRunResponse(
+        /**
+         * [TestResult] that encapsulates all [TestMatrix]es.
+         * For successful runs, this would be an instance of [TestResult.CompleteRun].
+         */
         val testResult: TestResult,
-        val downloads: List<TestResultDownloader.DownloadedTestResults>
+        /**
+         * List of downloaded artifacts for the test results.
+         */
+        val downloads: List<DownloadedTestResults>
     ) {
         fun downloadsFor(
             testMatrixId: String
@@ -294,18 +323,18 @@ class TestRunnerService(
         val cachedTests: Int,
     ) : Serializable {
         companion object {
-            fun create(
-                testMatices: List<TestMatrix>
+            internal fun create(
+                testMatrices: List<TestMatrix>
             ) = ScheduledFtlTests(
-                testMatrixIds = testMatices.map {
+                testMatrixIds = testMatrices.map {
                     checkNotNull(it.testMatrixId) {
-                        "Invalid test matrix without id!!! $testMatices"
+                        "Invalid test matrix without and id: $testMatrices"
                     }
                 },
-                newTests = testMatices.count {
+                newTests = testMatrices.count {
                     it.outcomeSummary == null
                 },
-                cachedTests = testMatices.count {
+                cachedTests = testMatrices.count {
                     it.outcomeSummary != null
                 }
             )

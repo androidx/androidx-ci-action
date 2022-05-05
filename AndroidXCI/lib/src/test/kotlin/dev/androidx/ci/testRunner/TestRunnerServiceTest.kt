@@ -20,8 +20,8 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
-import dev.androidx.ci.testRunner.FTLTestDevices.NEXUS5_19
-import dev.androidx.ci.testRunner.FTLTestDevices.PIXEL6_31
+import dev.androidx.ci.testRunner.FTLTestDevices.NEXUS10_API_19_VIRTUAL
+import dev.androidx.ci.testRunner.FTLTestDevices.PIXEL2_API_26_VIRTUAL
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
@@ -114,7 +114,7 @@ class TestRunnerServiceTest {
             it.writeText("library-test")
         }
         val targetDevices = listOf(
-            PIXEL6_31, NEXUS5_19
+            PIXEL2_API_26_VIRTUAL, NEXUS10_API_19_VIRTUAL
         )
         testScope.runTest {
             val testRun = async {
@@ -161,12 +161,12 @@ class TestRunnerServiceTest {
             val scheduled = testRunnerService.scheduleTests(
                 testApk = testApp,
                 appApk = appUnderTest,
-                devices = listOf(PIXEL6_31)
+                devices = listOf(PIXEL2_API_26_VIRTUAL)
             )
             assertThat(fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()).hasSize(1)
             assertThat(scheduled.cachedTests).isEqualTo(0)
             assertThat(scheduled.newTests).isEqualTo(1)
-            val pixel6TestMatrixId = scheduled.testMatrixIds.single()
+            val pixelTestMatrixId = scheduled.testMatrixIds.single()
 
             // finish it
             val result = async {
@@ -178,7 +178,7 @@ class TestRunnerServiceTest {
             runCurrent()
             assertThat(result.isActive).isTrue()
             // finish the test
-            fakeBackend.finishTest(pixel6TestMatrixId, SUCCESS)
+            fakeBackend.finishTest(pixelTestMatrixId, SUCCESS)
             advanceUntilIdle()
             assertThat(result.await().testResult.allTestsPassed).isTrue()
 
@@ -186,7 +186,7 @@ class TestRunnerServiceTest {
             val schedule2 = testRunnerService.scheduleTests(
                 testApk = testApp,
                 appApk = appUnderTest,
-                devices = listOf(PIXEL6_31, NEXUS5_19)
+                devices = listOf(PIXEL2_API_26_VIRTUAL, NEXUS10_API_19_VIRTUAL)
             )
             // only 1 new test matrix
             assertThat(fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()).hasSize(2)
@@ -212,12 +212,12 @@ class TestRunnerServiceTest {
             advanceUntilIdle()
             result2.await().let { response ->
                 assertThat(response.testResult.allTestsPassed).isFalse()
-                assertThat(response.testMatrixFor(pixel6TestMatrixId)?.outcomeSummary)
+                assertThat(response.testMatrixFor(pixelTestMatrixId)?.outcomeSummary)
                     .isEqualTo(SUCCESS)
                 assertThat(response.testMatrixFor(nexus5TestMatrixId)?.outcomeSummary)
                     .isEqualTo(FAILURE)
                 assertThat(response.downloadsFor(nexus5TestMatrixId)).isNotNull()
-                assertThat(response.downloadsFor(pixel6TestMatrixId)).isNotNull()
+                assertThat(response.downloadsFor(pixelTestMatrixId)).isNotNull()
             }
         }
     }

@@ -47,7 +47,14 @@ class Config {
     )
     class Datastore(
         val credentials: Credentials,
-    )
+        val testRunObjectKind: String
+    ) {
+        companion object {
+            val GITHUB_OBJECT_KIND = "TestRun"
+            val AOSP_OBJECT_KIND = "AOSP-TestRun"
+            val PLAYGROUND_OBJECT_KIND = "Playground-TestRun"
+        }
+    }
     class ToolsResult(
         val endPoint: String = "https://toolresults.googleapis.com/toolresults/v1beta3/",
         val credentials: Credentials,

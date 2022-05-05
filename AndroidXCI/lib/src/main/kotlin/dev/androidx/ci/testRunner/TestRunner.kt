@@ -211,7 +211,8 @@ class TestRunner(
                 firebaseProjectId = "androidx-dev-prod",
                 datastoreApi = DatastoreApi.build(
                     Config.Datastore(
-                        credentials = credentials
+                        credentials = credentials,
+                        testRunObjectKind = "TestRun"
                     ),
                     context = ioDispatcher
                 ),

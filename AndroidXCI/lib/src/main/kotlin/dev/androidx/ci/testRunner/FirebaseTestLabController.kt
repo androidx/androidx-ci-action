@@ -94,7 +94,8 @@ class FirebaseTestLabController(
 
     /**
      * Enqueues [TestMatrix]es to run the tests for the given APKs on the devices picked by
-     * [devicePicker]. Note that, for each device, a new [TestMatrix] to optimize cacheability.
+     * [devicePicker]. Note that, for each device, a separate [TestMatrix] is created to optimize
+     * cacheability (e.g. adding a new device wont invalidate test runs on other devices).
      *
      * Note that, if same exact test was run before, its results will be re-used.
      *
@@ -110,6 +111,7 @@ class FirebaseTestLabController(
         logger.info {
             "submitting tests for app: $appApk / test: $testApk on $devices"
         }
+        // create 1 TestMatrix for each device so that they can be better cached.
         return devices.map {
             testMatrixStore.getOrCreateTestMatrix(
                 appApk = appApk,
