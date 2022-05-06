@@ -41,10 +41,6 @@ internal class TestResultDownloader(
         }
         outputFolder.mkdirs()
         val resultJson = result.toJson().toByteArray(Charsets.UTF_8)
-        googleCloudApi.upload(
-            "final-results/testResult.json",
-            resultJson
-        )
         outputFolder.resolve(TestRunner.RESULT_JSON_FILE_NAME).writeBytes(resultJson)
         // download test artifacts
         if (result is TestResult.CompleteRun) {
