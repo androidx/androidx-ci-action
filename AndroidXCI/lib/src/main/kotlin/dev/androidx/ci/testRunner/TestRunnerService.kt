@@ -278,7 +278,7 @@ class TestRunnerService internal constructor(
                 firebaseProjectId = firebaseProjectId,
                 firebaseTestLabApi = FirebaseTestLabApi.build(
                     config = Config.FirebaseTestLab(
-                        credentials = credentials,
+                        credentials = toolsResultScoped,
                         httpLogLevel = httpLogLevel
                     )
                 ),
