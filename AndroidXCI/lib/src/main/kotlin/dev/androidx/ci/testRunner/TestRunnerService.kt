@@ -17,6 +17,7 @@
 package dev.androidx.ci.testRunner
 
 import com.google.auth.Credentials
+import com.google.auth.oauth2.GoogleCredentials
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
@@ -247,6 +248,9 @@ class TestRunnerService internal constructor(
             } else {
                 HttpLoggingInterceptor.Level.NONE
             }
+            val toolsResultScoped = (credentials as? GoogleCredentials)?.createScoped(
+                "https://www.googleapis.com/auth/cloud-platform"
+            ) ?: credentials
             return TestRunnerService(
                 googleCloudApi = GoogleCloudApi.build(
                     Config.GCloud(
@@ -267,7 +271,7 @@ class TestRunnerService internal constructor(
                 ),
                 toolsResultApi = ToolsResultApi.build(
                     config = Config.ToolsResult(
-                        credentials = credentials,
+                        credentials = toolsResultScoped,
                         httpLogLevel = httpLogLevel
                     )
                 ),
