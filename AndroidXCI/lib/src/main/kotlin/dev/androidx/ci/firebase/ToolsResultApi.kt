@@ -54,7 +54,10 @@ interface ToolsResultApi {
         fun build(
             config: Config.ToolsResult
         ): ToolsResultApi {
-            val client = OkHttpClient.Builder().authenticateWith(config.credentials).addInterceptor {
+            val client = OkHttpClient.Builder().authenticateWith(
+                credentials = config.credentials,
+                projectId = config.gcpProjectId
+            ).addInterceptor {
                 val newBuilder = it.request().newBuilder()
                 newBuilder.addHeader(
                     "Content-Type", "application/json;charset=utf-8",

@@ -44,7 +44,8 @@ class Config {
     class FirebaseTestLab(
         val endPoint: String = "https://testing.googleapis.com/v1/",
         val credentials: Credentials,
-        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE
+        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
+        val gcpProjectId: String,
     )
     class Datastore(
         val credentials: Credentials,
@@ -60,6 +61,7 @@ class Config {
     class ToolsResult(
         val endPoint: String = "https://toolresults.googleapis.com/toolresults/v1beta3/",
         val credentials: Credentials,
-        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE
+        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
+        val gcpProjectId: String,
     )
 }

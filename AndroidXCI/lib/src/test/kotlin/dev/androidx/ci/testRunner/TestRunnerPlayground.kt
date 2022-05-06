@@ -70,12 +70,14 @@ class TestRunnerPlayground {
             ),
             firebaseTestLabApi = FirebaseTestLabApi.build(
                 config = Config.FirebaseTestLab(
-                    credentials = playgroundCredentialsRule.credentials
+                    credentials = playgroundCredentialsRule.credentials,
+                    gcpProjectId = playgroundCredentialsRule.credentials.projectId
                 )
             ),
             toolsResultApi = ToolsResultApi.build(
                 config = Config.ToolsResult(
-                    credentials = playgroundCredentialsRule.credentials
+                    credentials = playgroundCredentialsRule.credentials,
+                    gcpProjectId = playgroundCredentialsRule.credentials.projectId
                 )
             ),
             firebaseProjectId = "androidx-dev-prod",

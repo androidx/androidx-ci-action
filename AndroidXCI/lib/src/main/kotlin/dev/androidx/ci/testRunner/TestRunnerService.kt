@@ -272,14 +272,16 @@ class TestRunnerService internal constructor(
                 toolsResultApi = ToolsResultApi.build(
                     config = Config.ToolsResult(
                         credentials = toolsResultScoped,
-                        httpLogLevel = httpLogLevel
+                        httpLogLevel = httpLogLevel,
+                        gcpProjectId = firebaseProjectId
                     )
                 ),
                 firebaseProjectId = firebaseProjectId,
                 firebaseTestLabApi = FirebaseTestLabApi.build(
                     config = Config.FirebaseTestLab(
                         credentials = toolsResultScoped,
-                        httpLogLevel = httpLogLevel
+                        httpLogLevel = httpLogLevel,
+                        gcpProjectId = firebaseProjectId
                     )
                 ),
                 gcsResultPath = gcsResultPath

@@ -31,7 +31,8 @@ class ToolsResultApiPlaygroundTest {
     private val api by lazy {
         ToolsResultApi.build(
             config = Config.ToolsResult(
-                credentials = playgroundCredentialsRule.credentials
+                credentials = playgroundCredentialsRule.credentials,
+                gcpProjectId = playgroundCredentialsRule.credentials.projectId
             )
         )
     }

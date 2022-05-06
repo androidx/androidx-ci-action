@@ -206,7 +206,8 @@ class TestRunner(
                 ),
                 firebaseTestLabApi = FirebaseTestLabApi.build(
                     config = Config.FirebaseTestLab(
-                        credentials = credentials
+                        credentials = credentials,
+                        gcpProjectId = credentials.projectId
                     )
                 ),
                 firebaseProjectId = "androidx-dev-prod",
@@ -220,7 +221,8 @@ class TestRunner(
                 ),
                 toolsResultApi = ToolsResultApi.build(
                     config = Config.ToolsResult(
-                        credentials = credentials
+                        credentials = credentials,
+                        gcpProjectId = credentials.projectId
                     )
                 ),
                 githubArtifactFilter = { artifact ->

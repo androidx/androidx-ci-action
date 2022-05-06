@@ -22,7 +22,10 @@ import okhttp3.OkHttpClient
 /**
  * Adds authentication to the Rest API call with Google credentials
  */
-fun OkHttpClient.Builder.authenticateWith(credentials: Credentials) = addInterceptor {
+fun OkHttpClient.Builder.authenticateWith(
+    credentials: Credentials,
+    projectId: String
+) = addInterceptor {
     val requestMetadata = credentials.getRequestMetadata(
         it.request().url.toUri()
     )
@@ -32,5 +35,6 @@ fun OkHttpClient.Builder.authenticateWith(credentials: Credentials) = addInterce
             newBuilder.addHeader(key, value)
         }
     }
+    newBuilder.addHeader("X-Goog-User-Project", projectId)
     it.proceed(newBuilder.build())
 }
