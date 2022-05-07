@@ -55,8 +55,7 @@ interface ToolsResultApi {
             config: Config.ToolsResult
         ): ToolsResultApi {
             val client = OkHttpClient.Builder().authenticateWith(
-                credentials = config.credentials,
-                projectId = config.gcpProjectId
+                config.gcp
             ).addInterceptor {
                 val newBuilder = it.request().newBuilder()
                 newBuilder.addHeader(

@@ -39,11 +39,13 @@ class GoogleCloudApiTest {
         val testScope = TestScope()
         val api = GoogleCloudApi.build(
             context = testScope.coroutineContext,
-            config = Config.GCloud(
-                credentials = NoCredentials.getInstance(),
+            config = Config.CloudStorage(
+                gcp = Config.Gcp(
+                    credentials = NoCredentials.getInstance(),
+                    projectId = "no-project"
+                ),
                 bucketName = "non-existing-bucket",
                 bucketPath = "testing",
-                gcpProjectId = "no-project"
             )
         )
         testScope.runTest {
@@ -69,11 +71,13 @@ class GoogleCloudApiTest {
         val result = kotlin.runCatching {
             GoogleCloudApi.build(
                 context = Dispatchers.IO,
-                config = Config.GCloud(
-                    credentials = NoCredentials.getInstance(),
+                config = Config.CloudStorage(
+                    gcp = Config.Gcp(
+                        credentials = NoCredentials.getInstance(),
+                        projectId = "no-project"
+                    ),
                     bucketName = "bucketname",
                     bucketPath = "badbucketpath/",
-                    gcpProjectId = "no-project"
                 )
             )
         }

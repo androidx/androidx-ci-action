@@ -43,8 +43,7 @@ class FirebaseTestLabApiPlaygroundTest {
     fun getTestMatrix() = runBlocking<Unit> {
         val ftl = FirebaseTestLabApi.build(
             config = Config.FirebaseTestLab(
-                credentials = playgroundCredentialsRule.credentials,
-                gcpProjectId = playgroundCredentialsRule.credentials.projectId
+                gcp = playgroundCredentialsRule.gcpConfig
             )
         )
         val matrix = ftl.getTestMatrix(
@@ -60,8 +59,7 @@ class FirebaseTestLabApiPlaygroundTest {
     fun getEnvironmentCatalog() = runBlocking<Unit> {
         val ftl = FirebaseTestLabApi.build(
             config = Config.FirebaseTestLab(
-                credentials = playgroundCredentialsRule.credentials,
-                gcpProjectId = playgroundCredentialsRule.credentials.projectId
+                gcp = playgroundCredentialsRule.gcpConfig,
             )
         )
         val catalog = ftl.getTestEnvironmentCatalog(
@@ -75,8 +73,7 @@ class FirebaseTestLabApiPlaygroundTest {
     fun getApkDetails() = runBlocking {
         val ftl = FirebaseTestLabApi.build(
             config = Config.FirebaseTestLab(
-                credentials = playgroundCredentialsRule.credentials,
-                gcpProjectId = playgroundCredentialsRule.credentials.projectId
+                gcp = playgroundCredentialsRule.gcpConfig,
             )
         )
         val testMatrix = ftl.getTestMatrix(
@@ -84,7 +81,7 @@ class FirebaseTestLabApiPlaygroundTest {
             testMatrixId = "matrix-3q374rmyj84i1"
         )
         val apkDetails = ftl.getApkDetails(
-            testMatrix.testSpecification.androidInstrumentationTest!!.testApk!!
+            testMatrix.testSpecification.androidInstrumentationTest!!.testApk
         )
         println(apkDetails)
     }

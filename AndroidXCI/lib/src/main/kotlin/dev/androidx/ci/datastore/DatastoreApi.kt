@@ -22,6 +22,7 @@ import com.google.cloud.datastore.FullEntity
 import com.google.cloud.datastore.IncompleteKey
 import com.google.cloud.datastore.Key
 import dev.androidx.ci.config.Config
+import dev.androidx.ci.util.configure
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
@@ -69,8 +70,7 @@ private class DatastoreApiImpl(
     override val testRunObjectKind: String = config.testRunObjectKind
     private val service by lazy {
         DatastoreOptions.newBuilder()
-            .setCredentials(config.credentials)
-            .setProjectId(config.gcpProjectId)
+            .configure(config.gcp)
             .build().service
     }
 

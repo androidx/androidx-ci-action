@@ -29,8 +29,8 @@ class Config {
         val repo: String,
         val token: String
     )
-    class GCloud(
-        val credentials: Credentials,
+    class CloudStorage(
+        val gcp: Gcp,
         /**
          * The name of the bucket to use
          */
@@ -38,19 +38,16 @@ class Config {
         /**
          * The relative path in the bucket to put values
          */
-        val bucketPath: String,
-        val gcpProjectId: String,
+        val bucketPath: String
     )
     class FirebaseTestLab(
+        val gcp: Gcp,
         val endPoint: String = "https://testing.googleapis.com/v1/",
-        val credentials: Credentials,
         val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
-        val gcpProjectId: String,
     )
     class Datastore(
-        val credentials: Credentials,
+        val gcp: Gcp,
         val testRunObjectKind: String,
-        val gcpProjectId: String,
     ) {
         companion object {
             val GITHUB_OBJECT_KIND = "TestRun"
@@ -59,9 +56,13 @@ class Config {
         }
     }
     class ToolsResult(
+        val gcp: Gcp,
         val endPoint: String = "https://toolresults.googleapis.com/toolresults/v1beta3/",
-        val credentials: Credentials,
         val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
-        val gcpProjectId: String,
+    )
+
+    class Gcp(
+        val credentials: Credentials,
+        val projectId: String
     )
 }

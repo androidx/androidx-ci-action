@@ -251,37 +251,37 @@ class TestRunnerService internal constructor(
             val toolsResultScoped = (credentials as? GoogleCredentials)?.createScoped(
                 "https://www.googleapis.com/auth/cloud-platform"
             ) ?: credentials
+            val gcpConfig = Config.Gcp(
+                credentials = credentials,
+                projectId = firebaseProjectId
+            )
             return TestRunnerService(
                 googleCloudApi = GoogleCloudApi.build(
-                    Config.GCloud(
-                        credentials = credentials,
+                    Config.CloudStorage(
+                        gcp = gcpConfig,
                         bucketName = bucketName,
                         bucketPath = bucketPath,
-                        gcpProjectId = firebaseProjectId,
                     ),
                     context = ioDispatcher
                 ),
                 datastoreApi = DatastoreApi.build(
                     Config.Datastore(
-                        credentials = credentials,
-                        testRunObjectKind = AOSP_OBJECT_KIND,
-                        gcpProjectId = firebaseProjectId,
+                        gcp = gcpConfig,
+                        testRunObjectKind = testRunDataStoreObjectKind,
                     ),
                     context = ioDispatcher
                 ),
                 toolsResultApi = ToolsResultApi.build(
                     config = Config.ToolsResult(
-                        credentials = toolsResultScoped,
+                        gcp = gcpConfig,
                         httpLogLevel = httpLogLevel,
-                        gcpProjectId = firebaseProjectId
                     )
                 ),
                 firebaseProjectId = firebaseProjectId,
                 firebaseTestLabApi = FirebaseTestLabApi.build(
                     config = Config.FirebaseTestLab(
-                        credentials = toolsResultScoped,
+                        gcp = gcpConfig,
                         httpLogLevel = httpLogLevel,
-                        gcpProjectId = firebaseProjectId
                     )
                 ),
                 gcsResultPath = gcsResultPath

@@ -44,8 +44,10 @@ class FirebaseTestLabApiTest {
     private val api = FirebaseTestLabApi.build(
         config = Config.FirebaseTestLab(
             endPoint = mockWebServer.url("/").toString(),
-            credentials = fakeCreds,
-            gcpProjectId = "no-project"
+            gcp = Config.Gcp(
+                credentials = fakeCreds,
+                projectId = "no-project",
+            )
         )
     )
 

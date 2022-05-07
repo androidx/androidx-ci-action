@@ -16,17 +16,16 @@
 
 package dev.androidx.ci.firebase
 
-import com.google.auth.Credentials
+import dev.androidx.ci.config.Config
 import okhttp3.OkHttpClient
 
 /**
  * Adds authentication to the Rest API call with Google credentials
  */
 fun OkHttpClient.Builder.authenticateWith(
-    credentials: Credentials,
-    projectId: String
+    gcpConfig: Config.Gcp
 ) = addInterceptor {
-    val requestMetadata = credentials.getRequestMetadata(
+    val requestMetadata = gcpConfig.credentials.getRequestMetadata(
         it.request().url.toUri()
     )
     val newBuilder = it.request().newBuilder()
@@ -35,6 +34,6 @@ fun OkHttpClient.Builder.authenticateWith(
             newBuilder.addHeader(key, value)
         }
     }
-    newBuilder.addHeader("X-Goog-User-Project", projectId)
+    newBuilder.addHeader("X-Goog-User-Project", gcpConfig.projectId)
     it.proceed(newBuilder.build())
 }

@@ -69,8 +69,7 @@ interface FirebaseTestLabApi {
             config: Config.FirebaseTestLab
         ): FirebaseTestLabApi {
             val client = OkHttpClient.Builder().authenticateWith(
-                credentials = config.credentials,
-                projectId = config.gcpProjectId
+                config.gcp
             ).addInterceptor {
                 val newBuilder = it.request().newBuilder()
                 newBuilder.addHeader(

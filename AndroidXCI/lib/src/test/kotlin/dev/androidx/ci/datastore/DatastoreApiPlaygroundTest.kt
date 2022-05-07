@@ -44,9 +44,8 @@ class DatastoreApiPlaygroundTest {
     private val datastore by lazy {
         DatastoreApi.build(
             Config.Datastore(
-                credentials = playgroundCredentialsRule.credentials,
+                gcp = playgroundCredentialsRule.gcpConfig,
                 testRunObjectKind = Config.Datastore.GITHUB_OBJECT_KIND,
-                gcpProjectId = playgroundCredentialsRule.credentials.projectId
             ),
             context = testScope.coroutineContext
         )

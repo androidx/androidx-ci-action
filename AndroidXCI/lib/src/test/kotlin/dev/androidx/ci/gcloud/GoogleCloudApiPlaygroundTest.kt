@@ -48,11 +48,10 @@ class GoogleCloudApiPlaygroundTest {
     @Test
     fun putItem() = testScope.runTest {
         val client = GoogleCloudApi.build(
-            config = Config.GCloud(
-                credentials = playgroundCredentialsRule.credentials,
+            config = Config.CloudStorage(
+                gcp = playgroundCredentialsRule.gcpConfig,
                 bucketName = "androidx-ftl-test-results",
                 bucketPath = "testing",
-                gcpProjectId = playgroundCredentialsRule.credentials.projectId
             ),
             context = testScope.coroutineContext
         )
@@ -71,11 +70,10 @@ class GoogleCloudApiPlaygroundTest {
     fun downloadFolder() = testScope.runTest {
         val folder = tmpFolder.newFolder()
         val client = GoogleCloudApi.build(
-            config = Config.GCloud(
-                credentials = playgroundCredentialsRule.credentials,
+            config = Config.CloudStorage(
+                gcp = playgroundCredentialsRule.gcpConfig,
                 bucketName = "androidx-ftl-test-results",
                 bucketPath = "github-ci-action",
-                gcpProjectId = playgroundCredentialsRule.credentials.projectId
             ),
             context = testScope.coroutineContext
         )

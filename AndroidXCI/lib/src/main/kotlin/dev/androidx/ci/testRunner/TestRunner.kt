@@ -187,13 +187,16 @@ class TestRunner(
             val credentials = ServiceAccountCredentials.fromStream(
                 googleCloudCredentials.byteInputStream(Charsets.UTF_8)
             )
+            val gcpConfig = Config.Gcp(
+                credentials = credentials,
+                projectId = credentials.projectId
+            )
             return TestRunner(
                 googleCloudApi = GoogleCloudApi.build(
-                    Config.GCloud(
-                        credentials = credentials,
+                    Config.CloudStorage(
+                        gcp = gcpConfig,
                         bucketName = "androidx-ftl-test-results",
                         bucketPath = "github-ci-action",
-                        gcpProjectId = credentials.projectId
                     ),
                     context = ioDispatcher
                 ),
@@ -206,23 +209,20 @@ class TestRunner(
                 ),
                 firebaseTestLabApi = FirebaseTestLabApi.build(
                     config = Config.FirebaseTestLab(
-                        credentials = credentials,
-                        gcpProjectId = credentials.projectId
+                        gcp = gcpConfig
                     )
                 ),
                 firebaseProjectId = "androidx-dev-prod",
                 datastoreApi = DatastoreApi.build(
                     Config.Datastore(
-                        credentials = credentials,
+                        gcp = gcpConfig,
                         testRunObjectKind = "TestRun",
-                        gcpProjectId = credentials.projectId,
                     ),
                     context = ioDispatcher
                 ),
                 toolsResultApi = ToolsResultApi.build(
                     config = Config.ToolsResult(
-                        credentials = credentials,
-                        gcpProjectId = credentials.projectId
+                        gcp = gcpConfig
                     )
                 ),
                 githubArtifactFilter = { artifact ->

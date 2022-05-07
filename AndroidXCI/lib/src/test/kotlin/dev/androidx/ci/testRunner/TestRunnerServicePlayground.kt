@@ -32,8 +32,8 @@ class TestRunnerServicePlayground {
     @Before
     fun initTestService() {
         testRunnerService = TestRunnerService.create(
-            credentials = playgroundCredentialsRule.credentials,
-            firebaseProjectId = "androidx-dev-prod",
+            credentials = playgroundCredentialsRule.gcpConfig.credentials,
+            firebaseProjectId = playgroundCredentialsRule.gcpConfig.projectId,
             bucketName = "androidx-ftl-aosp-bucket-2",
             bucketPath = "localRuns",
             gcsResultPath = "yigit",

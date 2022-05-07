@@ -53,11 +53,10 @@ class TestRunnerPlayground {
         val runId = "1243675283"
         testRunner = TestRunner(
             googleCloudApi = GoogleCloudApi.build(
-                Config.GCloud(
-                    credentials = playgroundCredentialsRule.credentials,
+                Config.CloudStorage(
+                    gcp = playgroundCredentialsRule.gcpConfig,
                     bucketName = "androidx-ftl-test-results",
                     bucketPath = "github-ci-action",
-                    gcpProjectId = playgroundCredentialsRule.credentials.projectId
                 ),
                 context = Dispatchers.IO
             ),
@@ -70,22 +69,19 @@ class TestRunnerPlayground {
             ),
             firebaseTestLabApi = FirebaseTestLabApi.build(
                 config = Config.FirebaseTestLab(
-                    credentials = playgroundCredentialsRule.credentials,
-                    gcpProjectId = playgroundCredentialsRule.credentials.projectId
+                    gcp = playgroundCredentialsRule.gcpConfig,
                 )
             ),
             toolsResultApi = ToolsResultApi.build(
                 config = Config.ToolsResult(
-                    credentials = playgroundCredentialsRule.credentials,
-                    gcpProjectId = playgroundCredentialsRule.credentials.projectId
+                    gcp = playgroundCredentialsRule.gcpConfig,
                 )
             ),
             firebaseProjectId = "androidx-dev-prod",
             datastoreApi = DatastoreApi.build(
                 Config.Datastore(
-                    credentials = playgroundCredentialsRule.credentials,
+                    gcp = playgroundCredentialsRule.gcpConfig,
                     testRunObjectKind = Config.Datastore.PLAYGROUND_OBJECT_KIND,
-                    gcpProjectId = playgroundCredentialsRule.credentials.projectId
                 ),
                 context = Dispatchers.IO
             ),
