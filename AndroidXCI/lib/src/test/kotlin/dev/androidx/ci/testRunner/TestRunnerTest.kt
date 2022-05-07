@@ -39,7 +39,7 @@ import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
 @OptIn(ExperimentalCoroutinesApi::class)
-class TestRunnerTest {
+internal class TestRunnerTest {
     @get:Rule
     val tmpFolder = TemporaryFolder()
     private val testScope = TestScope()

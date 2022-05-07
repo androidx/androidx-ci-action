@@ -166,7 +166,7 @@ class TestRunner internal constructor(
     }
 
     companion object {
-        const val RESULT_JSON_FILE_NAME = "result.json"
+        internal const val RESULT_JSON_FILE_NAME = "result.json"
         private val ALLOWED_ARTIFACTS = listOf(
             "artifacts_activity",
             "artifacts_fragment",
@@ -239,7 +239,7 @@ class TestRunner internal constructor(
         /**
          * Specifies an output folder for the given test matrix where its artifacts will be downloaded into.
          */
-        fun localResultFolderFor(
+        internal fun localResultFolderFor(
             matrix: TestMatrix,
             outputFolder: File
         ): File {

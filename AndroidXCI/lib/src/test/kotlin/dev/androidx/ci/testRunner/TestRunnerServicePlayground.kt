@@ -24,7 +24,7 @@ import org.junit.Test
 import java.io.File
 import java.util.Locale
 
-class TestRunnerServicePlayground {
+internal class TestRunnerServicePlayground {
     @get:Rule
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 

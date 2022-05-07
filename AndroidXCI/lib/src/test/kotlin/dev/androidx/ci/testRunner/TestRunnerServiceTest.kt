@@ -33,7 +33,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class TestRunnerServiceTest {
+internal class TestRunnerServiceTest {
     @get:Rule
     val tmpFolder = TemporaryFolder()
     private val testScope = TestScope()

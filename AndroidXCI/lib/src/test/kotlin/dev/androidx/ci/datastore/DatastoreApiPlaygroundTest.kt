@@ -35,7 +35,7 @@ import org.junit.Test
  * export ANDROIDX_GCLOUD_CREDENTIALS="<cloud json key from iam>"
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class DatastoreApiPlaygroundTest {
+internal class DatastoreApiPlaygroundTest {
     @get:Rule
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 

@@ -41,7 +41,7 @@ internal class SchemaProcessor(
     val schemas: Collection<SchemaDto>,
     val pkg: String,
 ) {
-    fun process(): List<TypeSpec> {
+    fun process(): List<TypeSpec.Builder> {
         return schemas.filter {
             it.isObject()
         }.map { schemaDto ->
@@ -49,7 +49,7 @@ internal class SchemaProcessor(
         }
     }
 
-    private fun SchemaDto.toTypeSpec(): TypeSpec {
+    private fun SchemaDto.toTypeSpec(): TypeSpec.Builder {
         fun PropertyDto.enums(
             name: String
         ): List<Triple<PropertyDto, String, List<String>>> {
@@ -113,7 +113,7 @@ internal class SchemaProcessor(
         typeSpec.addKdoc(
             description?.sanitize() ?: ""
         )
-        return typeSpec.build()
+        return typeSpec
     }
 
     private fun PropertyDto.toPropertySpec(

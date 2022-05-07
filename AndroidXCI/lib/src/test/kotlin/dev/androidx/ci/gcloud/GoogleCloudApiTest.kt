@@ -32,7 +32,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
-class GoogleCloudApiTest {
+internal class GoogleCloudApiTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun noAuthentication_checkCorrectContext() {

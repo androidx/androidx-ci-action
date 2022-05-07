@@ -30,7 +30,7 @@ import java.time.Instant
 import java.util.Date
 
 @RunWith(JUnit4::class)
-class FirebaseTestLabApiTest {
+internal class FirebaseTestLabApiTest {
     private val mockWebServer = MockWebServer()
     private val fakeCreds = OAuth2Credentials.newBuilder()
         .setAccessToken(

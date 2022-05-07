@@ -34,7 +34,7 @@ import org.junit.runners.JUnit4
  * export ANDROIDX_GCLOUD_CREDENTIALS="<cloud json key from iam>"
  */
 @RunWith(JUnit4::class)
-class FirebaseTestLabApiPlaygroundTest {
+internal class FirebaseTestLabApiPlaygroundTest {
     private val projectId = "androidx-dev-prod"
     @get:Rule
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()

@@ -39,7 +39,7 @@ import org.junit.Test
  * export ANDROIDX_GCLOUD_CREDENTIALS="<cloud json key from iam>"
  * export ANDROIDX_GITHUB_TOKEN="<github token>"
  */
-class TestRunnerPlayground {
+internal class TestRunnerPlayground {
     private lateinit var testRunner: TestRunner
 
     @get:Rule

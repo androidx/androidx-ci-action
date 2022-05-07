@@ -172,7 +172,7 @@ private class ZipEntryScopeImpl(
  * [bytes] can only be accessed while reading the entry in the stream such that trying to access
  * it afterwards will throw an [IllegalStateException]
  */
-interface ZipEntryScope {
+internal interface ZipEntryScope {
     val entry: ZipEntry
     @get:Throws(IllegalStateException::class)
     val bytes: ByteArray

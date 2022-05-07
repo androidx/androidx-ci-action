@@ -36,7 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.FUNCTION)
-annotation class Retry(val times: Int = 3)
+internal annotation class Retry(val times: Int = 3)
+
 typealias RetryScheduler = (delay: Long, timeUnit: TimeUnit, block: suspend () -> Unit) -> Unit
 
 private class RetryCallAdapter(
@@ -143,7 +144,7 @@ private class RetryCallback(
     }
 }
 
-class RetryCallAdapterFactory(
+internal class RetryCallAdapterFactory(
     private val scheduler: RetryScheduler
 ) : CallAdapter.Factory() {
     override fun get(returnType: Type, annotations: Array<out Annotation>, retrofit: Retrofit): CallAdapter<*, *> {

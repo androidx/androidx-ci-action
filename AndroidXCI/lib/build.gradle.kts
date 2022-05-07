@@ -28,11 +28,13 @@ generatedModels {
         listOf(
             dev.androidx.ci.codegen.plugin.GeneratedModelInfo(
                 discoveryFileUrl = "https://testing.googleapis.com/\$discovery/rest?version=v1",
-                pkg = "dev.androidx.ci.generated.ftl"
+                pkg = "dev.androidx.ci.generated.ftl",
+                internal = false
             ),
             dev.androidx.ci.codegen.plugin.GeneratedModelInfo(
                 discoveryFileUrl = "https://toolresults.googleapis.com/\$discovery/rest?version=v1beta3",
-                pkg = "dev.androidx.ci.generated.testResults"
+                pkg = "dev.androidx.ci.generated.testResults",
+                internal = true
             )
         )
     )

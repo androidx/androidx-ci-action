@@ -27,7 +27,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
-class GithubApiTest {
+internal class GithubApiTest {
     private val mockWebServer = MockWebServer()
     private val api = GithubApi.build(
         config = Config.Github(

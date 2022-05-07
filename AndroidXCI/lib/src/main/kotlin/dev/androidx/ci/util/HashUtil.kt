@@ -18,6 +18,6 @@ package dev.androidx.ci.util
 
 import okio.ByteString.Companion.toByteString
 
-fun sha256(input: ByteArray): String {
+internal fun sha256(input: ByteArray): String {
     return input.toByteString().sha256().hex()
 }

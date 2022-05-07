@@ -23,7 +23,7 @@ import dev.androidx.ci.fake.FakeDatastore
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
-class FakeDatastoreApiTest {
+internal class FakeDatastoreApiTest {
     private val datastore = FakeDatastore()
     @Test
     fun readWrite() = runBlocking<Unit> {

@@ -23,7 +23,7 @@ import com.google.cloud.datastore.Key
 import dev.androidx.ci.datastore.DatastoreApi
 import java.util.UUID
 
-class FakeDatastore : DatastoreApi {
+internal class FakeDatastore : DatastoreApi {
     override val testRunObjectKind: String
         get() = "Fake"
     private val data = mutableMapOf<Key, Entity>()
