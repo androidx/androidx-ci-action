@@ -53,7 +53,7 @@ class TestRunnerTest {
             githubApi = fakeBackend.fakeGithubApi,
             firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
             toolsResultApi = fakeBackend.fakeToolsResultApi,
-            firebaseProjectId = PROJECT_ID,
+            projectId = PROJECT_ID,
             targetRunId = TARGET_RUN_ID,
             hostRunId = HOST_RUN_ID,
             datastoreApi = fakeBackend.datastoreApi,

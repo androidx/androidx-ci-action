@@ -33,7 +33,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-interface ToolsResultApi {
+internal interface ToolsResultApi {
     @Retry
     @GET("projects/{projectId}/histories")
     suspend fun getHistories(

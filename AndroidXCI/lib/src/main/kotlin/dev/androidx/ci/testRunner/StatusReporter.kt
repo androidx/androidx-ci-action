@@ -25,7 +25,7 @@ import dev.androidx.ci.util.LazyComputedValue
 /**
  * Helper class to report status of a run to the backend, github etc.
  */
-class StatusReporter(
+internal class StatusReporter(
     val githubApi: GithubApi,
     /**
      * The Github workflow run which is hosting this TestRun

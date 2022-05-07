@@ -19,7 +19,7 @@ package dev.androidx.ci.firebase.dto
 /**
  * Environment type values to get device catalog
  */
-enum class EnvironmentType {
+internal enum class EnvironmentType {
     ENVIRONMENT_TYPE_UNSPECIFIED,
     ANDROID,
     IOS,

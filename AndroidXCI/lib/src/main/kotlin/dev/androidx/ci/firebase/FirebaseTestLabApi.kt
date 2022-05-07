@@ -36,7 +36,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-interface FirebaseTestLabApi {
+internal interface FirebaseTestLabApi {
     @Retry
     @GET("projects/{projectId}/testMatrices/{testMatrixId}")
     suspend fun getTestMatrix(

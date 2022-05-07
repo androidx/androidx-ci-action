@@ -65,7 +65,7 @@ class TestRunnerService internal constructor(
         resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$gcsResultPath")
     )
     private val apkStore = ApkStore(googleCloudApi)
-    val testLabController = FirebaseTestLabController(
+    private val testLabController = FirebaseTestLabController(
         firebaseTestLabApi = firebaseTestLabApi,
         firebaseProjectId = firebaseProjectId,
         testMatrixStore = testMatrixStore
@@ -248,9 +248,6 @@ class TestRunnerService internal constructor(
             } else {
                 HttpLoggingInterceptor.Level.NONE
             }
-            val toolsResultScoped = (credentials as? GoogleCredentials)?.createScoped(
-                "https://www.googleapis.com/auth/cloud-platform"
-            ) ?: credentials
             val gcpConfig = Config.Gcp(
                 credentials = credentials,
                 projectId = firebaseProjectId

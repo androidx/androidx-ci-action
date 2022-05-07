@@ -32,7 +32,7 @@ import kotlin.coroutines.CoroutineContext
  * Note that, GCS library has built in retry logic so caller should not have additional retry logic
  * for failed requests.
  */
-interface GoogleCloudApi {
+internal interface GoogleCloudApi {
     /**
      * Uploads the given [bytes] into the given [relativePath].
      * The [relativePath] is relative to the root path in the bucket.

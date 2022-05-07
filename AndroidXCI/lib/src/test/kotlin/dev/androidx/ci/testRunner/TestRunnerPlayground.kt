@@ -77,7 +77,7 @@ class TestRunnerPlayground {
                     gcp = playgroundCredentialsRule.gcpConfig,
                 )
             ),
-            firebaseProjectId = "androidx-dev-prod",
+            projectId = "androidx-dev-prod",
             datastoreApi = DatastoreApi.build(
                 Config.Datastore(
                     gcp = playgroundCredentialsRule.gcpConfig,

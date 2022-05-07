@@ -36,3 +36,4 @@ kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 ktlintIdea = { id = "org.jlleitschuh.gradle.ktlint-idea", version.ref = "ktlint" }
 ktlintGradle = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+binaryValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.9.0"}

@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.binaryValidator)
     id("androidx-model-builder")
     id("maven-publish")
 }

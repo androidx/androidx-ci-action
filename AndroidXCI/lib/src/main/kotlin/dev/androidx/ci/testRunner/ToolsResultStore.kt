@@ -25,7 +25,7 @@ import java.util.UUID
 /**
  * Handles histories for test runs.
  */
-class ToolsResultStore(
+internal class ToolsResultStore(
     private val firebaseProjectId: String,
     private val toolsResultApi: ToolsResultApi
 ) {

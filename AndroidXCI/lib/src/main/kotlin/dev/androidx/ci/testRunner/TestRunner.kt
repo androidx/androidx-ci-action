@@ -49,13 +49,13 @@ import java.util.zip.ZipEntry
  * * Wait for all tests to finish, download outputs
  * * Generate final report
  */
-class TestRunner(
+class TestRunner internal constructor(
     private val googleCloudApi: GoogleCloudApi,
     private val githubApi: GithubApi,
     datastoreApi: DatastoreApi,
     firebaseTestLabApi: FirebaseTestLabApi,
     toolsResultApi: ToolsResultApi,
-    firebaseProjectId: String,
+    projectId: String,
     /**
      * The workflow run id from github whose artifacts will be tested
      */
@@ -75,7 +75,7 @@ class TestRunner(
 ) {
     private val logger = logger()
     private val testMatrixStore = TestMatrixStore(
-        firebaseProjectId = firebaseProjectId,
+        firebaseProjectId = projectId,
         datastoreApi = datastoreApi,
         firebaseTestLabApi = firebaseTestLabApi,
         toolsResultApi = toolsResultApi,
@@ -84,7 +84,7 @@ class TestRunner(
     private val apkStore = ApkStore(googleCloudApi)
     private val testLabController = FirebaseTestLabController(
         firebaseTestLabApi = firebaseTestLabApi,
-        firebaseProjectId = firebaseProjectId,
+        firebaseProjectId = projectId,
         testMatrixStore = testMatrixStore
     )
     private val statusReporter = StatusReporter(
@@ -212,7 +212,7 @@ class TestRunner(
                         gcp = gcpConfig
                     )
                 ),
-                firebaseProjectId = "androidx-dev-prod",
+                projectId = gcpConfig.projectId,
                 datastoreApi = DatastoreApi.build(
                     Config.Datastore(
                         gcp = gcpConfig,

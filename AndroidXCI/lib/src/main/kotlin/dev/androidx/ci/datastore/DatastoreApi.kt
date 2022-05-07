@@ -29,7 +29,7 @@ import kotlin.coroutines.CoroutineContext
 /**
  * Interface for Datastore communications so that we can also fake it in tests.
  */
-interface DatastoreApi {
+internal interface DatastoreApi {
     // Default object kind that is used to group datastore objects.
     val testRunObjectKind: String
     /**
