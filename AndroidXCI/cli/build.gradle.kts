@@ -26,6 +26,7 @@ dependencies {
     implementation(libs.coroutines.core)
     implementation(libs.clikt)
     implementation(libs.bundles.log4j)
+    testImplementation(libs.truth)
 }
 
 application {
