@@ -380,10 +380,10 @@ class TestRunnerService internal constructor(
                     }
                 },
                 newTests = testMatrices.count {
-                    it.outcomeSummary == null
+                    !it.isComplete()
                 },
                 cachedTests = testMatrices.count {
-                    it.outcomeSummary != null
+                    it.isComplete()
                 }
             )
         }
