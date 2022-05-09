@@ -34,7 +34,8 @@ internal class TestResultDownloader(
     private val logger = logger()
     suspend fun downloadTestResults(
         outputFolder: File,
-        result: TestResult
+        result: TestResult,
+        clearOutputFolder: Boolean
     ): List<DownloadedTestResults> {
         if (outputFolder.exists()) {
             outputFolder.deleteRecursively()

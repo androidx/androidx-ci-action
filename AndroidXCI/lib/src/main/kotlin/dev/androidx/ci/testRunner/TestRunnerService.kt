@@ -172,7 +172,8 @@ class TestRunnerService internal constructor(
             googleCloudApi = googleCloudApi
         ).downloadTestResults(
             outputFolder = localDownloadFolder,
-            result = result
+            result = result,
+            clearOutputFolder = true
         )
         return TestRunResponse(
             testResult = result,

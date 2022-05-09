@@ -131,7 +131,9 @@ class TestRunner internal constructor(
                     googleCloudApi = googleCloudApi
                 ).downloadTestResults(
                     outputFolder = outputFolder,
-                    result = result
+                    result = result,
+                    // don't clear the output folder as the CLI uses it for logs as well.
+                    clearOutputFolder = false
                 )
             }
             statusReporter.reportEnd(result)
