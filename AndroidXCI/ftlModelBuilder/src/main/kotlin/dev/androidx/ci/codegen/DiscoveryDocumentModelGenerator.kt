@@ -18,6 +18,7 @@ package dev.androidx.ci.codegen
 
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -50,6 +51,10 @@ internal class DiscoveryDocumentModelGenerator(
      * The root package for generated classes
      */
     val pkg: String,
+    /**
+     * If true, classes will be generated with internal modifier.
+     */
+    val typeSpecModifiers: List<KModifier> = emptyList(),
 ) {
     fun generate() {
         val discoveryDoc = fetchDiscoveryDocument()
@@ -57,7 +62,9 @@ internal class DiscoveryDocumentModelGenerator(
             schemas = discoveryDoc.schemas.values,
             pkg = pkg
         )
-        val typeSpecs = processor.process()
+        val typeSpecs = processor.process().map {
+            it.addModifiers(typeSpecModifiers).build()
+        }
         typeSpecs.forEach { typeSpec ->
             val fileSpec = FileSpec.builder(
                 packageName = pkg,

@@ -26,7 +26,7 @@ import java.lang.IllegalStateException
 import kotlin.random.Random
 
 @RunWith(JUnit4::class)
-class ZipArtifactParserTest {
+internal class ZipArtifactParserTest {
     private val random = Random(System.nanoTime())
     private val api = FakeGithubApi()
 

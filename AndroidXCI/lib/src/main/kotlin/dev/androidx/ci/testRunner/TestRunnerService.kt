@@ -17,7 +17,6 @@
 package dev.androidx.ci.testRunner
 
 import com.google.auth.Credentials
-import com.google.auth.oauth2.GoogleCredentials
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
@@ -65,7 +64,7 @@ class TestRunnerService internal constructor(
         resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$gcsResultPath")
     )
     private val apkStore = ApkStore(googleCloudApi)
-    val testLabController = FirebaseTestLabController(
+    internal val testLabController = FirebaseTestLabController(
         firebaseTestLabApi = firebaseTestLabApi,
         firebaseProjectId = firebaseProjectId,
         testMatrixStore = testMatrixStore
@@ -248,9 +247,6 @@ class TestRunnerService internal constructor(
             } else {
                 HttpLoggingInterceptor.Level.NONE
             }
-            val toolsResultScoped = (credentials as? GoogleCredentials)?.createScoped(
-                "https://www.googleapis.com/auth/cloud-platform"
-            ) ?: credentials
             val gcpConfig = Config.Gcp(
                 credentials = credentials,
                 projectId = firebaseProjectId

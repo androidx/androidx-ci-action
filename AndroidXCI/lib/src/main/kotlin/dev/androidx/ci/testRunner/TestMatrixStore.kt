@@ -40,7 +40,7 @@ import java.util.UUID
  * Maintains test matrices by also adding a caching layer over FTL to avoid re-creating test
  * matrices for the same configuration.
  */
-class TestMatrixStore(
+internal class TestMatrixStore(
     private val firebaseProjectId: String,
     private val datastoreApi: DatastoreApi,
     private val firebaseTestLabApi: FirebaseTestLabApi,

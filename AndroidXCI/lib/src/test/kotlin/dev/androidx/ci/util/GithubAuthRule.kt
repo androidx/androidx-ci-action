@@ -25,7 +25,7 @@ import org.junit.runners.model.Statement
  * A common rule to read GCloud credentials from environment variables for
  * local testing.
  */
-class GithubAuthRule : TestRule {
+internal class GithubAuthRule : TestRule {
     lateinit var githubToken: String
         private set
 

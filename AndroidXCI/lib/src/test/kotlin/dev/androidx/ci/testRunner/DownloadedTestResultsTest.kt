@@ -22,7 +22,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 
-class DownloadedTestResultsTest {
+internal class DownloadedTestResultsTest {
     @get:Rule
     val tmpFolder = TemporaryFolder()
 

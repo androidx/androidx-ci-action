@@ -26,7 +26,7 @@ import org.junit.runners.JUnit4
 import kotlin.random.Random
 
 @RunWith(JUnit4::class)
-class NestedZipArtifactParserTest {
+internal class NestedZipArtifactParserTest {
     private val random = Random(System.nanoTime())
     private val api = FakeGithubApi()
 

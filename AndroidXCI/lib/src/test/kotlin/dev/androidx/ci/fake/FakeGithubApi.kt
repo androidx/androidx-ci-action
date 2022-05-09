@@ -27,7 +27,7 @@ import java.util.UUID
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-class FakeGithubApi : GithubApi {
+internal class FakeGithubApi : GithubApi {
     private val runInfos = mutableMapOf<String, RunInfo>()
     private val commitInfos = mutableMapOf<String, CommitInfo>()
     private val artifacts = mutableMapOf<String, ArtifactsResponse>()

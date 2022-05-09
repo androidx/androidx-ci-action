@@ -22,7 +22,7 @@ import okhttp3.OkHttpClient
 /**
  * Adds authentication to the Rest API call with Google credentials
  */
-fun OkHttpClient.Builder.authenticateWith(
+internal fun OkHttpClient.Builder.authenticateWith(
     gcpConfig: Config.Gcp
 ) = addInterceptor {
     val requestMetadata = gcpConfig.credentials.getRequestMetadata(

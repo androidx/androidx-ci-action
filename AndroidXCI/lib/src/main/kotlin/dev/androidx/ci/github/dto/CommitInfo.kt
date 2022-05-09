@@ -21,7 +21,7 @@ import com.squareup.moshi.Json
 /**
  * Details of a git commit
  */
-data class CommitInfo(
+internal data class CommitInfo(
     /**
      * The commit sha
      */

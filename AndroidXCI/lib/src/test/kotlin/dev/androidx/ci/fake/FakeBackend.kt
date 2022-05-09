@@ -22,7 +22,7 @@ import dev.androidx.ci.github.dto.RunInfo
 import java.util.UUID
 import kotlin.random.Random
 
-class FakeBackend(
+internal class FakeBackend(
     val fakeGithubApi: FakeGithubApi = FakeGithubApi(),
     val fakeGoogleCloudApi: FakeGoogleCloudApi = FakeGoogleCloudApi(),
     val fakeFirebaseTestLabApi: FakeFirebaseTestLabApi = FakeFirebaseTestLabApi(),

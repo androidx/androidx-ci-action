@@ -34,7 +34,7 @@ import org.apache.logging.log4j.kotlin.logger
  * Controller to understand TestMatrix states, picks the environment matrix (set of devices to run
  * the test on) and can observe multiple TestMatrices for their results.
  */
-class FirebaseTestLabController(
+internal class FirebaseTestLabController(
     private val firebaseTestLabApi: FirebaseTestLabApi,
     private val firebaseProjectId: String,
     private val testMatrixStore: TestMatrixStore

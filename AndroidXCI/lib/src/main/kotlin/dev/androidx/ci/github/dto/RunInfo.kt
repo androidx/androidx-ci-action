@@ -21,7 +21,7 @@ import com.squareup.moshi.Json
 /**
  * Information about a Github Workflow run from which we can find related commits, PRs etc.
  */
-data class RunInfo(
+internal data class RunInfo(
     val id: String,
     val name: String,
     @Json(name = "html_url")

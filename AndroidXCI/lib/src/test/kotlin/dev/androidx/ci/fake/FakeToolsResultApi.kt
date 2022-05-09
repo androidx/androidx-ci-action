@@ -22,7 +22,7 @@ import dev.androidx.ci.generated.testResults.History
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
 import java.util.UUID
 
-class FakeToolsResultApi : ToolsResultApi {
+internal class FakeToolsResultApi : ToolsResultApi {
     private val histories = mutableListOf<History>()
     override suspend fun getHistories(projectId: String, name: String?, pageSize: Int): ListHistoriesResponse {
         return ListHistoriesResponse(

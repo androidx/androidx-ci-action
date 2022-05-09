@@ -37,7 +37,7 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 @OptIn(ExperimentalCoroutinesApi::class)
-class GoogleCloudApiPlaygroundTest {
+internal class GoogleCloudApiPlaygroundTest {
     @get:Rule
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 

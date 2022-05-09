@@ -22,7 +22,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 /**
  * Common configuration for TestRunner.
  */
-class Config {
+internal class Config {
     class Github(
         val endPoint: String = "https://api.github.com",
         val owner: String,

@@ -26,7 +26,7 @@ import org.junit.runners.model.Statement
 /**
  * A common rule to read Github token from environment variables for local testing.
  */
-class GoogleCloudCredentialsRule : TestRule {
+internal class GoogleCloudCredentialsRule : TestRule {
     lateinit var gcpConfig: Config.Gcp
         private set
     private fun loadCredentials() {

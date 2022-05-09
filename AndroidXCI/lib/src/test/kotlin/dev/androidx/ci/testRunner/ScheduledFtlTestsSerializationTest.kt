@@ -21,7 +21,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-class ScheduledFtlTestsSerializationTest {
+internal class ScheduledFtlTestsSerializationTest {
     @get:Rule
     val tmmFolder = TemporaryFolder()
 

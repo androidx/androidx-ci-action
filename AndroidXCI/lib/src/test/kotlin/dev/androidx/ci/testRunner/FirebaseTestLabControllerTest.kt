@@ -26,7 +26,7 @@ import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
-class FirebaseTestLabControllerTest {
+internal class FirebaseTestLabControllerTest {
     private val fakeBackend = FakeBackend()
     private val firebaseTestLabApi = FirebaseTestLabController(
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,

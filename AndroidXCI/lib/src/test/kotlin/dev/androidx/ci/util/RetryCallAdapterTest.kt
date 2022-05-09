@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit
  *
  * This is good enough for now, if it flakes etc, we'll figure out a solution.
  */
-class RetryCallAdapterTest {
+internal class RetryCallAdapterTest {
     private val server = MockWebServer()
     interface Api {
         @Retry(2)

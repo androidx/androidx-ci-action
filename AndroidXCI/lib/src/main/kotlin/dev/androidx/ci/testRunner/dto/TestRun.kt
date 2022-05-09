@@ -34,7 +34,7 @@ private const val PROP_TEST_MATRIX_ID = "testMatrixId"
  * Object that gets pushed into Datastore for each unique test run.
  * Uniqueness of a TestRun is computed from its parameters, see [createId].
  */
-class TestRun(
+internal class TestRun(
     val id: Id,
     val testMatrixId: String
 ) {
@@ -78,12 +78,12 @@ class TestRun(
     }
 }
 
-fun TestRun.toEntity(): FullEntity<IncompleteKey> = Entity.newBuilder()
+internal fun TestRun.toEntity(): FullEntity<IncompleteKey> = Entity.newBuilder()
     .set(PROP_TEST_MATRIX_ID, testMatrixId)
     .setKey(id.key)
     .build()
 
-fun Entity.toTestRun(): TestRun? {
+internal fun Entity.toTestRun(): TestRun? {
     if (this.isNull(PROP_TEST_MATRIX_ID)) {
         return null
     }
