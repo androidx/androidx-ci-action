@@ -37,7 +37,7 @@ import org.junit.runners.JUnit4
  */
 @RunWith(JUnit4::class)
 @OptIn(ExperimentalCoroutinesApi::class)
-class GoogleCloudApiPlaygroundTest {
+internal class GoogleCloudApiPlaygroundTest {
     @get:Rule
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 
@@ -48,8 +48,8 @@ class GoogleCloudApiPlaygroundTest {
     @Test
     fun putItem() = testScope.runTest {
         val client = GoogleCloudApi.build(
-            config = Config.GCloud(
-                credentials = playgroundCredentialsRule.credentials,
+            config = Config.CloudStorage(
+                gcp = playgroundCredentialsRule.gcpConfig,
                 bucketName = "androidx-ftl-test-results",
                 bucketPath = "testing",
             ),
@@ -70,10 +70,10 @@ class GoogleCloudApiPlaygroundTest {
     fun downloadFolder() = testScope.runTest {
         val folder = tmpFolder.newFolder()
         val client = GoogleCloudApi.build(
-            config = Config.GCloud(
-                credentials = playgroundCredentialsRule.credentials,
+            config = Config.CloudStorage(
+                gcp = playgroundCredentialsRule.gcpConfig,
                 bucketName = "androidx-ftl-test-results",
-                bucketPath = "github-ci-action"
+                bucketPath = "github-ci-action",
             ),
             context = testScope.coroutineContext
         )

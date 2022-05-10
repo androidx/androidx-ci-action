@@ -30,7 +30,7 @@ import okio.buffer
 import okio.source
 import java.util.UUID
 
-class FakeFirebaseTestLabApi(
+internal class FakeFirebaseTestLabApi(
     /**
      * Invoked when a new test is created
      */

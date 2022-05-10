@@ -30,7 +30,7 @@ import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
-class TestMatrixStoreTest {
+internal class TestMatrixStoreTest {
     val firebaseTestLabApi = FakeFirebaseTestLabApi()
     val datastoreApi = FakeDatastore()
     val toolsResultApi = FakeToolsResultApi()

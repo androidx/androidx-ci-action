@@ -35,5 +35,9 @@ data class GeneratedModelInfo(
     /**
      * Root package for generated classes
      */
-    val pkg: String
+    val pkg: String,
+    /**
+     * If true, classes will be generated with the internal modifier
+     */
+    val internal: Boolean = false
 ) : Serializable

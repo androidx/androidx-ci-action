@@ -23,7 +23,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 
-class ToolsResultApiPlaygroundTest {
+internal class ToolsResultApiPlaygroundTest {
     private val projectId = "androidx-dev-prod"
     @get:Rule
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
@@ -31,7 +31,7 @@ class ToolsResultApiPlaygroundTest {
     private val api by lazy {
         ToolsResultApi.build(
             config = Config.ToolsResult(
-                credentials = playgroundCredentialsRule.credentials
+                gcp = playgroundCredentialsRule.gcpConfig
             )
         )
     }

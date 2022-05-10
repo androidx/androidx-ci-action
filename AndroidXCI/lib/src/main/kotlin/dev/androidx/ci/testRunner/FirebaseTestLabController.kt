@@ -22,6 +22,7 @@ import dev.androidx.ci.firebase.dto.EnvironmentType
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.AndroidDeviceList
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.TestResult
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -33,19 +34,21 @@ import org.apache.logging.log4j.kotlin.logger
  * Controller to understand TestMatrix states, picks the environment matrix (set of devices to run
  * the test on) and can observe multiple TestMatrices for their results.
  */
-class FirebaseTestLabController(
+internal class FirebaseTestLabController(
     private val firebaseTestLabApi: FirebaseTestLabApi,
     private val firebaseProjectId: String,
     private val testMatrixStore: TestMatrixStore
 ) {
     private val logger = logger()
 
-    private val environmentMatrix = LazyComputedValue {
-        logger.info { "finding default environment matrix" }
-        val catalog = firebaseTestLabApi.getTestEnvironmentCatalog(
+    private val testCatalog = LazyComputedValue {
+        firebaseTestLabApi.getTestEnvironmentCatalog(
             environmentType = EnvironmentType.ANDROID,
             projectId = firebaseProjectId
         )
+    }
+
+    private val defaultDevicePicker = { catalog: TestEnvironmentCatalog ->
         logger.info { "received catalog: $catalog" }
         val defaultModel = catalog.androidDeviceCatalog?.models?.first { model ->
             model.tags?.contains("default") == true
@@ -54,44 +57,77 @@ class FirebaseTestLabController(
             ?.mapNotNull { it.toIntOrNull() }
             ?.maxOrNull()
             ?: error("Cannot find supported version for $defaultModel in test device catalog: $catalog")
-        EnvironmentMatrix(
-            androidDeviceList = AndroidDeviceList(
-                androidDevices = listOf(
-                    AndroidDevice(
-                        locale = "en",
-                        androidModelId = defaultModel.id,
-                        androidVersionId = defaultModelVersion.toString(),
-                        orientation = "portrait"
-                    )
-                )
+        listOf(
+            AndroidDevice(
+                locale = "en",
+                androidModelId = defaultModel.id,
+                androidVersionId = defaultModelVersion.toString(),
+                orientation = "portrait"
             )
-        ).also {
-            logger.info { "default matrix:$it" }
-        }
+        )
+    }
+
+    private suspend fun DevicePicker.pickDevices(): List<AndroidDevice> {
+        return testCatalog.get().let(this)
+    }
+
+    private fun List<AndroidDevice>.createEnvironmentMatrix() = EnvironmentMatrix(
+        androidDeviceList = AndroidDeviceList(
+            androidDevices = this
+        )
+    )
+
+    @VisibleForTesting
+    internal suspend fun getDefaultEnvironmentMatrix(): EnvironmentMatrix {
+        return testCatalog.get().let(defaultDevicePicker).createEnvironmentMatrix()
     }
 
     @VisibleForTesting
-    internal suspend fun getEnvironmentMatrix() = environmentMatrix.get()
+    internal suspend fun getCatalog(): TestEnvironmentCatalog {
+        return testCatalog.get()
+    }
 
     /**
-     * Enqueues a [TestMatrix] to run the test for the given APKs in the default environment.
+     * Enqueues [TestMatrix]es to run the tests for the given APKs on the devices picked by
+     * [devicePicker]. Note that, for each device, a separate [TestMatrix] is created to optimize
+     * cacheability (e.g. adding a new device wont invalidate test runs on other devices).
      *
      * Note that, if same exact test was run before, its results will be re-used.
+     *
+     * @param devicePicker The [DevicePicker] that will decide on which [AndroidDevice]s to
+     * use to run the tests.
      */
-    private suspend fun submitTest(
+    suspend fun submitTests(
         appApk: UploadedApk,
-        testApk: UploadedApk
-    ): TestMatrix {
-        val environmentMatrix = environmentMatrix.get()
+        testApk: UploadedApk,
+        devicePicker: DevicePicker? = null
+    ): List<TestMatrix> {
+        val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
-            "submitting tests for app: $appApk / test: $testApk"
+            "submitting tests for app: $appApk / test: $testApk on $devices"
         }
-        return testMatrixStore.getOrCreateTestMatrix(
-            appApk = appApk,
-            testApk = testApk,
-            environmentMatrix = environmentMatrix
-        )
+        // create 1 TestMatrix for each device so that they can be better cached.
+        return devices.map {
+            testMatrixStore.getOrCreateTestMatrix(
+                appApk = appApk,
+                testApk = testApk,
+                environmentMatrix = listOf(it).createEnvironmentMatrix()
+            )
+        }
     }
+
+    suspend fun collectTestResultsByTestMatrixIds(
+        testMatrixIds: List<String>,
+        pollIntervalMs: Long
+    ): TestResult = collectTestResults(
+        matrices = testMatrixIds.map { testMatrixId ->
+            firebaseTestLabApi.getTestMatrix(
+                projectId = firebaseProjectId,
+                testMatrixId = testMatrixId
+            )
+        },
+        pollIntervalMs = pollIntervalMs
+    )
 
     /**
      * Collects the results for the given list of TestMatrices.
@@ -125,8 +161,7 @@ class FirebaseTestLabController(
             logger.info {
                 "updated matrix: $updated"
             }
-            val outcomeSummary = updated.outcomeSummary
-            if (outcomeSummary != null) {
+            if (updated.isComplete()) {
                 completed.add(updated)
                 pending.removeAt(nextMatrixIndex)
             } else {
@@ -144,7 +179,8 @@ class FirebaseTestLabController(
      */
     suspend fun pairAndStartTests(
         apks: List<UploadedApk>,
-        placeholderApk: UploadedApk
+        placeholderApk: UploadedApk,
+        devicePicker: DevicePicker? = null
     ): List<TestMatrix> {
         val pairs = apks.mapNotNull { uploadedApk ->
             val isTestApk = uploadedApk.apkInfo.filePath.endsWith(TEST_APK_SUFFIX)
@@ -164,10 +200,11 @@ class FirebaseTestLabController(
                 null
             }
         }
-        return pairs.map {
-            submitTest(
+        return pairs.flatMap {
+            submitTests(
                 appApk = it.first,
-                testApk = it.second
+                testApk = it.second,
+                devicePicker = devicePicker
             )
         }
     }
@@ -176,3 +213,12 @@ class FirebaseTestLabController(
         private const val TEST_APK_SUFFIX = "-androidTest.apk"
     }
 }
+
+internal val incompleteTestStates = setOf(
+    TestMatrix.State.TEST_STATE_UNSPECIFIED,
+    TestMatrix.State.VALIDATING,
+    TestMatrix.State.PENDING,
+    TestMatrix.State.RUNNING,
+)
+
+internal fun TestMatrix.isComplete() = state != null && state !in incompleteTestStates

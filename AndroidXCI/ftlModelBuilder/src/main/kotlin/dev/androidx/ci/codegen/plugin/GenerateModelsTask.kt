@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.codegen.plugin
 
+import com.squareup.kotlinpoet.KModifier
 import dev.androidx.ci.codegen.DiscoveryDocumentModelGenerator
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
@@ -44,7 +45,12 @@ internal abstract class GenerateModelsTask : DefaultTask() {
             DiscoveryDocumentModelGenerator(
                 outDir = outDir,
                 discoveryUrl = input.discoveryFileUrl,
-                pkg = input.pkg
+                pkg = input.pkg,
+                typeSpecModifiers = if (input.internal) {
+                    listOf(KModifier.INTERNAL)
+                } else {
+                    listOf(KModifier.PUBLIC)
+                }
             ).generate()
         }
     }

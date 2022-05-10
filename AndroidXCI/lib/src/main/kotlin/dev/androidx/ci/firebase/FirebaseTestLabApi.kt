@@ -25,6 +25,7 @@ import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
+import dev.androidx.ci.util.withLog4J
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -35,7 +36,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-interface FirebaseTestLabApi {
+internal interface FirebaseTestLabApi {
     @Retry
     @GET("projects/{projectId}/testMatrices/{testMatrixId}")
     suspend fun getTestMatrix(
@@ -67,7 +68,9 @@ interface FirebaseTestLabApi {
         fun build(
             config: Config.FirebaseTestLab
         ): FirebaseTestLabApi {
-            val client = OkHttpClient.Builder().authenticateWith(config.credentials).addInterceptor {
+            val client = OkHttpClient.Builder().authenticateWith(
+                config.gcp
+            ).addInterceptor {
                 val newBuilder = it.request().newBuilder()
                 newBuilder.addHeader(
                     "Content-Type", "application/json;charset=utf-8",
@@ -78,7 +81,10 @@ interface FirebaseTestLabApi {
                 it.proceed(
                     newBuilder.build()
                 )
-            }.build()
+            }.withLog4J(
+                level = config.httpLogLevel,
+                klass = FirebaseTestLabApi::class
+            ).build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()

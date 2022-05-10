@@ -41,7 +41,7 @@ import kotlin.jvm.Throws
 /**
  * Class to handle communications with the Github API
  */
-interface GithubApi {
+internal interface GithubApi {
     /**
      * Returns the artifacts in the given run
      */
@@ -113,7 +113,7 @@ interface GithubApi {
  * Opens a stream for the given path and returns a sequence of Zip entries that can be skipped or
  * read.
  */
-suspend fun GithubApi.zipArchiveStream(
+internal suspend fun GithubApi.zipArchiveStream(
     path: String,
     unwrapNestedZipEntries: Boolean = false
 ): Sequence<ZipEntryScope> {
@@ -172,7 +172,7 @@ private class ZipEntryScopeImpl(
  * [bytes] can only be accessed while reading the entry in the stream such that trying to access
  * it afterwards will throw an [IllegalStateException]
  */
-interface ZipEntryScope {
+internal interface ZipEntryScope {
     val entry: ZipEntry
     @get:Throws(IllegalStateException::class)
     val bytes: ByteArray

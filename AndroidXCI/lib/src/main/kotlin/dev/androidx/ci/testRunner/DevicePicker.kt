@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Android Open Source Project
+ * Copyright 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package dev.androidx.ci.testRunner.vo
+package dev.androidx.ci.testRunner
 
-import dev.androidx.ci.gcloud.GcsPath
+import dev.androidx.ci.generated.ftl.AndroidDevice
+import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 
 /**
- * Wrapper for an Apk that exists in GCP
+ * Helper function that can pick [AndroidDevice]s based on a [TestEnvironmentCatalog].
+ * Often times, you can use the [FTLTestDevices] but if you want to have a more generic selection
+ * logic (e.g. pick certain sdk levels), you can implement this interface.
  */
-internal data class UploadedApk(
-    val gcsPath: GcsPath,
-    val apkInfo: ApkInfo
-)
+typealias DevicePicker = (TestEnvironmentCatalog) -> List<AndroidDevice>

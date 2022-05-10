@@ -35,7 +35,7 @@ import retrofit2.HttpException
 
 @RunWith(JUnit4::class)
 @OptIn(ExperimentalCoroutinesApi::class)
-class FakeFirebaseTestLabApiTest {
+internal class FakeFirebaseTestLabApiTest {
     private val fakeApi = FakeFirebaseTestLabApi()
 
     @Test

@@ -28,7 +28,7 @@ import java.io.File
  *
  * This fake is useful for other tests that would interact with GCloud.
  */
-class FakeGoogleCloudApi : GoogleCloudApi {
+internal class FakeGoogleCloudApi : GoogleCloudApi {
     var uploadCount = 0
         private set
     private val rootGcsPath = GcsPath("gs://test")

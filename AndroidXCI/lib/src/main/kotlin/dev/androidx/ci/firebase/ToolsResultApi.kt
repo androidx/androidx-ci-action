@@ -22,6 +22,7 @@ import dev.androidx.ci.generated.testResults.History
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
+import dev.androidx.ci.util.withLog4J
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -32,7 +33,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-interface ToolsResultApi {
+internal interface ToolsResultApi {
     @Retry
     @GET("projects/{projectId}/histories")
     suspend fun getHistories(
@@ -53,7 +54,9 @@ interface ToolsResultApi {
         fun build(
             config: Config.ToolsResult
         ): ToolsResultApi {
-            val client = OkHttpClient.Builder().authenticateWith(config.credentials).addInterceptor {
+            val client = OkHttpClient.Builder().authenticateWith(
+                config.gcp
+            ).addInterceptor {
                 val newBuilder = it.request().newBuilder()
                 newBuilder.addHeader(
                     "Content-Type", "application/json;charset=utf-8",
@@ -64,7 +67,10 @@ interface ToolsResultApi {
                 it.proceed(
                     newBuilder.build()
                 )
-            }.build()
+            }.withLog4J(
+                level = config.httpLogLevel,
+                klass = ToolsResultApi::class
+            ).build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()

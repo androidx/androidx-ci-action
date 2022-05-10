@@ -28,7 +28,7 @@ import org.apache.logging.log4j.kotlin.logger
  * This class is the handler between GCP and rest of the code where ApkStore handles uploading new Apks and de-duping
  * them.
  */
-class ApkStore(
+internal class ApkStore(
     private val googleCloudApi: GoogleCloudApi,
 ) {
     private val logger = logger()

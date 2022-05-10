@@ -39,7 +39,7 @@ import org.junit.Test
  * export ANDROIDX_GCLOUD_CREDENTIALS="<cloud json key from iam>"
  * export ANDROIDX_GITHUB_TOKEN="<github token>"
  */
-class TestRunnerPlayground {
+internal class TestRunnerPlayground {
     private lateinit var testRunner: TestRunner
 
     @get:Rule
@@ -53,10 +53,10 @@ class TestRunnerPlayground {
         val runId = "1243675283"
         testRunner = TestRunner(
             googleCloudApi = GoogleCloudApi.build(
-                Config.GCloud(
-                    credentials = playgroundCredentialsRule.credentials,
+                Config.CloudStorage(
+                    gcp = playgroundCredentialsRule.gcpConfig,
                     bucketName = "androidx-ftl-test-results",
-                    bucketPath = "github-ci-action"
+                    bucketPath = "github-ci-action",
                 ),
                 context = Dispatchers.IO
             ),
@@ -69,18 +69,19 @@ class TestRunnerPlayground {
             ),
             firebaseTestLabApi = FirebaseTestLabApi.build(
                 config = Config.FirebaseTestLab(
-                    credentials = playgroundCredentialsRule.credentials
+                    gcp = playgroundCredentialsRule.gcpConfig,
                 )
             ),
             toolsResultApi = ToolsResultApi.build(
                 config = Config.ToolsResult(
-                    credentials = playgroundCredentialsRule.credentials
+                    gcp = playgroundCredentialsRule.gcpConfig,
                 )
             ),
-            firebaseProjectId = "androidx-dev-prod",
+            projectId = "androidx-dev-prod",
             datastoreApi = DatastoreApi.build(
                 Config.Datastore(
-                    credentials = playgroundCredentialsRule.credentials
+                    gcp = playgroundCredentialsRule.gcpConfig,
+                    testRunObjectKind = Config.Datastore.PLAYGROUND_OBJECT_KIND,
                 ),
                 context = Dispatchers.IO
             ),

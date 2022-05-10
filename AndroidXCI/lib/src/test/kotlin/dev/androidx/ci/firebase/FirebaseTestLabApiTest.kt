@@ -30,7 +30,7 @@ import java.time.Instant
 import java.util.Date
 
 @RunWith(JUnit4::class)
-class FirebaseTestLabApiTest {
+internal class FirebaseTestLabApiTest {
     private val mockWebServer = MockWebServer()
     private val fakeCreds = OAuth2Credentials.newBuilder()
         .setAccessToken(
@@ -44,7 +44,10 @@ class FirebaseTestLabApiTest {
     private val api = FirebaseTestLabApi.build(
         config = Config.FirebaseTestLab(
             endPoint = mockWebServer.url("/").toString(),
-            credentials = fakeCreds
+            gcp = Config.Gcp(
+                credentials = fakeCreds,
+                projectId = "no-project",
+            )
         )
     )
 

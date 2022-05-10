@@ -21,7 +21,6 @@ import dev.androidx.ci.config.Config
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
-import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.github.GithubApi
@@ -50,13 +49,13 @@ import java.util.zip.ZipEntry
  * * Wait for all tests to finish, download outputs
  * * Generate final report
  */
-class TestRunner(
+class TestRunner internal constructor(
     private val googleCloudApi: GoogleCloudApi,
     private val githubApi: GithubApi,
     datastoreApi: DatastoreApi,
     firebaseTestLabApi: FirebaseTestLabApi,
     toolsResultApi: ToolsResultApi,
-    firebaseProjectId: String,
+    projectId: String,
     /**
      * The workflow run id from github whose artifacts will be tested
      */
@@ -76,7 +75,7 @@ class TestRunner(
 ) {
     private val logger = logger()
     private val testMatrixStore = TestMatrixStore(
-        firebaseProjectId = firebaseProjectId,
+        firebaseProjectId = projectId,
         datastoreApi = datastoreApi,
         firebaseTestLabApi = firebaseTestLabApi,
         toolsResultApi = toolsResultApi,
@@ -85,7 +84,7 @@ class TestRunner(
     private val apkStore = ApkStore(googleCloudApi)
     private val testLabController = FirebaseTestLabController(
         firebaseTestLabApi = firebaseTestLabApi,
-        firebaseProjectId = firebaseProjectId,
+        firebaseProjectId = projectId,
         testMatrixStore = testMatrixStore
     )
     private val statusReporter = StatusReporter(
@@ -127,42 +126,15 @@ class TestRunner(
         }
         logger.trace("done running tests, will upload result to gcloud and download artifacts")
         try {
-            val resultJson = result.toJson().toByteArray(Charsets.UTF_8)
-            googleCloudApi.upload(
-                "final-results/$targetRunId/testResult.json",
-                resultJson
-            )
-            outputFolder?.resolve(RESULT_JSON_FILE_NAME)?.writeBytes(resultJson)
-            // download test artifacts
-            if (result is TestResult.CompleteRun && outputFolder != null) {
-                logger.info("will download test artifacts")
-                coroutineScope {
-                    val artifactDownloads = result.matrices.map { testMatrix ->
-                        async {
-                            logger.info {
-                                "Downloading artifacts for ${testMatrix.testMatrixId}"
-                            }
-                            val downloadFolder = localResultFolderFor(
-                                matrix = testMatrix,
-                                outputFolder = outputFolder
-                            ).also {
-                                it.mkdirs()
-                            }
-                            googleCloudApi.download(
-                                gcsPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath),
-                                target = downloadFolder,
-                                filter = { name ->
-                                    // these are logs per test, they are plenty in numbers so lets not download them
-                                    !name.contains("test_cases")
-                                }
-                            )
-                            logger.info {
-                                "Downloaded artifacts for ${testMatrix.testMatrixId} into $downloadFolder"
-                            }
-                        }
-                    }
-                    artifactDownloads.awaitAll()
-                }
+            outputFolder?.let {
+                TestResultDownloader(
+                    googleCloudApi = googleCloudApi
+                ).downloadTestResults(
+                    outputFolder = outputFolder,
+                    result = result,
+                    // don't clear the output folder as the CLI uses it for logs as well.
+                    clearOutputFolder = false
+                )
             }
             statusReporter.reportEnd(result)
         } catch (th: Throwable) {
@@ -196,7 +168,7 @@ class TestRunner(
     }
 
     companion object {
-        const val RESULT_JSON_FILE_NAME = "result.json"
+        internal const val RESULT_JSON_FILE_NAME = "result.json"
         private val ALLOWED_ARTIFACTS = listOf(
             "artifacts_activity",
             "artifacts_fragment",
@@ -217,12 +189,16 @@ class TestRunner(
             val credentials = ServiceAccountCredentials.fromStream(
                 googleCloudCredentials.byteInputStream(Charsets.UTF_8)
             )
+            val gcpConfig = Config.Gcp(
+                credentials = credentials,
+                projectId = credentials.projectId
+            )
             return TestRunner(
                 googleCloudApi = GoogleCloudApi.build(
-                    Config.GCloud(
-                        credentials = credentials,
+                    Config.CloudStorage(
+                        gcp = gcpConfig,
                         bucketName = "androidx-ftl-test-results",
-                        bucketPath = "github-ci-action"
+                        bucketPath = "github-ci-action",
                     ),
                     context = ioDispatcher
                 ),
@@ -235,19 +211,20 @@ class TestRunner(
                 ),
                 firebaseTestLabApi = FirebaseTestLabApi.build(
                     config = Config.FirebaseTestLab(
-                        credentials = credentials
+                        gcp = gcpConfig
                     )
                 ),
-                firebaseProjectId = "androidx-dev-prod",
+                projectId = gcpConfig.projectId,
                 datastoreApi = DatastoreApi.build(
                     Config.Datastore(
-                        credentials = credentials
+                        gcp = gcpConfig,
+                        testRunObjectKind = "TestRun",
                     ),
                     context = ioDispatcher
                 ),
                 toolsResultApi = ToolsResultApi.build(
                     config = Config.ToolsResult(
-                        credentials = credentials
+                        gcp = gcpConfig
                     )
                 ),
                 githubArtifactFilter = { artifact ->
@@ -264,7 +241,7 @@ class TestRunner(
         /**
          * Specifies an output folder for the given test matrix where its artifacts will be downloaded into.
          */
-        fun localResultFolderFor(
+        internal fun localResultFolderFor(
             matrix: TestMatrix,
             outputFolder: File
         ): File {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Android Open Source Project
+ * Copyright 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package dev.androidx.ci.testRunner.vo
+package dev.androidx.ci.util
 
-import dev.androidx.ci.gcloud.GcsPath
+import com.google.cloud.Service
+import com.google.cloud.ServiceOptions
+import dev.androidx.ci.config.Config
 
 /**
- * Wrapper for an Apk that exists in GCP
+ * Configures the given builder with [Config.Gcp].
  */
-internal data class UploadedApk(
-    val gcsPath: GcsPath,
-    val apkInfo: ApkInfo
-)
+internal fun <ServiceT : Service<OptionsT>,
+    OptionsT : ServiceOptions<ServiceT, OptionsT>,
+    B : ServiceOptions.Builder<ServiceT, OptionsT, B>>
+ServiceOptions.Builder<ServiceT, OptionsT, B>.configure(gcpConfig: Config.Gcp): B {
+    return this.setCredentials(gcpConfig.credentials).setProjectId(gcpConfig.projectId)
+}

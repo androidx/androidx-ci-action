@@ -32,7 +32,7 @@ class SchemaProcessorTest {
             schemas = listOf(schema),
             pkg = "foo.bar"
         )
-        val specs = processor.process()
+        val specs = processor.process().map { it.build() }
         assertThat(specs).hasSize(1)
         val code = specs.first().toString()
         assertThat(code.trimIndent()).isEqualTo(
@@ -62,7 +62,7 @@ class SchemaProcessorTest {
             schemas = listOf(schema),
             pkg = "foo.bar"
         )
-        val specs = processor.process()
+        val specs = processor.process().map { it.build() }
         assertThat(specs).hasSize(1)
         val code = specs.first().toString()
         assertThat(code.trimIndent()).isEqualTo(

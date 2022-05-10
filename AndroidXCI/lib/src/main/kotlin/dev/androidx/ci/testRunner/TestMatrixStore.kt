@@ -35,11 +35,12 @@ import dev.androidx.ci.testRunner.vo.UploadedApk
 import org.apache.logging.log4j.kotlin.logger
 import retrofit2.HttpException
 import java.util.UUID
+
 /**
  * Maintains test matrices by also adding a caching layer over FTL to avoid re-creating test
  * matrices for the same configuration.
  */
-class TestMatrixStore(
+internal class TestMatrixStore(
     private val firebaseProjectId: String,
     private val datastoreApi: DatastoreApi,
     private val firebaseTestLabApi: FirebaseTestLabApi,
@@ -66,10 +67,16 @@ class TestMatrixStore(
             appApk = appApk.apkInfo,
             testApk = testApk.apkInfo
         )
+        logger.trace {
+            "test run id: $testRunId"
+        }
 
         getExistingTestMatrix(testRunId)?.let {
             logger.info("found existing test matrix: ${it.testMatrixId}")
             return it
+        }
+        logger.trace {
+            "No test run history for $testRunId, creating a new one."
         }
         val newTestMatrix = firebaseTestLabApi.createTestMatrix(
             projectId = firebaseProjectId,

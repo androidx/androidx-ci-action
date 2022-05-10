@@ -21,6 +21,7 @@ import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageOptions
 import dev.androidx.ci.config.Config
+import dev.androidx.ci.util.configure
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.coroutines.CoroutineContext
@@ -31,7 +32,7 @@ import kotlin.coroutines.CoroutineContext
  * Note that, GCS library has built in retry logic so caller should not have additional retry logic
  * for failed requests.
  */
-interface GoogleCloudApi {
+internal interface GoogleCloudApi {
     /**
      * Uploads the given [bytes] into the given [relativePath].
      * The [relativePath] is relative to the root path in the bucket.
@@ -66,7 +67,7 @@ interface GoogleCloudApi {
 
     companion object {
         fun build(
-            config: Config.GCloud,
+            config: Config.CloudStorage,
             context: CoroutineContext
         ): GoogleCloudApi {
             return GoogleCloudApiImpl(config, context)
@@ -75,7 +76,7 @@ interface GoogleCloudApi {
 }
 
 private class GoogleCloudApiImpl(
-    val config: Config.GCloud,
+    val config: Config.CloudStorage,
     val context: CoroutineContext
 ) : GoogleCloudApi {
     init {
@@ -89,9 +90,8 @@ private class GoogleCloudApiImpl(
     private val rootGcsPath = GcsPath(gcspPathPrefix) + config.bucketPath
 
     private val service: Storage = StorageOptions.newBuilder()
-        .setCredentials(
-            config.credentials
-        ).build().service
+        .configure(config.gcp)
+        .build().service
 
     override suspend fun upload(
         relativePath: String,

@@ -32,15 +32,18 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
-class GoogleCloudApiTest {
+internal class GoogleCloudApiTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun noAuthentication_checkCorrectContext() {
         val testScope = TestScope()
         val api = GoogleCloudApi.build(
             context = testScope.coroutineContext,
-            config = Config.GCloud(
-                credentials = NoCredentials.getInstance(),
+            config = Config.CloudStorage(
+                gcp = Config.Gcp(
+                    credentials = NoCredentials.getInstance(),
+                    projectId = "no-project"
+                ),
                 bucketName = "non-existing-bucket",
                 bucketPath = "testing",
             )
@@ -68,8 +71,11 @@ class GoogleCloudApiTest {
         val result = kotlin.runCatching {
             GoogleCloudApi.build(
                 context = Dispatchers.IO,
-                config = Config.GCloud(
-                    credentials = NoCredentials.getInstance(),
+                config = Config.CloudStorage(
+                    gcp = Config.Gcp(
+                        credentials = NoCredentials.getInstance(),
+                        projectId = "no-project"
+                    ),
                     bucketName = "bucketname",
                     bucketPath = "badbucketpath/",
                 )

@@ -34,7 +34,7 @@ private const val PROP_TEST_MATRIX_ID = "testMatrixId"
  * Object that gets pushed into Datastore for each unique test run.
  * Uniqueness of a TestRun is computed from its parameters, see [createId].
  */
-class TestRun(
+internal class TestRun(
     val id: Id,
     val testMatrixId: String
 ) {
@@ -44,7 +44,6 @@ class TestRun(
      * if we've already run the exact same test.
      */
     companion object {
-        private const val KIND = "TestRun"
         private val adapter by lazy {
             val type = Types.newParameterizedType(
                 Map::class.java,
@@ -74,17 +73,17 @@ class TestRun(
                 )
             )
             val sha = sha256(json.toByteArray(Charsets.UTF_8))
-            return Id(datastoreApi.createKey(KIND, sha))
+            return Id(datastoreApi.createKey(datastoreApi.testRunObjectKind, sha))
         }
     }
 }
 
-fun TestRun.toEntity(): FullEntity<IncompleteKey> = Entity.newBuilder()
+internal fun TestRun.toEntity(): FullEntity<IncompleteKey> = Entity.newBuilder()
     .set(PROP_TEST_MATRIX_ID, testMatrixId)
     .setKey(id.key)
     .build()
 
-fun Entity.toTestRun(): TestRun? {
+internal fun Entity.toTestRun(): TestRun? {
     if (this.isNull(PROP_TEST_MATRIX_ID)) {
         return null
     }

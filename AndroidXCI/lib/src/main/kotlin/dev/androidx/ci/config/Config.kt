@@ -17,19 +17,20 @@
 package dev.androidx.ci.config
 
 import com.google.auth.Credentials
+import okhttp3.logging.HttpLoggingInterceptor
 
 /**
  * Common configuration for TestRunner.
  */
-class Config {
+internal class Config {
     class Github(
         val endPoint: String = "https://api.github.com",
         val owner: String,
         val repo: String,
         val token: String
     )
-    class GCloud(
-        val credentials: Credentials,
+    class CloudStorage(
+        val gcp: Gcp,
         /**
          * The name of the bucket to use
          */
@@ -40,14 +41,28 @@ class Config {
         val bucketPath: String
     )
     class FirebaseTestLab(
+        val gcp: Gcp,
         val endPoint: String = "https://testing.googleapis.com/v1/",
-        val credentials: Credentials
+        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
     )
     class Datastore(
-        val credentials: Credentials,
-    )
+        val gcp: Gcp,
+        val testRunObjectKind: String,
+    ) {
+        companion object {
+            val GITHUB_OBJECT_KIND = "TestRun"
+            val AOSP_OBJECT_KIND = "AOSP-TestRun"
+            val PLAYGROUND_OBJECT_KIND = "Playground-TestRun"
+        }
+    }
     class ToolsResult(
+        val gcp: Gcp,
         val endPoint: String = "https://toolresults.googleapis.com/toolresults/v1beta3/",
-        val credentials: Credentials
+        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
+    )
+
+    class Gcp(
+        val credentials: Credentials,
+        val projectId: String
     )
 }
