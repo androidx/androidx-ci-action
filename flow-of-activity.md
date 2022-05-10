@@ -35,5 +35,5 @@ graph TB
     
     end
     FirebaseTestLab-->|TestMatrixId|CollectTestMatrixResult
-    CollectTestMatrixResult-->|"Comlete Test Matrices</br>(has URIs to artifacts)"|DownloadTestResultArtifacts
+    CollectTestMatrixResult-->|"Complete Test Matrices</br>(has URIs to artifacts)"|DownloadTestResultArtifacts
 ```
