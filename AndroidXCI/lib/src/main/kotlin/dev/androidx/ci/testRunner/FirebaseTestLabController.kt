@@ -67,11 +67,6 @@ internal class FirebaseTestLabController(
         )
     }
 
-    private suspend fun DevicePicker.buildEnvironmentMatrix(): EnvironmentMatrix {
-        return testCatalog.get().let(this)
-            .createEnvironmentMatrix()
-    }
-
     private suspend fun DevicePicker.pickDevices(): List<AndroidDevice> {
         return testCatalog.get().let(this)
     }

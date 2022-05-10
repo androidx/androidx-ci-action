@@ -26,7 +26,7 @@ import org.apache.logging.log4j.kotlin.logger
 import java.io.File
 
 /**
- * Helper class to download TestResults for a given [TestResult] object.
+ * Helper class to download test artifacts for a given [TestResult] object.
  */
 internal class TestResultDownloader(
     private val googleCloudApi: GoogleCloudApi,
@@ -37,8 +37,10 @@ internal class TestResultDownloader(
         result: TestResult,
         clearOutputFolder: Boolean
     ): List<DownloadedTestResults> {
-        if (outputFolder.exists()) {
-            outputFolder.deleteRecursively()
+        if (clearOutputFolder) {
+            if (outputFolder.exists()) {
+                outputFolder.deleteRecursively()
+            }
         }
         outputFolder.mkdirs()
         val resultJson = result.toJson().toByteArray(Charsets.UTF_8)

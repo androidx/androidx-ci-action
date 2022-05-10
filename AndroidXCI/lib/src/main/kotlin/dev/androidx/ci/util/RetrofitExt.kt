@@ -183,7 +183,7 @@ internal class RetryCallAdapterFactory(
 }
 
 /**
- * Adds BODY logging for http requests.
+ * Add a log4j logger for the given level to all requests.
  */
 internal fun OkHttpClient.Builder.withLog4J(
     level: HttpLoggingInterceptor.Level,
