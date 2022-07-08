@@ -97,6 +97,8 @@ private class Cli : CliktCommand() {
     val deviceSpecs by option(
         help = """
             List of device - sdk pairs to run the tests.
+            See https://firebase.google.com/docs/test-lab/android/available-testing-devices for list of available
+            devices.
             Each spec should be in the form of <id>:<sdkVersion> concatenated by ','.
             e.g. "redfin:30, sailfish:25"
         """.trimIndent(),
@@ -147,7 +149,7 @@ private class Cli : CliktCommand() {
                 outputFolder = outputFolder,
                 githubOwner = githubOwner,
                 githubRepo = githubRepo,
-                devicePicker = deviceSpecs?.let(::createDevicePicker),
+                devicePicker = deviceSpecs?.takeIf{ it.isNotBlank() }?.let(::createDevicePicker),
                 artifactNameFilter = artifactNameFilter,
                 bucketName = gcpBucketName,
                 bucketPath = gcpBucketPath

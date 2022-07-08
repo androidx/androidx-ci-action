@@ -14,8 +14,12 @@ inputs:
     description: 'The output folder to download results into'
     required: true
   device-specs:
-    description: 'Specs for devices. e.g. redfin:30, sailfish:25'
-    required: true
+    description: |
+      Specs for devices. e.g. redfin:30, sailfish:25.
+      If not set, an API compatible device will be picked.
+      See https://firebase.google.com/docs/test-lab/android/available-testing-devices
+      for list of available devices.
+    required: false
   log-file:
     description: 'Log file to export test runner logs.'
     required: false
