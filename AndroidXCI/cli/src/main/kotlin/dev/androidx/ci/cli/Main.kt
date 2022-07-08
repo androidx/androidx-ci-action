@@ -136,9 +136,10 @@ private class Cli : CliktCommand() {
         }
         val githubOwner = repoParts.first()
         val githubRepo = repoParts.drop(1).joinToString("/")
-        val artifactNameFilter = artifactNameRegex?.let { input ->
-            createRegexArtifactFilter(input)
-        } ?: acceptAll
+        val artifactNameFilter = artifactNameRegex
+            ?.takeIf { it.isNotEmpty() }
+            ?.let(::createRegexArtifactFilter)
+            ?: acceptAll
         val result = runBlocking {
             val testRunner = TestRunner.create(
                 targetRunId = targetRunId,
@@ -149,7 +150,9 @@ private class Cli : CliktCommand() {
                 outputFolder = outputFolder,
                 githubOwner = githubOwner,
                 githubRepo = githubRepo,
-                devicePicker = deviceSpecs?.takeIf { it.isNotBlank() }?.let(::createDevicePicker),
+                devicePicker = deviceSpecs
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(::createDevicePicker),
                 artifactNameFilter = artifactNameFilter,
                 bucketName = gcpBucketName,
                 bucketPath = gcpBucketPath
@@ -180,6 +183,7 @@ private class Cli : CliktCommand() {
             regex.matches(artifactName)
         }
     }
+
     /**
      * Add new logger to log into the output directory.
      */
@@ -275,6 +279,7 @@ data class DeviceSpec(
                 sdk = sdkVersion
             )
         }
+
         fun parseSpecs(input: String): List<DeviceSpec> {
             return input.split(",").map {
                 it.trim()
