@@ -52,17 +52,13 @@ class DeviceSpecTest {
         expected = IllegalArgumentException::class
     )
     fun invalidSpec_noSdk() {
-        assertThat(
-            DeviceSpec.parseSpecs("a:")
-        ).isEmpty()
+        DeviceSpec.parseSpecs("a:")
     }
 
     @Test(
         expected = IllegalArgumentException::class
     )
     fun invalidSpec_noId() {
-        assertThat(
-            DeviceSpec.parseSpecs(":")
-        ).isEmpty()
+        DeviceSpec.parseSpecs(":")
     }
 }

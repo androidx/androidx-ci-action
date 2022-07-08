@@ -254,9 +254,9 @@ data class DeviceSpec(
             val parts = spec.split(":")
             require(parts.size == 2) {
                 """
-                        Each device spec should have two parts separated by ':'.
-                        Invalid input: $spec
-                    """
+                Each device spec should have two parts separated by ':'.
+                Invalid input: $spec
+                """
             }
             val deviceId = parts[0].trim().also {
                 require(it.isNotBlank()) {
