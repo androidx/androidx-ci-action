@@ -149,7 +149,7 @@ private class Cli : CliktCommand() {
                 outputFolder = outputFolder,
                 githubOwner = githubOwner,
                 githubRepo = githubRepo,
-                devicePicker = deviceSpecs?.takeIf{ it.isNotBlank() }?.let(::createDevicePicker),
+                devicePicker = deviceSpecs?.takeIf { it.isNotBlank() }?.let(::createDevicePicker),
                 artifactNameFilter = artifactNameFilter,
                 bucketName = gcpBucketName,
                 bucketPath = gcpBucketPath
