@@ -174,13 +174,6 @@ class TestRunner internal constructor(
 
     companion object {
         internal const val RESULT_JSON_FILE_NAME = "result.json"
-        private val ALLOWED_ARTIFACTS = listOf(
-            "artifacts_activity",
-            "artifacts_fragment",
-            "artifacts_lifecycle",
-            "artifacts_navigation",
-            "artifacts_room"
-        )
         fun create(
             targetRunId: String,
             hostRunId: String,
