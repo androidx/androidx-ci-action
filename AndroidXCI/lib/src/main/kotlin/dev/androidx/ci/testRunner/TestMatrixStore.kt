@@ -158,7 +158,8 @@ internal class TestMatrixStore(
             projectId = firebaseProjectId,
             flakyTestAttempts = 2,
             testSpecification = TestSpecification(
-                disableVideoRecording = true,
+                testTimeout = "2700s", // Limit for physical devices.
+                disableVideoRecording = false,
                 androidInstrumentationTest = AndroidInstrumentationTest(
                     appApk = FileReference(
                         gcsPath = appApk.gcsPath.path
