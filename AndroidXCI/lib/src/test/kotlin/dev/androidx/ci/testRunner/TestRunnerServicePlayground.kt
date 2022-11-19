@@ -41,26 +41,6 @@ internal class TestRunnerServicePlayground {
         )
     }
 
-    @Test
-    fun manual() {
-        val apkPath = File(
-            "/Users/yboyar/src/androidx-main/frameworks/support/out/room-playground/room-playground/room/room-runtime/build/outputs/apk/androidTest/debug/room-runtime-debug-androidTest.apk"
-        )
-        runBlocking {
-            val l3 = testRunnerService.runTest(
-                testApk = apkPath,
-                appApk = null,
-                devicePicker = {
-                    listOf(
-                        FTLTestDevices.PIXEL2_API_26_VIRTUAL
-                    )
-                },
-                localDownloadFolder = File("/Users/yboyar/src/androidx-ci-action/AndroidXCI/real-test-out")
-            )
-            println(l3.downloads)
-        }
-    }
-
     /**
      * Handy class to regenerate [FTLTestDevices].
      */

@@ -221,4 +221,4 @@ internal val incompleteTestStates = setOf(
     TestMatrix.State.RUNNING,
 )
 
-internal fun TestMatrix.isComplete() = state != null && state !in incompleteTestStates
+fun TestMatrix.isComplete() = state != null && state !in incompleteTestStates

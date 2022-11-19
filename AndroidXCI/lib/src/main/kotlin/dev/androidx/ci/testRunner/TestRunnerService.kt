@@ -25,7 +25,6 @@ import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GoogleCloudApi
-import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.TestResult
@@ -38,7 +37,6 @@ import okio.sink
 import okio.source
 import org.apache.logging.log4j.kotlin.logger
 import java.io.File
-import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
 /**
@@ -71,43 +69,6 @@ class TestRunnerService internal constructor(
     )
 
     /**
-     * Runs the test for the given [testApk] [appApk] pair by invoking [scheduleTests] followed by
-     * [getTestResults]. See their documentation for details.
-     *
-     * @see scheduleTests
-     * @see getTestResults
-     */
-    suspend fun runTest(
-        testApk: File,
-        appApk: File? = null,
-        localDownloadFolder: File,
-        devices: List<AndroidDevice>
-    ): TestRunResponse {
-        return runTest(
-            testApk = testApk,
-            appApk = appApk,
-            localDownloadFolder = localDownloadFolder,
-            devicePicker = {
-                devices
-            }
-        )
-    }
-
-    /**
-     * Schedules the tests for the given devices.
-     *
-     * @see scheduleTests for details.
-     */
-    suspend fun scheduleTests(
-        testApk: File,
-        appApk: File? = null,
-        devices: List<AndroidDevice>
-    ): ScheduledFtlTests = scheduleTests(
-        testApk = testApk,
-        appApk = appApk,
-        devicePicker = { devices }
-    )
-    /**
      * Schedules test runs on FirebaseTestLab for the given testApk / appApk pair.
      * Note that this method will return before test executions are complete.
      *
@@ -122,11 +83,35 @@ class TestRunnerService internal constructor(
         testApk: File,
         appApk: File? = null,
         devicePicker: DevicePicker? = null,
-    ): ScheduledFtlTests {
-        logger.trace { "Scheduling tests for testApk: $testApk appApk: $appApk" }
-        val uploadedTestApk = apkStore.uploadApk(testApk.name, testApk.readBytes())
+    ) = scheduleTests(
+        testApk = testApk.name to testApk.readBytes(),
+        appApk = appApk?.let {
+            it.name to it.readBytes()
+        },
+        devicePicker = devicePicker
+    )
+
+    /**
+     * Schedules test runs on FirebaseTestLab for the given testApk / appApk pair.
+     * Note that this method will return before test executions are complete.
+     *
+     * @param testApk The test apk which has the instrumentation tests
+     * @param appApk The application under test. Can be `null` for library tests
+     * @param devicePicker A block that can return desired devices from a [TestEnvironmentCatalog].
+     *
+     * @return A [ScheduledFtlTests] that includes the information about the tests that are
+     * scheduled. You can later use the [getTestResults] API to collect results.
+     */
+    suspend fun scheduleTests(
+        testApk: Pair<String, ByteArray>,
+        appApk: Pair<String, ByteArray>?,
+        devicePicker: DevicePicker? = null,
+    ): List<TestMatrix> {
+        logger.trace { "Scheduling tests for testApk: ${testApk.first} appApk: ${appApk?.first}" }
+
+        val uploadedTestApk = apkStore.uploadApk(testApk.first, testApk.second)
         val uploadedAppApk = appApk?.let {
-            apkStore.uploadApk(appApk.name, appApk.readBytes())
+            apkStore.uploadApk(appApk.first, appApk.second)
         } ?: apkStore.getPlaceholderApk()
         logger.trace { "Will submit tests to the test lab" }
         val testMatrices = testLabController.submitTests(
@@ -135,7 +120,7 @@ class TestRunnerService internal constructor(
             devicePicker = devicePicker
         )
         logger.trace { "Enqueued ${testMatrices.size} matrices" }
-        return ScheduledFtlTests.create(testMatrices)
+        return testMatrices
     }
 
     /**
@@ -179,28 +164,6 @@ class TestRunnerService internal constructor(
             testResult = result,
             downloads = downloadResult
         )
-    }
-
-    /**
-     * Runs the test for the given [testApk] [appApk] pair by invoking [scheduleTests] followed by
-     * [getTestResults]. See their documentation for details.
-     *
-     * @see scheduleTests
-     * @see getTestResults
-     */
-    suspend fun runTest(
-        testApk: File,
-        appApk: File? = null,
-        localDownloadFolder: File,
-        devicePicker: DevicePicker? = null,
-    ): TestRunResponse {
-        logger.trace { "Running tests for testApk: $testApk appApk: $appApk" }
-        val enqueue = scheduleTests(
-            testApk = testApk,
-            appApk = appApk,
-            devicePicker = devicePicker
-        )
-        return getTestResults(listOf(enqueue), localDownloadFolder = localDownloadFolder)
     }
 
     companion object {
@@ -314,7 +277,7 @@ class TestRunnerService internal constructor(
     }
 
     /**
-     * A [Serializable] class that holds the information for a set of [TestMatrix]es that are
+     * A class that holds the information for a set of [TestMatrix]es that are
      * scheduled in Firebase Test Lab.
      *
      * You can later use this object to get the results of those tests.
