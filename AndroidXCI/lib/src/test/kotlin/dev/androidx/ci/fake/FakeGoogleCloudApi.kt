@@ -30,10 +30,12 @@ import java.io.InputStream
  *
  * This fake is useful for other tests that would interact with GCloud.
  */
-internal class FakeGoogleCloudApi : GoogleCloudApi {
+internal class FakeGoogleCloudApi(
+    val bucketName: String
+) : GoogleCloudApi {
     var uploadCount = 0
         private set
-    private val rootGcsPath = GcsPath("gs://test")
+    val rootGcsPath = GcsPath("gs://$bucketName")
     private val artifacts = mutableMapOf<GcsPath, ByteArray>()
 
     fun artifacts() = artifacts.toMap()
@@ -48,18 +50,14 @@ internal class FakeGoogleCloudApi : GoogleCloudApi {
     }
 
     override suspend fun walkTopDown(gcsPath: GcsPath): Sequence<BlobVisitor> {
-        val rootPath = gcsPath
         return artifacts.asSequence().filter { entry ->
-            entry.key.path.startsWith(rootPath.path)
+            entry.key.path.startsWith(gcsPath.path)
         }.map { entry ->
             object : BlobVisitor {
                 override val relativePath: String
-                    get() = entry.key.path.substringAfter(rootPath.path)
-                override val fileName: String
-                    get() = entry.key.path.substringAfterLast('/')
-                override val fullPath: String
-                    get() = entry.key.path
-
+                    get() = entry.key.path.substringAfter(gcsPath.path).trimStart('/')
+                override val gcsPath: GcsPath
+                    get() = entry.key
                 override fun obtainInputStream(): InputStream {
                     return entry.value.inputStream()
                 }
@@ -77,7 +75,7 @@ internal class FakeGoogleCloudApi : GoogleCloudApi {
     }
 
     private fun makeGcsPath(relativePath: String) = GcsPath.create(
-        bucketName = "local-test",
+        bucketName = bucketName,
         bucketPath = relativePath
     )
 

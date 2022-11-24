@@ -83,6 +83,11 @@ class TestRunnerService internal constructor(
         )
     }
 
+    suspend fun uploadApk(
+        name: String,
+        bytes: ByteArray
+    ) = apkStore.uploadApk(name = name, bytes = bytes)
+
     suspend fun scheduleTests(
         testApk: UploadedApk,
         appApk: UploadedApk?,
@@ -143,13 +148,13 @@ class TestRunnerService internal constructor(
                 mergedXmlBlobs[
                         fileName.substringBefore(MERGED_TEST_RESULT_SUFFIX)
                 ] = visitor
-            } else if (fileName.startsWith("test_result_") && fileName.endsWith(".xml")) {
+            } else if (fileName.startsWith(TEST_RESULT_XML_PREFIX) && fileName.endsWith(TEST_RESULT_XML_SUFFIX)) {
                 getTestResultFiles(visitor).addXmlResult(
                     ResultFileResourceImpl(visitor)
                 )
-            } else if (fileName == "logcat") {
+            } else if (fileName == LOGCAT_FILE_NAME) {
                 getTestResultFiles(visitor).logcat = ResultFileResourceImpl(visitor)
-            } else if (fileName == "instrumentation.results") {
+            } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
                 getTestResultFiles(visitor).intrumentationResult = ResultFileResourceImpl(visitor)
             }
         }
@@ -169,13 +174,23 @@ class TestRunnerService internal constructor(
         testMatrixId: String
     ): List<TestRunResult>? {
         val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
+        return resultFiles(testMatrix)
+    }
+
+    suspend fun resultFiles(
+        testMatrix: TestMatrix
+    ): List<TestRunResult>? {
         if (!testMatrix.isComplete()) return null
         val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
         return resultFiles(resultPath)
     }
 
     companion object {
-        private val MERGED_TEST_RESULT_SUFFIX = "-test_results_merged.xml"
+        private const val MERGED_TEST_RESULT_SUFFIX = "-test_results_merged.xml"
+        private const val LOGCAT_FILE_NAME = "logcat"
+        private const val TEST_RESULT_XML_PREFIX = "test_result_"
+        private const val TEST_RESULT_XML_SUFFIX = ".xml"
+        private const val INSTRUMENTATION_RESULTS_FILE_NAME = "instrumentation.results"
         fun create(
             /**
              * service account file contents

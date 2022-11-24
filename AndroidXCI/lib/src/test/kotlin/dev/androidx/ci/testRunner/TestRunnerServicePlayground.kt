@@ -23,7 +23,6 @@ internal class TestRunnerServicePlayground {
 
     @Test
     fun playground() = runBlocking<Unit> {
-
         val testMatrixId = "matrix-hzjx70s88liva"
         val testMatrix = subject.getTestMatrix(testMatrixId)
         println(testMatrix)

@@ -22,7 +22,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 internal class ApkStoreTest {
-    private val gcpApi = FakeGoogleCloudApi()
+    private val gcpApi = FakeGoogleCloudApi("my-bucket")
     private val apkStore = ApkStore(gcpApi)
 
     @Test

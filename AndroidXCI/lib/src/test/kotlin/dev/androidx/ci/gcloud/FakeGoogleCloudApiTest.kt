@@ -28,7 +28,7 @@ import org.junit.runners.JUnit4
 @RunWith(JUnit4::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class FakeGoogleCloudApiTest {
-    private val api = FakeGoogleCloudApi()
+    private val api = FakeGoogleCloudApi("my-bucket")
     private val testScope = TestCoroutineScope()
 
     @Test
