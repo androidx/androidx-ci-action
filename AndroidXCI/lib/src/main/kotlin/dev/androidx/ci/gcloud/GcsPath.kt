@@ -21,7 +21,7 @@ import com.google.cloud.storage.BlobInfo
 /**
  * Represents the unique path of a Google Cloud Storage object.
  */
-internal class GcsPath(path: String) {
+class GcsPath(path: String) {
     init {
         check(path.startsWith("gs://")) {
             "Invalid Google Cloud Storage path: $path"

@@ -29,6 +29,7 @@ import dev.androidx.ci.testRunner.vo.UploadedApk
 import dev.androidx.ci.util.LazyComputedValue
 import kotlinx.coroutines.delay
 import org.apache.logging.log4j.kotlin.logger
+import retrofit2.HttpException
 
 /**
  * Controller to understand TestMatrix states, picks the environment matrix (set of devices to run
@@ -128,6 +129,22 @@ internal class FirebaseTestLabController(
         },
         pollIntervalMs = pollIntervalMs
     )
+
+    suspend fun getTestMatrix(
+        testMatrixId: String
+    ): TestMatrix? {
+        return try {
+            firebaseTestLabApi.getTestMatrix(
+                projectId = firebaseProjectId,
+                testMatrixId = testMatrixId
+            )
+        } catch (httpException:HttpException) {
+            if (httpException.code() == 404) {
+                return null
+            }
+            throw httpException
+        }
+    }
 
     /**
      * Collects the results for the given list of TestMatrices.

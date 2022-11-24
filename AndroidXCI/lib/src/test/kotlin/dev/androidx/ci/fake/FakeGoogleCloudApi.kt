@@ -16,9 +16,11 @@
 
 package dev.androidx.ci.fake
 
+import dev.androidx.ci.gcloud.BlobVisitor
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import java.io.File
+import java.io.InputStream
 
 /**
  * A simple implementation of [GoogleCloudApi] for testing and verification.
@@ -45,10 +47,24 @@ internal class FakeGoogleCloudApi : GoogleCloudApi {
         return path
     }
 
-    override suspend fun download(gcsPath: GcsPath, target: File, filter: (String) -> Boolean) {
-        target.resolve("downloadedFile.txt").writeText(
-            gcsPath.path, Charsets.UTF_8
-        )
+    override suspend fun walkTopDown(gcsPath: GcsPath): Sequence<BlobVisitor> {
+        val rootPath = gcsPath
+        return artifacts.asSequence().filter { entry ->
+            entry.key.path.startsWith(rootPath.path)
+        }.map { entry ->
+            object : BlobVisitor {
+                override val relativePath: String
+                    get() = entry.key.path.substringAfter(rootPath.path)
+                override val fileName: String
+                    get() = entry.key.path.substringAfterLast('/')
+                override val fullPath: String
+                    get() = entry.key.path
+
+                override fun obtainInputStream(): InputStream {
+                    return entry.value.inputStream()
+                }
+            }
+        }
     }
 
     override suspend fun existingFilePath(relativePath: String): GcsPath? {

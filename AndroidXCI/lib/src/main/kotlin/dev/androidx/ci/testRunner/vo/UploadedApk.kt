@@ -21,7 +21,7 @@ import dev.androidx.ci.gcloud.GcsPath
 /**
  * Wrapper for an Apk that exists in GCP
  */
-internal data class UploadedApk(
+data class UploadedApk(
     val gcsPath: GcsPath,
     val apkInfo: ApkInfo
 )

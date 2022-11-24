@@ -13,53 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package dev.androidx.ci.testRunner
 
 import com.google.auth.Credentials
-import com.squareup.moshi.Json
-import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.config.Config.Datastore.Companion.AOSP_OBJECT_KIND
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
+import dev.androidx.ci.gcloud.BlobVisitor
+import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
-import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
-import dev.androidx.ci.testRunner.vo.TestResult
-import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
+import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.logging.HttpLoggingInterceptor
-import okio.buffer
-import okio.sink
-import okio.source
 import org.apache.logging.log4j.kotlin.logger
-import java.io.File
-import java.util.concurrent.TimeUnit
+import java.io.InputStream
 
 /**
- * A service class that can enqueue tests on the FirebaseTestLab. Usually, you want 1 instance of
- * this that is shared between all of your test runs.
- *
- * You should use [TestRunnerService.create] to get an instance of this class.
+ * A new controller for APIs used by AOSP test runner.
  */
 class TestRunnerService internal constructor(
     private val googleCloudApi: GoogleCloudApi,
-    datastoreApi: DatastoreApi,
-    firebaseTestLabApi: FirebaseTestLabApi,
-    toolsResultApi: ToolsResultApi,
     firebaseProjectId: String,
+    datastoreApi: DatastoreApi,
+    toolsResultApi: ToolsResultApi,
+    firebaseTestLabApi: FirebaseTestLabApi,
     gcsResultPath: String
-) {
+){
     private val logger = logger()
+
     private val testMatrixStore = TestMatrixStore(
         firebaseProjectId = firebaseProjectId,
         datastoreApi = datastoreApi,
         firebaseTestLabApi = firebaseTestLabApi,
         toolsResultApi = toolsResultApi,
-        resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$gcsResultPath")
+        resultsGcsPrefix = googleCloudApi.getGcsPath("aosp-ftl/$gcsResultPath")
     )
     private val apkStore = ApkStore(googleCloudApi)
     internal val testLabController = FirebaseTestLabController(
@@ -67,106 +58,124 @@ class TestRunnerService internal constructor(
         firebaseProjectId = firebaseProjectId,
         testMatrixStore = testMatrixStore
     )
-
     /**
-     * Schedules test runs on FirebaseTestLab for the given testApk / appApk pair.
-     * Note that this method will return before test executions are complete.
+     * Finds the APK in Google Cloud Storage with the given name and sha.
+     * If it doesn't exist, uses the [bytes] method to obtain the bytes and uploads it.
      *
-     * @param testApk The test apk which has the instrumentation tests
-     * @param appApk The application under test. Can be `null` for library tests
-     * @param devicePicker A block that can return desired devices from a [TestEnvironmentCatalog].
-     *
-     * @return A [ScheduledFtlTests] that includes the information about the tests that are
-     * scheduled. You can later use the [getTestResults] API to collect results.
+     * @param name Name of the APK. Should be the name that uniquely identifies the APK, can be a path.
+     * @param sha256 sha256 of the bytes of the APK
+     * @param bytes Callback method that can return the bytes of the APK to be uploaded, if necessary.
      */
-    suspend fun scheduleTests(
-        testApk: File,
-        appApk: File? = null,
-        devicePicker: DevicePicker? = null,
-    ) = scheduleTests(
-        testApk = testApk.name to testApk.readBytes(),
-        appApk = appApk?.let {
-            it.name to it.readBytes()
-        },
-        devicePicker = devicePicker
-    )
-
-    /**
-     * Schedules test runs on FirebaseTestLab for the given testApk / appApk pair.
-     * Note that this method will return before test executions are complete.
-     *
-     * @param testApk The test apk which has the instrumentation tests
-     * @param appApk The application under test. Can be `null` for library tests
-     * @param devicePicker A block that can return desired devices from a [TestEnvironmentCatalog].
-     *
-     * @return A [ScheduledFtlTests] that includes the information about the tests that are
-     * scheduled. You can later use the [getTestResults] API to collect results.
-     */
-    suspend fun scheduleTests(
-        testApk: Pair<String, ByteArray>,
-        appApk: Pair<String, ByteArray>?,
-        devicePicker: DevicePicker? = null,
-    ): List<TestMatrix> {
-        logger.trace { "Scheduling tests for testApk: ${testApk.first} appApk: ${appApk?.first}" }
-
-        val uploadedTestApk = apkStore.uploadApk(testApk.first, testApk.second)
-        val uploadedAppApk = appApk?.let {
-            apkStore.uploadApk(appApk.first, appApk.second)
-        } ?: apkStore.getPlaceholderApk()
-        logger.trace { "Will submit tests to the test lab" }
-        val testMatrices = testLabController.submitTests(
-            appApk = uploadedAppApk,
-            testApk = uploadedTestApk,
-            devicePicker = devicePicker
+    suspend fun getOrUploadApk(
+        name: String,
+        sha256: String,
+        bytes: () -> ByteArray
+    ): UploadedApk {
+        apkStore.getUploadedApk(
+            name = name,
+            sha256 = sha256
+        )?.let {
+            return it
+        }
+        return apkStore.uploadApk(
+            name = name,
+            bytes = bytes()
         )
-        logger.trace { "Enqueued ${testMatrices.size} matrices" }
-        return testMatrices
     }
 
-    /**
-     * Queries the Firebase Test Lab API to get the results of the [scheduledTests].
-     * It will also download the outputs of the test into the given [localDownloadFolder]. You
-     * can access downloaded artifacts via [TestRunResponse.downloads].
-     *
-     *
-     * @param scheduledTests The list of [ScheduledFtlTests] that are obtained from [scheduledTests]
-     * @param localDownloadFolder A local folder into which the results will be downloaded. Note
-     * that the contents of the folder will be cleared.
-     * @param pollIntervalMs FirebaseTestLab does not provide an API to observe results, hence this
-     * method will poll one of the pending [TestMatrix]es in the given interval, until all of them
-     * are complete.
-     *
-     * @return a [TestRunResponse] that includes all of the [TestMatrix] information along with the
-     * downloaded artifacts.
-     */
-    suspend fun getTestResults(
-        scheduledTests: List<ScheduledFtlTests>,
-        localDownloadFolder: File,
-        pollIntervalMs: Long = TimeUnit.SECONDS.toMillis(10)
-    ): TestRunResponse {
-        val testMatrixIds = scheduledTests.flatMap {
-            it.testMatrixIds
-        }.distinct()
-        logger.trace { "Will collect results for ${testMatrixIds.size} matrices" }
-        val result = testLabController.collectTestResultsByTestMatrixIds(
-            testMatrixIds = testMatrixIds,
-            pollIntervalMs = pollIntervalMs
+    suspend fun scheduleTests(
+        testApk: UploadedApk,
+        appApk: UploadedApk?,
+        devicePicker: DevicePicker
+    ): ScheduleTestsResponse {
+        val testMatrices = testLabController.submitTests(
+            appApk = appApk ?: apkStore.getPlaceholderApk(),
+            testApk = testApk,
+            devicePicker = devicePicker
         )
-        logger.trace { "All test matrices complete. Downloading outputs." }
-        val downloadResult = TestResultDownloader(
-            googleCloudApi = googleCloudApi
-        ).downloadTestResults(
-            outputFolder = localDownloadFolder,
-            result = result,
-            clearOutputFolder = true
+        return ScheduleTestsResponse.create(
+            testMatrices
         )
-        return TestRunResponse(
-            testResult = result,
-            downloads = downloadResult
-        )
+    }
+
+    suspend fun getTestMatrix(
+        testMatrixId: String
+    ): TestMatrix? {
+        return testLabController.getTestMatrix(testMatrixId)
+    }
+
+    internal suspend fun test(
+        gcsPath: String = "gs://androidx-ftl-test-results/github-ci-action/ftl"
+    ): Sequence<BlobVisitor> {
+        val path = GcsPath(path = gcsPath)
+        return googleCloudApi.walkTopDown(path)
+    }
+
+    internal suspend fun resultFiles(
+        resultPath: GcsPath
+    ): List<TestRunResult> {
+        val byFullDeviceId = mutableMapOf<String, TestResultFiles>()
+        fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
+        val mergedXmlBlobs = mutableMapOf<String, BlobVisitor>()
+        fun getTestResultFiles(
+            visitor: BlobVisitor
+        ) = byFullDeviceId.getOrPut(visitor.fullDeviceId()) {
+            TestResultFiles(fullDeviceId = visitor.fullDeviceId())
+        }
+        // sample output looks like:
+        // redfin-30-en-portrait-test_results_merged.xml
+        // redfin-30-en-portrait/instrumentation.results
+        // redfin-30-en-portrait/logcat
+        // redfin-30-en-portrait/test_cases/0000_logcat
+        // redfin-30-en-portrait/test_cases/0001_logcat
+        // redfin-30-en-portrait/test_cases/0002_logcat
+        // redfin-30-en-portrait/test_result_1.xml
+        // redfin-30-en-portrait/video.mp4
+        // redfin-30-en-portrait_rerun_1/logcat
+        // redfin-30-en-portrait_rerun_1/test_result_1.xml
+        // redfin-30-en-portrait_rerun_2/logcat
+        // redfin-30-en-portrait_rerun_2/test_result_1.xml
+        googleCloudApi.walkTopDown(
+            gcsPath = resultPath
+        ).forEach { visitor ->
+            val fileName = visitor.fileName
+            if (fileName.endsWith(MERGED_TEST_RESULT_SUFFIX)) {
+                mergedXmlBlobs[
+                        fileName.substringBefore(MERGED_TEST_RESULT_SUFFIX)
+                ] = visitor
+            } else if (fileName.startsWith("test_result_") && fileName.endsWith(".xml")) {
+                getTestResultFiles(visitor).addXmlResult(
+                    ResultFileResourceImpl(visitor)
+                )
+            } else if (fileName == "logcat") {
+                getTestResultFiles(visitor).logcat = ResultFileResourceImpl(visitor)
+            } else if (fileName == "instrumentation.results") {
+                getTestResultFiles(visitor).intrumentationResult = ResultFileResourceImpl(visitor)
+            }
+        }
+        return mergedXmlBlobs.map { mergedXmlEntry ->
+            val relatedRuns = byFullDeviceId.entries.filter {
+                it.key.startsWith(mergedXmlEntry.key)
+            }.map { it.value }.sortedBy { it.runNumber }
+            TestRunResult(
+                deviceId = mergedXmlEntry.key,
+                mergedResults = ResultFileResourceImpl(mergedXmlEntry.value),
+                testRuns = relatedRuns
+            )
+        }
+    }
+
+    suspend fun resultFiles(
+        testMatrixId: String
+    ): List<TestRunResult>? {
+        val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
+        if (!testMatrix.isComplete()) return null
+        val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
+        return resultFiles(resultPath)
     }
 
     companion object {
+        private val MERGED_TEST_RESULT_SUFFIX = "-test_results_merged.xml"
         fun create(
             /**
              * service account file contents
@@ -249,103 +258,105 @@ class TestRunnerService internal constructor(
         }
     }
 
-    /**
-     * Data class to hold the result for a group of invocations.
-     */
-    data class TestRunResponse(
-        /**
-         * [TestResult] that encapsulates all [TestMatrix]es.
-         * For successful runs, this would be an instance of [TestResult.CompleteRun].
-         */
-        val testResult: TestResult,
-        /**
-         * List of downloaded artifacts for the test results.
-         */
-        val downloads: List<DownloadedTestResults>
+    data class ScheduleTestsResponse(
+        val testMatrices: List<TestMatrix>,
+        val pendingTests: Int,
+        val alreadyCompletedTests: Int
     ) {
-        fun downloadsFor(
-            testMatrixId: String
-        ) = downloads.find {
-            it.testMatrixId == testMatrixId
-        }
-
-        fun testMatrixFor(
-            testMatrixId: String
-        ): TestMatrix? = (testResult as TestResult.CompleteRun).matrices.find {
-            it.testMatrixId == testMatrixId
-        }
-    }
-
-    /**
-     * A class that holds the information for a set of [TestMatrix]es that are
-     * scheduled in Firebase Test Lab.
-     *
-     * You can later use this object to get the results of those tests.
-     */
-    data class ScheduledFtlTests(
-        /**
-         * List of test matrix ids that are scheduled to run
-         */
-        @Json(name = "testMatrixIds")
-        val testMatrixIds: List<String>,
-        /**
-         * Number of tests that are new
-         */
-        @Json(name = "newTests")
-        val newTests: Int,
-        /**
-         * Number of tests where we used a previously scheduled run
-         */
-        @Json(name = "cachedTests")
-        val cachedTests: Int,
-    ) {
-        fun writeToFile(file: File) = writeToFile(
-            file = file,
-            scheduledTests = this
-        )
         companion object {
-            private val jsonAdapter = Moshi.Builder().add(
-                MetadataKotlinJsonAdapterFactory()
-            ).build().adapter(ScheduledFtlTests::class.java)
-
-            fun writeToFile(file: File, scheduledTests: ScheduledFtlTests) {
-                file.parentFile.mkdirs()
-                file.sink(
-                    append = false
-                ).buffer().use {
-                    jsonAdapter.toJson(it, scheduledTests)
-                }
-            }
-
-            fun readFromFile(file: File): ScheduledFtlTests {
-                require(file.exists()) {
-                    "File ${file.absolutePath} does not exist"
-                }
-                return file.source().buffer().use {
-                    jsonAdapter.fromJson(it)
-                } ?: error(
-                    """
-                    Unable to load ScheduledFtlTests from ${file.absolutePath}
-                    File contents: ${file.readText(Charsets.UTF_8)}
-                    """.trimIndent()
-                )
-            }
-
-            internal fun create(
+            fun create(
                 testMatrices: List<TestMatrix>
-            ) = ScheduledFtlTests(
-                testMatrixIds = testMatrices.map {
-                    checkNotNull(it.testMatrixId) {
-                        "Invalid test matrix without and id: $testMatrices"
-                    }
-                },
-                newTests = testMatrices.count {
+            ) = ScheduleTestsResponse(
+                testMatrices = testMatrices,
+                pendingTests = testMatrices.count {
                     !it.isComplete()
                 },
-                cachedTests = testMatrices.count {
+                alreadyCompletedTests = testMatrices.count {
                     it.isComplete()
                 }
             )
+        }
+    }
+
+    class TestRunResult(
+        val deviceId: String,
+        val mergedResults: ResultFileResource,
+        val testRuns: List<TestResultFiles>
+    ) {
+        override fun toString(): String {
+            return buildString {
+                appendLine("TestRunResult(")
+                appendLine("deviceId: $deviceId")
+                appendLine("mergedResults: $mergedResults")
+                testRuns.forEach {
+                    appendLine(it)
+                }
+                appendLine(")")
+            }
+        }
+    }
+    class TestResultFiles internal constructor(
+        /**
+         * an identifier for the device that run the test
+         * e.g. redfin-30-en-portrait
+         * e.g. redfin-30-en-portrait-rerun_1/
+         */
+        val fullDeviceId: String,
+    ) {
+        private val xmlResultBlobs = mutableListOf<ResultFileResource>()
+        var logcat: ResultFileResource? = null
+            internal set
+        var intrumentationResult: ResultFileResource? = null
+            internal set
+        val xmlResults: List<ResultFileResource> = xmlResultBlobs
+        /**
+         * Returns the run # for the test.
+         * e.g. if the test run 3 times (due to retries), this will return 0, 1 and 2.
+         */
+        val runNumber: Int
+        init {
+            val rerunNumber = fullDeviceId.substringAfterLast("rerun_", missingDelimiterValue = "")
+            runNumber = if (rerunNumber.isBlank()) {
+                0
+            } else {
+                rerunNumber.toIntOrNull() ?: 0
+            }
+        }
+
+        internal fun addXmlResult(resultFileResource: ResultFileResource) {
+            xmlResultBlobs.add(resultFileResource)
+        }
+
+        override fun toString(): String {
+            return """
+                TestResultFiles(
+                  fullDeviceId='$fullDeviceId',
+                  runNumber=$runNumber,
+                  logcat=$logcat,
+                  intrumentationResult=$intrumentationResult,
+                  xmlResults=$xmlResults,
+                )
+            """.trimIndent()
+        }
+
+
+    }
+
+    /**
+     * Represents a result resource, like xml results or logcat or even a video.
+     */
+    interface ResultFileResource {
+        val gcsPath: GcsPath
+        fun openInputStream(): InputStream
+    }
+
+    private class ResultFileResourceImpl(
+        private val blobVisitor: BlobVisitor
+    ): ResultFileResource {
+        override val gcsPath = blobVisitor.gcsPath
+        override fun openInputStream(): InputStream = blobVisitor.obtainInputStream()
+        override fun toString(): String {
+            return "ResultFile('$gcsPath')"
         }
     }
 }

@@ -16,14 +16,14 @@
 
 package dev.androidx.ci.gcloud
 
-import com.google.cloud.storage.BlobId
-import com.google.cloud.storage.BlobInfo
-import com.google.cloud.storage.Storage
-import com.google.cloud.storage.StorageOptions
+import com.google.cloud.storage.*
+import com.google.common.io.ByteStreams
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.util.configure
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.InputStream
+import java.nio.channels.Channels
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -45,18 +45,6 @@ internal interface GoogleCloudApi {
     ): GcsPath
 
     /**
-     * Downloads the given [gcsPath] into the given [target].
-     *
-     * If the [gcsPath] is a blob, it will be downloaded to [target].
-     * If the [gcsPath] is a prefix, everything inside it will be downloaded into [target].
-     */
-    suspend fun download(
-        gcsPath: GcsPath,
-        target: File,
-        filter: (String) -> Boolean
-    )
-
-    /**
      * Returns a GcsPath for an object if it exists
      */
     suspend fun existingFilePath(
@@ -71,6 +59,47 @@ internal interface GoogleCloudApi {
             context: CoroutineContext
         ): GoogleCloudApi {
             return GoogleCloudApiImpl(config, context)
+        }
+    }
+
+    /**
+     * Walks all entries in the given gcsPath from top to bottom.
+     */
+    suspend fun walkTopDown(gcsPath: GcsPath): Sequence<BlobVisitor>
+}
+
+/**
+ * Downloads the given [gcsPath] into the given [target].
+ *
+ * If the [gcsPath] is a blob, it will be downloaded to [target].
+ * If the [gcsPath] is a prefix, everything inside it will be downloaded into [target].
+ */
+internal suspend fun GoogleCloudApi.download(
+    gcsPath: GcsPath,
+    target: File,
+    filter: (String) -> Boolean
+) {
+    walkTopDown(gcsPath).filter {visitor ->
+        filter(visitor.relativePath)
+    }.forEach { visitor ->
+        val targetFile = if (visitor.isRoot()) {
+            check(!target.isDirectory) {
+                "trying to download a blob file into a folder ?"
+            }
+            target
+        } else {
+            target.resolve(
+                visitor.relativePath
+            )
+        }
+        targetFile.parentFile?.mkdirs()
+        visitor.obtainInputStream().use {inputStream ->
+            targetFile.outputStream().use { outputStream ->
+                ByteStreams.copy(
+                    inputStream,
+                    outputStream
+                )
+            }
         }
     }
 }
@@ -105,39 +134,35 @@ private class GoogleCloudApiImpl(
         GcsPath.create(blob)
     }
 
-    override suspend fun download(
-        gcsPath: GcsPath,
-        target: File,
-        filter: (String) -> Boolean
-    ) {
+    override suspend fun walkTopDown(
+        gcsPath: GcsPath
+    ): Sequence<BlobVisitor> {
         val blobId = gcsPath.blobId
         val blob = service.get(blobId)
-        if (blob != null) {
-            // single file
-            check(!target.isDirectory) {
-                "trying to download a blob file into a folder ?"
-            }
-            blob.downloadTo(target.toPath())
-            return
-        }
-        // probably a folder, list them
-        var page = service.list(
-            config.bucketName,
-            Storage.BlobListOption.prefix(blobId.name)
-        )
-        while (page != null) {
-            page.iterateAll().filter {
-                filter(it.name)
-            }.forEach { fileBlob ->
-                val relativePath = fileBlob.name.substringAfter(
-                    blobId.name + "/"
+        return sequence<BlobVisitor> {
+            if (blob != null) {
+                yield(BlobVisitorImpl(
+                    rootBlobId = blobId,
+                    blob = blob
+                ))
+            } else {
+                // probably a folder, list them
+                var page = service.list(
+                    config.bucketName,
+                    Storage.BlobListOption.prefix(blobId.name)
                 )
-                val targetFile = target.resolve(relativePath).also {
-                    it.parentFile.mkdirs()
+                while (page != null) {
+                    page.iterateAll().forEach { fileBlob ->
+                        yield(
+                            BlobVisitorImpl(
+                                rootBlobId = blobId,
+                                blob = fileBlob
+                            )
+                        )
+                    }
+                    page = page.nextPage
                 }
-                fileBlob.downloadTo(targetFile.toPath())
             }
-            page = page.nextPage
         }
     }
 
@@ -167,4 +192,34 @@ private class GoogleCloudApiImpl(
 
     private fun makeBucketPath(relativePath: String) =
         "${config.bucketPath}/$relativePath"
+}
+
+internal interface BlobVisitor {
+    fun isRoot() = relativePath.isEmpty()
+
+    val relativePath: String
+    val gcsPath: GcsPath
+
+    val fileName: String
+        get() = gcsPath.path.substringAfterLast('/')
+    fun obtainInputStream(): InputStream
+}
+
+private class BlobVisitorImpl(
+    val rootBlobId: BlobId,
+    private val blob: Blob
+): BlobVisitor {
+    override val gcsPath = GcsPath(
+        blob.blobId.toGsUtilUri()
+    )
+    override val relativePath: String
+        get() = blob.name.substringAfter(rootBlobId.name).trimStart('/')
+
+    override fun obtainInputStream(): InputStream {
+        return Channels.newInputStream(blob.reader())
+    }
+
+    override fun toString(): String {
+        return "Blob($gcsPath)"
+    }
 }

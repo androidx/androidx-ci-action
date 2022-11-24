@@ -45,14 +45,25 @@ internal class ApkStore(
 
     suspend fun getPlaceholderApk() = placeholderApk.get()
 
-    suspend fun uploadApk(
+    suspend fun getUploadedApk(
         name: String,
-        bytes: ByteArray
-    ): UploadedApk {
-        val apkInfo = ApkInfo.create(
+        sha256: String
+    ): UploadedApk? {
+        val apkInfo = ApkInfo(
             filePath = name,
-            contents = bytes
+            idHash = sha256
         )
+        return getUploadedApk(
+            ApkInfo(
+                filePath = name,
+                idHash = sha256
+            )
+        )
+    }
+
+    private suspend fun getUploadedApk(
+        apkInfo: ApkInfo
+    ): UploadedApk? {
         val relativePath = apkInfo.gcpRelativePath()
         logger.info {
             "checking if apk already exists"
@@ -65,6 +76,21 @@ internal class ApkStore(
                 apkInfo = apkInfo
             )
         }
+        return null
+    }
+
+    suspend fun uploadApk(
+        name: String,
+        bytes: ByteArray
+    ): UploadedApk {
+        val apkInfo = ApkInfo.create(
+            filePath = name,
+            contents = bytes
+        )
+        getUploadedApk(apkInfo)?.let {
+            return it
+        }
+        val relativePath = apkInfo.gcpRelativePath()
         logger.info {
             "uploading $name to $relativePath"
         }

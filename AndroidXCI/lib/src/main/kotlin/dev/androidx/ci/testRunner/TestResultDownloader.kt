@@ -18,6 +18,7 @@ package dev.androidx.ci.testRunner
 
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
+import dev.androidx.ci.gcloud.download
 import dev.androidx.ci.testRunner.vo.TestResult
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll

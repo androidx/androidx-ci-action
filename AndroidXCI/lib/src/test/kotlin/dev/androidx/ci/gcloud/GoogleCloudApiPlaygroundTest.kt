@@ -78,7 +78,7 @@ internal class GoogleCloudApiPlaygroundTest {
             context = testScope.coroutineContext
         )
         val path = GcsPath(
-            "gs://androidx-ftl-test-results/github-ci-action/ftl/821097113"
+            "gs://androidx-ftl-test-results/github-ci-action/ftl/2408474692"
         )
         client.download(
             path,
@@ -87,5 +87,8 @@ internal class GoogleCloudApiPlaygroundTest {
             !it.contains("test_cases")
         }
         println("donwloaded")
+        folder.walkTopDown().forEach {
+            println("DDD: ${it.absoluteFile}")
+        }
     }
 }
