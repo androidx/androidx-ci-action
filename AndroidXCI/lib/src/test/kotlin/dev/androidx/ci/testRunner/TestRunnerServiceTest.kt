@@ -9,7 +9,7 @@ import org.junit.Test
 
 class TestRunnerServiceTest {
     private val fakeBackend = FakeBackend()
-    private val subject = TestRunnerService(
+    private val subject = TestRunnerServiceImpl(
         googleCloudApi = fakeBackend.fakeGoogleCloudApi,
         firebaseProjectId = fakeBackend.firebaseProjectId,
         datastoreApi = fakeBackend.datastoreApi,

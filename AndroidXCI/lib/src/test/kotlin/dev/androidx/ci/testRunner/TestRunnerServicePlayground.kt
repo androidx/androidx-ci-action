@@ -11,14 +11,14 @@ internal class TestRunnerServicePlayground {
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 
     val subject by lazy {
-        TestRunnerService.create(
+        TestRunnerServiceImpl.create(
             credentials = playgroundCredentialsRule.gcpConfig.credentials,
             firebaseProjectId = playgroundCredentialsRule.gcpConfig.projectId,
             bucketName = "androidx-ftl-test-results",
             bucketPath = "github-ci-action",
             gcsResultPath = "yigit-local",
             logHttpCalls = false
-        )
+        ) as TestRunnerServiceImpl
     }
 
     @Test
