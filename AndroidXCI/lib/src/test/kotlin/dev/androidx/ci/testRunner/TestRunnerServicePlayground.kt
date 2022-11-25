@@ -26,7 +26,7 @@ internal class TestRunnerServicePlayground {
         val testMatrixId = "matrix-hzjx70s88liva"
         val testMatrix = subject.getTestMatrix(testMatrixId)
         println(testMatrix)
-        subject.resultFiles(testMatrixId)?.forEach { resultFiles ->
+        subject.getTestMatrixResults(testMatrixId)?.forEach { resultFiles ->
             println(resultFiles)
             resultFiles.mergedResults.openInputStream().use {
                 println(it.readAllBytes().toString(Charsets.UTF_8))

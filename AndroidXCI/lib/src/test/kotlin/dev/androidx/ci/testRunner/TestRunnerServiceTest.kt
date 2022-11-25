@@ -70,14 +70,14 @@ class TestRunnerServiceTest {
         )
         // incomplete, no results
         assertThat(
-            subject.resultFiles(testMatrix)
+            subject.getTestMatrixResults(testMatrix)
         ).isNull()
         fakeBackend.finishTest(
             testMatrixId = testMatrixId,
             outcome = TestMatrix.OutcomeSummary.SUCCESS
         )
         assertThat(
-            subject.resultFiles(testMatrix)
+            subject.getTestMatrixResults(testMatrix)
         ).isNull()
 
         // put some results
@@ -97,7 +97,7 @@ class TestRunnerServiceTest {
             "$resultRelativePath/redfin-30-en-portrait/test_result_2.xml",
             "test_result_2 content xml".toByteArray(Charsets.UTF_8)
         )
-        val results = subject.resultFiles(testMatrixId)
+        val results = subject.getTestMatrixResults(testMatrixId)
         assertThat(results).hasSize(1)
         val result = results!!.single()
         assertThat(

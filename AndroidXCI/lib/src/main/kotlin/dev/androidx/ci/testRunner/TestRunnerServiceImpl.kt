@@ -120,13 +120,13 @@ class TestRunnerServiceImpl internal constructor(
     internal suspend fun resultFiles(
         resultPath: GcsPath
     ): List<TestRunnerService.TestRunResult> {
-        val byFullDeviceId = mutableMapOf<String, TestRunnerService.TestResultFiles>()
+        val byFullDeviceId = mutableMapOf<String, TestResultFilesImpl>()
         fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
         val mergedXmlBlobs = mutableMapOf<String, BlobVisitor>()
         fun getTestResultFiles(
             visitor: BlobVisitor
         ) = byFullDeviceId.getOrPut(visitor.fullDeviceId()) {
-            TestRunnerService.TestResultFiles(fullDeviceId = visitor.fullDeviceId())
+            TestResultFilesImpl(fullDeviceId = visitor.fullDeviceId())
         }
         // sample output looks like:
         // redfin-30-en-portrait-test_results_merged.xml
@@ -171,14 +171,14 @@ class TestRunnerServiceImpl internal constructor(
         }
     }
 
-    suspend fun resultFiles(
+    suspend fun getTestMatrixResults(
         testMatrixId: String
     ): List<TestRunnerService.TestRunResult>? {
         val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
-        return resultFiles(testMatrix)
+        return getTestMatrixResults(testMatrix)
     }
 
-    suspend fun resultFiles(
+    override suspend fun getTestMatrixResults(
         testMatrix: TestMatrix
     ): List<TestRunnerService.TestRunResult>? {
         if (!testMatrix.isComplete()) return null
@@ -281,6 +281,53 @@ class TestRunnerServiceImpl internal constructor(
         override fun openInputStream(): InputStream = blobVisitor.obtainInputStream()
         override fun toString(): String {
             return "ResultFile('$gcsPath')"
+        }
+    }
+
+    class TestResultFilesImpl internal constructor(
+        /**
+         * an identifier for the device that run the test
+         * e.g. redfin-30-en-portrait
+         * e.g. redfin-30-en-portrait-rerun_1/
+         */
+        override val fullDeviceId: String,
+    ) : TestRunnerService.TestResultFiles {
+        private val xmlResultBlobs = mutableListOf<TestRunnerService.ResultFileResource>()
+        override var logcat: TestRunnerService.ResultFileResource? = null
+            internal set
+        override var intrumentationResult: TestRunnerService.ResultFileResource? = null
+            internal set
+        override val xmlResults: List<TestRunnerService.ResultFileResource> = xmlResultBlobs
+
+        /**
+         * Returns the run # for the test.
+         * e.g. if the test run 3 times (due to retries), this will return 0, 1 and 2.
+         */
+        override val runNumber: Int
+
+        init {
+            val rerunNumber = fullDeviceId.substringAfterLast("rerun_", missingDelimiterValue = "")
+            runNumber = if (rerunNumber.isBlank()) {
+                0
+            } else {
+                rerunNumber.toIntOrNull() ?: 0
+            }
+        }
+
+        internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
+            xmlResultBlobs.add(resultFileResource)
+        }
+
+        override fun toString(): String {
+            return """
+                TestResultFiles(
+                  fullDeviceId='$fullDeviceId',
+                  runNumber=$runNumber,
+                  logcat=$logcat,
+                  intrumentationResult=$intrumentationResult,
+                  xmlResults=$xmlResults,
+                )
+            """.trimIndent()
         }
     }
 

@@ -21,6 +21,8 @@ interface TestRunnerService {
 
     suspend fun getTestMatrix(testMatrixId: String): TestMatrix?
 
+    suspend fun getTestMatrixResults(testMatrix: TestMatrix): List<TestRunResult>?
+
     /**
      * Represents a result resource, like xml results or logcat or even a video.
      */
@@ -66,50 +68,12 @@ interface TestRunnerService {
             }
         }
     }
-    class TestResultFiles internal constructor(
-        /**
-         * an identifier for the device that run the test
-         * e.g. redfin-30-en-portrait
-         * e.g. redfin-30-en-portrait-rerun_1/
-         */
-        val fullDeviceId: String,
-    ) {
-        private val xmlResultBlobs = mutableListOf<ResultFileResource>()
-        var logcat: ResultFileResource? = null
-            internal set
-        var intrumentationResult: ResultFileResource? = null
-            internal set
-        val xmlResults: List<ResultFileResource> = xmlResultBlobs
-        /**
-         * Returns the run # for the test.
-         * e.g. if the test run 3 times (due to retries), this will return 0, 1 and 2.
-         */
+
+    interface TestResultFiles {
+        val fullDeviceId: String
+        val logcat: ResultFileResource?
+        val intrumentationResult: ResultFileResource?
+        val xmlResults: List<ResultFileResource>
         val runNumber: Int
-        init {
-            val rerunNumber = fullDeviceId.substringAfterLast("rerun_", missingDelimiterValue = "")
-            runNumber = if (rerunNumber.isBlank()) {
-                0
-            } else {
-                rerunNumber.toIntOrNull() ?: 0
-            }
-        }
-
-        internal fun addXmlResult(resultFileResource: ResultFileResource) {
-            xmlResultBlobs.add(resultFileResource)
-        }
-
-        override fun toString(): String {
-            return """
-                TestResultFiles(
-                  fullDeviceId='$fullDeviceId',
-                  runNumber=$runNumber,
-                  logcat=$logcat,
-                  intrumentationResult=$intrumentationResult,
-                  xmlResults=$xmlResults,
-                )
-            """.trimIndent()
-        }
-
-
     }
 }
