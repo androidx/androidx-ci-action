@@ -11,7 +11,7 @@ import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
-class TestRunnerServiceTest {
+class TestRunnerServiceImplTest {
     private val fakeBackend = FakeBackend()
     private val subject = TestRunnerServiceImpl(
         googleCloudApi = fakeBackend.fakeGoogleCloudApi,

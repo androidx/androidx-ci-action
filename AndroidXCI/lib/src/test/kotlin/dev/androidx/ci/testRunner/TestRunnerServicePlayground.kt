@@ -38,8 +38,6 @@ internal class TestRunnerServicePlayground {
     fun log() = runBlocking<Unit> {
         subject.test("gs://androidx-ftl-test-results/github-ci-action/ftl/2490462699/fd6c9f30215965b0b00aa99c98dfb6bef4b5ea849b07f3b7a3c8869360279dde/")
             .filter {
-//            val fileName = it.fileName
-//            fileName.startsWith("test_result_") && fileName.endsWith(".xml")
                 it.fileName.endsWith(".xml")
             }.forEach {
                 println("-----------")
@@ -56,7 +54,7 @@ internal class TestRunnerServicePlayground {
     fun log2() = runBlocking<Unit> {
         val gcsPath =
             GcsPath("gs://androidx-ftl-test-results/github-ci-action/ftl/2490462699/fd6c9f30215965b0b00aa99c98dfb6bef4b5ea849b07f3b7a3c8869360279dde/")
-        subject.resultFiles(gcsPath).forEach {
+        subject.findResultFiles(gcsPath).forEach {
             println(it)
         }
     }

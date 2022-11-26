@@ -67,7 +67,7 @@ internal interface GoogleCloudApi {
     }
 
     /**
-     * Walks all entries in the given gcsPath from top to bottom.
+     * Walks all entries under the given [gcsPath].
      */
     suspend fun walkEntires(gcsPath: GcsPath): Sequence<BlobVisitor>
 }
@@ -158,7 +158,7 @@ private class GoogleCloudApiImpl(
                     Storage.BlobListOption.prefix(blobId.name)
                 )
                 while (page != null) {
-                    page.iterateAll().forEach { fileBlob ->
+                    page.values.forEach { fileBlob ->
                         yield(
                             BlobVisitorImpl(
                                 rootBlobId = blobId,

@@ -23,7 +23,6 @@ import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.UploadedApk
-import org.apache.logging.log4j.kotlin.logger
 import java.io.InputStream
 
 /**
@@ -37,8 +36,6 @@ internal class TestRunnerServiceImpl internal constructor(
     firebaseTestLabApi: FirebaseTestLabApi,
     gcsResultPath: String
 ) : TestRunnerService {
-    private val logger = logger()
-
     private val testMatrixStore = TestMatrixStore(
         firebaseProjectId = firebaseProjectId,
         datastoreApi = datastoreApi,
@@ -47,21 +44,13 @@ internal class TestRunnerServiceImpl internal constructor(
         resultsGcsPrefix = googleCloudApi.getGcsPath("aosp-ftl/$gcsResultPath")
     )
     private val apkStore = ApkStore(googleCloudApi)
-    internal val testLabController = FirebaseTestLabController(
+    private val testLabController = FirebaseTestLabController(
         firebaseTestLabApi = firebaseTestLabApi,
         firebaseProjectId = firebaseProjectId,
         testMatrixStore = testMatrixStore
     )
 
-    /**
-     * Finds the APK in Google Cloud Storage with the given name and sha.
-     * If it doesn't exist, uses the [bytes] method to obtain the bytes and uploads it.
-     *
-     * @param name Name of the APK. Should be the name that uniquely identifies the APK, can be a path.
-     * @param sha256 sha256 of the bytes of the APK
-     * @param bytes Callback method that can return the bytes of the APK to be uploaded, if necessary.
-     */
-    suspend fun getOrUploadApk(
+    override suspend fun getOrUploadApk(
         name: String,
         sha256: String,
         bytes: () -> ByteArray
@@ -111,7 +100,7 @@ internal class TestRunnerServiceImpl internal constructor(
         return googleCloudApi.walkEntires(path)
     }
 
-    internal suspend fun resultFiles(
+    internal suspend fun findResultFiles(
         resultPath: GcsPath
     ): List<TestRunnerService.TestRunResult> {
         val byFullDeviceId = mutableMapOf<String, TestResultFilesImpl>()
@@ -177,7 +166,7 @@ internal class TestRunnerServiceImpl internal constructor(
     ): List<TestRunnerService.TestRunResult>? {
         if (!testMatrix.isComplete()) return null
         val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
-        return resultFiles(resultPath)
+        return findResultFiles(resultPath)
     }
 
     companion object {
