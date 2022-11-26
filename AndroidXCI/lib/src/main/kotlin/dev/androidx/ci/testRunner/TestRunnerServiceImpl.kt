@@ -15,9 +15,6 @@
  */
 package dev.androidx.ci.testRunner
 
-import com.google.auth.Credentials
-import dev.androidx.ci.config.Config
-import dev.androidx.ci.config.Config.Datastore.Companion.AOSP_OBJECT_KIND
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
@@ -26,16 +23,13 @@ import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.UploadedApk
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import okhttp3.logging.HttpLoggingInterceptor
 import org.apache.logging.log4j.kotlin.logger
 import java.io.InputStream
 
 /**
- * A new controller for APIs used by AOSP test runner.
+ * Real implementation of [TestRunnerService].
  */
-class TestRunnerServiceImpl internal constructor(
+internal class TestRunnerServiceImpl internal constructor(
     private val googleCloudApi: GoogleCloudApi,
     firebaseProjectId: String,
     datastoreApi: DatastoreApi,
@@ -114,7 +108,7 @@ class TestRunnerServiceImpl internal constructor(
         gcsPath: String = "gs://androidx-ftl-test-results/github-ci-action/ftl"
     ): Sequence<BlobVisitor> {
         val path = GcsPath(path = gcsPath)
-        return googleCloudApi.walkTopDown(path)
+        return googleCloudApi.walkEntires(path)
     }
 
     internal suspend fun resultFiles(
@@ -141,7 +135,7 @@ class TestRunnerServiceImpl internal constructor(
         // redfin-30-en-portrait_rerun_1/test_result_1.xml
         // redfin-30-en-portrait_rerun_2/logcat
         // redfin-30-en-portrait_rerun_2/test_result_1.xml
-        googleCloudApi.walkTopDown(
+        googleCloudApi.walkEntires(
             gcsPath = resultPath
         ).forEach { visitor ->
             val fileName = visitor.fileName
@@ -192,86 +186,6 @@ class TestRunnerServiceImpl internal constructor(
         private const val TEST_RESULT_XML_PREFIX = "test_result_"
         private const val TEST_RESULT_XML_SUFFIX = ".xml"
         private const val INSTRUMENTATION_RESULTS_FILE_NAME = "instrumentation.results"
-        fun create(
-            /**
-             * service account file contents
-             */
-            credentials: Credentials,
-            /**
-             * Firebase project id
-             */
-            firebaseProjectId: String,
-            /**
-             * GCP bucket name
-             */
-            bucketName: String,
-            /**
-             * GCP bucket path (path inside the bucket)
-             */
-            bucketPath: String,
-            /**
-             * GCP path to put the results into. Re-using the same path might result in a very
-             * big object in GCP so it might make sense to use a single path per initialization.
-             * (e.g. a timestamp followed by a random suffix).
-             */
-            gcsResultPath: String,
-            /**
-             * If enabled, HTTP requests will also be logged. Keep in mind, they might include
-             * sensitive data.
-             */
-            logHttpCalls: Boolean = false,
-            /**
-             * The coroutine dispatcher to use for IO operations. Defaults to [Dispatchers.IO].
-             */
-            ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-            /**
-             * The "kind" for objects that are kept in Datastore, defaults to [AOSP_OBJECT_KIND].
-             * You may want to modify this if you want to use the same GCP account for isolated
-             * test runs.
-             */
-            testRunDataStoreObjectKind: String = AOSP_OBJECT_KIND
-        ): TestRunnerService {
-            val httpLogLevel = if (logHttpCalls) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
-            val gcpConfig = Config.Gcp(
-                credentials = credentials,
-                projectId = firebaseProjectId
-            )
-            return TestRunnerServiceImpl(
-                googleCloudApi = GoogleCloudApi.build(
-                    Config.CloudStorage(
-                        gcp = gcpConfig,
-                        bucketName = bucketName,
-                        bucketPath = bucketPath,
-                    ),
-                    context = ioDispatcher
-                ),
-                datastoreApi = DatastoreApi.build(
-                    Config.Datastore(
-                        gcp = gcpConfig,
-                        testRunObjectKind = testRunDataStoreObjectKind,
-                    ),
-                    context = ioDispatcher
-                ),
-                toolsResultApi = ToolsResultApi.build(
-                    config = Config.ToolsResult(
-                        gcp = gcpConfig,
-                        httpLogLevel = httpLogLevel,
-                    )
-                ),
-                firebaseProjectId = firebaseProjectId,
-                firebaseTestLabApi = FirebaseTestLabApi.build(
-                    config = Config.FirebaseTestLab(
-                        gcp = gcpConfig,
-                        httpLogLevel = httpLogLevel,
-                    )
-                ),
-                gcsResultPath = gcsResultPath
-            )
-        }
     }
 
     private class ResultFileResourceImpl(

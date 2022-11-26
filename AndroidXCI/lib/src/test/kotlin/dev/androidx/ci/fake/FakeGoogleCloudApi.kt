@@ -48,7 +48,7 @@ internal class FakeGoogleCloudApi(
         return path
     }
 
-    override suspend fun walkTopDown(gcsPath: GcsPath): Sequence<BlobVisitor> {
+    override suspend fun walkEntires(gcsPath: GcsPath): Sequence<BlobVisitor> {
         return artifacts.asSequence().filter { entry ->
             entry.key.path.startsWith(gcsPath.path)
         }.map { entry ->

@@ -11,7 +11,7 @@ internal class TestRunnerServicePlayground {
     val playgroundCredentialsRule = GoogleCloudCredentialsRule()
 
     val subject by lazy {
-        TestRunnerServiceImpl.create(
+        TestRunnerService.create(
             credentials = playgroundCredentialsRule.gcpConfig.credentials,
             firebaseProjectId = playgroundCredentialsRule.gcpConfig.projectId,
             bucketName = "androidx-ftl-test-results",
@@ -22,7 +22,7 @@ internal class TestRunnerServicePlayground {
     }
 
     @Test
-    fun playground() = runBlocking<Unit> {
+    fun getSomeResults() = runBlocking<Unit> {
         val testMatrixId = "matrix-hzjx70s88liva"
         val testMatrix = subject.getTestMatrix(testMatrixId)
         println(testMatrix)
@@ -36,24 +36,26 @@ internal class TestRunnerServicePlayground {
 
     @Test
     fun log() = runBlocking<Unit> {
-        subject.test("gs://androidx-ftl-test-results/github-ci-action/ftl/2490462699/fd6c9f30215965b0b00aa99c98dfb6bef4b5ea849b07f3b7a3c8869360279dde/").filter {
+        subject.test("gs://androidx-ftl-test-results/github-ci-action/ftl/2490462699/fd6c9f30215965b0b00aa99c98dfb6bef4b5ea849b07f3b7a3c8869360279dde/")
+            .filter {
 //            val fileName = it.fileName
 //            fileName.startsWith("test_result_") && fileName.endsWith(".xml")
-            it.fileName.endsWith(".xml")
-        }.forEach {
-            println("-----------")
-            it.obtainInputStream().use {
-                it.bufferedReader(Charsets.UTF_8).readLines().forEach {
-                    println(it)
+                it.fileName.endsWith(".xml")
+            }.forEach {
+                println("-----------")
+                it.obtainInputStream().use {
+                    it.bufferedReader(Charsets.UTF_8).readLines().forEach {
+                        println(it)
+                    }
                 }
+                println("-----------")
             }
-            println("-----------")
-        }
     }
 
     @Test
     fun log2() = runBlocking<Unit> {
-        val gcsPath = GcsPath("gs://androidx-ftl-test-results/github-ci-action/ftl/2490462699/fd6c9f30215965b0b00aa99c98dfb6bef4b5ea849b07f3b7a3c8869360279dde/")
+        val gcsPath =
+            GcsPath("gs://androidx-ftl-test-results/github-ci-action/ftl/2490462699/fd6c9f30215965b0b00aa99c98dfb6bef4b5ea849b07f3b7a3c8869360279dde/")
         subject.resultFiles(gcsPath).forEach {
             println(it)
         }
