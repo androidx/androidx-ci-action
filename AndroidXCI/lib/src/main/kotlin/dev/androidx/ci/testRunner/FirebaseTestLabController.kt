@@ -138,7 +138,7 @@ internal class FirebaseTestLabController(
                 projectId = firebaseProjectId,
                 testMatrixId = testMatrixId
             )
-        } catch (httpException:HttpException) {
+        } catch (httpException: HttpException) {
             if (httpException.code() == 404) {
                 return null
             }

@@ -16,7 +16,11 @@
 
 package dev.androidx.ci.gcloud
 
-import com.google.cloud.storage.*
+import com.google.cloud.storage.Blob
+import com.google.cloud.storage.BlobId
+import com.google.cloud.storage.BlobInfo
+import com.google.cloud.storage.Storage
+import com.google.cloud.storage.StorageOptions
 import com.google.common.io.ByteStreams
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.util.configure
@@ -79,7 +83,7 @@ internal suspend fun GoogleCloudApi.download(
     target: File,
     filter: (String) -> Boolean
 ) {
-    walkTopDown(gcsPath).filter {visitor ->
+    walkTopDown(gcsPath).filter { visitor ->
         filter(visitor.relativePath)
     }.forEach { visitor ->
         val targetFile = if (visitor.isRoot()) {
@@ -93,7 +97,7 @@ internal suspend fun GoogleCloudApi.download(
             )
         }
         targetFile.parentFile?.mkdirs()
-        visitor.obtainInputStream().use {inputStream ->
+        visitor.obtainInputStream().use { inputStream ->
             targetFile.outputStream().use { outputStream ->
                 ByteStreams.copy(
                     inputStream,
@@ -141,10 +145,12 @@ private class GoogleCloudApiImpl(
         val blob = service.get(blobId)
         return sequence<BlobVisitor> {
             if (blob != null) {
-                yield(BlobVisitorImpl(
-                    rootBlobId = blobId,
-                    blob = blob
-                ))
+                yield(
+                    BlobVisitorImpl(
+                        rootBlobId = blobId,
+                        blob = blob
+                    )
+                )
             } else {
                 // probably a folder, list them
                 var page = service.list(
@@ -208,7 +214,7 @@ internal interface BlobVisitor {
 private class BlobVisitorImpl(
     val rootBlobId: BlobId,
     private val blob: Blob
-): BlobVisitor {
+) : BlobVisitor {
     override val gcsPath = GcsPath(
         blob.blobId.toGsUtilUri()
     )

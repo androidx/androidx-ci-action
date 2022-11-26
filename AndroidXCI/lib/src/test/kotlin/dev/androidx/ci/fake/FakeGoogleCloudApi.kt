@@ -19,7 +19,6 @@ package dev.androidx.ci.fake
 import dev.androidx.ci.gcloud.BlobVisitor
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
-import java.io.File
 import java.io.InputStream
 
 /**

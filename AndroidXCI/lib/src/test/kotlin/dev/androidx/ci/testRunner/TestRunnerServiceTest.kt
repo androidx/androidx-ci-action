@@ -2,7 +2,11 @@ package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
-import dev.androidx.ci.generated.ftl.*
+import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.GoogleCloudStorage
+import dev.androidx.ci.generated.ftl.ResultStorage
+import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -131,7 +135,6 @@ class TestRunnerServiceTest {
                 "test_result_2 content xml",
             )
         }
-
     }
 
     private fun TestRunnerService.ResultFileResource.readFully() = openInputStream().use {

@@ -48,7 +48,6 @@ internal class TestRunnerServicePlayground {
                 }
             }
             println("-----------")
-
         }
     }
 
