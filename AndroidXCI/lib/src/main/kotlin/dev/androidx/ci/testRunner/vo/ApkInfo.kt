@@ -21,7 +21,7 @@ import dev.androidx.ci.util.sha256
 /**
  * Information about an APK file.
  */
-internal data class ApkInfo(
+data class ApkInfo constructor(
     /**
      * Path of the ApkFile as seen in the output artifact
      */

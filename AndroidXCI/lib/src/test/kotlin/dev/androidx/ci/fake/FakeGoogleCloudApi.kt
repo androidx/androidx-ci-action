@@ -16,9 +16,10 @@
 
 package dev.androidx.ci.fake
 
+import dev.androidx.ci.gcloud.BlobVisitor
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
-import java.io.File
+import java.io.InputStream
 
 /**
  * A simple implementation of [GoogleCloudApi] for testing and verification.
@@ -28,10 +29,12 @@ import java.io.File
  *
  * This fake is useful for other tests that would interact with GCloud.
  */
-internal class FakeGoogleCloudApi : GoogleCloudApi {
+internal class FakeGoogleCloudApi(
+    val bucketName: String
+) : GoogleCloudApi {
     var uploadCount = 0
         private set
-    private val rootGcsPath = GcsPath("gs://test")
+    val rootGcsPath = GcsPath("gs://$bucketName")
     private val artifacts = mutableMapOf<GcsPath, ByteArray>()
 
     fun artifacts() = artifacts.toMap()
@@ -45,10 +48,20 @@ internal class FakeGoogleCloudApi : GoogleCloudApi {
         return path
     }
 
-    override suspend fun download(gcsPath: GcsPath, target: File, filter: (String) -> Boolean) {
-        target.resolve("downloadedFile.txt").writeText(
-            gcsPath.path, Charsets.UTF_8
-        )
+    override suspend fun walkEntires(gcsPath: GcsPath): Sequence<BlobVisitor> {
+        return artifacts.asSequence().filter { entry ->
+            entry.key.path.startsWith(gcsPath.path)
+        }.map { entry ->
+            object : BlobVisitor {
+                override val relativePath: String
+                    get() = entry.key.path.substringAfter(gcsPath.path).trimStart('/')
+                override val gcsPath: GcsPath
+                    get() = entry.key
+                override fun obtainInputStream(): InputStream {
+                    return entry.value.inputStream()
+                }
+            }
+        }
     }
 
     override suspend fun existingFilePath(relativePath: String): GcsPath? {
@@ -61,7 +74,7 @@ internal class FakeGoogleCloudApi : GoogleCloudApi {
     }
 
     private fun makeGcsPath(relativePath: String) = GcsPath.create(
-        bucketName = "local-test",
+        bucketName = bucketName,
         bucketPath = relativePath
     )
 

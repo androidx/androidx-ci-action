@@ -23,8 +23,9 @@ import java.util.UUID
 import kotlin.random.Random
 
 internal class FakeBackend(
+    val bucketName: String = "fake-bucket",
     val fakeGithubApi: FakeGithubApi = FakeGithubApi(),
-    val fakeGoogleCloudApi: FakeGoogleCloudApi = FakeGoogleCloudApi(),
+    val fakeGoogleCloudApi: FakeGoogleCloudApi = FakeGoogleCloudApi(bucketName),
     val fakeFirebaseTestLabApi: FakeFirebaseTestLabApi = FakeFirebaseTestLabApi(),
     val fakeToolsResultApi: FakeToolsResultApi = FakeToolsResultApi(),
     val datastoreApi: FakeDatastore = FakeDatastore(),

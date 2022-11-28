@@ -43,8 +43,18 @@ internal class ApkStore(
         uploadApk("placeholderApp.apk", bytes)
     }
 
+    /**
+     * Returns the placeholder app APK if the test does not have an app apk (required by FTL).
+     */
     suspend fun getPlaceholderApk() = placeholderApk.get()
 
+    /**
+     * Uploads the given APK or returns the existing one if it was uploaded before.
+     *
+     * @param name The name of the APK. Anything that identifies it good enough, only used for retrieval and bucket
+     *        organization.
+     * @param bytes The bytes of the APK file.
+     */
     suspend fun uploadApk(
         name: String,
         bytes: ByteArray
@@ -53,18 +63,10 @@ internal class ApkStore(
             filePath = name,
             contents = bytes
         )
+        getUploadedApk(apkInfo)?.let {
+            return it
+        }
         val relativePath = apkInfo.gcpRelativePath()
-        logger.info {
-            "checking if apk already exists"
-        }
-        val existing = googleCloudApi.existingFilePath(relativePath)
-        if (existing != null) {
-            logger.info { "apk exists already, returning without re-upload: $existing" }
-            return UploadedApk(
-                gcsPath = existing,
-                apkInfo = apkInfo
-            )
-        }
         logger.info {
             "uploading $name to $relativePath"
         }
@@ -80,6 +82,39 @@ internal class ApkStore(
                 "completed uploading apk: $it"
             }
         }
+    }
+
+    /**
+     * Returns the APK for the given [name] and [sha256] if it already exists in the backend.
+     */
+    suspend fun getUploadedApk(
+        name: String,
+        sha256: String
+    ): UploadedApk? {
+        return getUploadedApk(
+            ApkInfo(
+                filePath = name,
+                idHash = sha256
+            )
+        )
+    }
+
+    private suspend fun getUploadedApk(
+        apkInfo: ApkInfo
+    ): UploadedApk? {
+        val relativePath = apkInfo.gcpRelativePath()
+        logger.info {
+            "checking if apk already exists"
+        }
+        val existing = googleCloudApi.existingFilePath(relativePath)
+        if (existing != null) {
+            logger.info { "apk exists already, returning without re-upload: $existing" }
+            return UploadedApk(
+                gcsPath = existing,
+                apkInfo = apkInfo
+            )
+        }
+        return null
     }
 
     private fun ApkInfo.gcpRelativePath() = filePathWithoutExtension + "/" + this.idHash + ".apk"
