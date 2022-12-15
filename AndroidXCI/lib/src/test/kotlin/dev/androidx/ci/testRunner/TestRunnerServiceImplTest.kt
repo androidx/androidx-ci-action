@@ -2,9 +2,12 @@ package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
+import dev.androidx.ci.generated.ftl.ClientInfo
+import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
+import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.util.sha256
@@ -21,9 +24,12 @@ class TestRunnerServiceImplTest {
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
         gcsResultPath = "testRunnerServiceTest"
     )
+    private val devicePicker = { env: TestEnvironmentCatalog ->
+        listOf(FTLTestDevices.BLUELINE_API_28_PHYSICAL)
+    }
 
     @Test
-    fun uploadApk() = runBlocking<Unit> {
+    fun uploadApkAndSchedule() = runBlocking<Unit> {
         val apk1Bytes = byteArrayOf(1, 2, 3, 4, 5)
         val apk1Sha = sha256(apk1Bytes)
         val upload1 = subject.getOrUploadApk(
@@ -48,6 +54,73 @@ class TestRunnerServiceImplTest {
         assertThat(
             fakeBackend.fakeGoogleCloudApi.uploadCount
         ).isEqualTo(1)
+    }
+
+    @Test
+    fun schedule() = runBlocking<Unit> {
+        val apk1Bytes = byteArrayOf(1, 2, 3, 4, 5)
+        val apk1Sha = sha256(apk1Bytes)
+        val upload1 = subject.getOrUploadApk(
+            name = "foo.apk",
+            sha256 = apk1Sha
+        ) {
+            apk1Bytes
+        }
+        val result = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = null,
+            devicePicker = devicePicker
+        )
+        assertThat(
+            result.testMatrices
+        ).hasSize(1)
+        assertThat(
+            result.testMatrices.single().clientInfo
+        ).isNull()
+
+        val sameRequest = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = null,
+            devicePicker = devicePicker
+        )
+        assertThat(
+            sameRequest.testMatrices
+        ).containsExactlyElementsIn(result.testMatrices)
+        // change client info, it should result in new test matrices
+        val clientInfo = ClientInfo(
+            name = "test",
+            clientInfoDetails = listOf(
+                ClientInfoDetail("key", "value")
+            )
+        )
+        val newClientInfo = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = clientInfo,
+            devicePicker = devicePicker
+        )
+        assertThat(
+            sameRequest.testMatrices
+        ).containsExactlyElementsIn(result.testMatrices)
+        assertThat(
+            newClientInfo.testMatrices
+        ).isNotEmpty()
+        assertThat(
+            newClientInfo.testMatrices
+        ).containsNoneIn(
+            result.testMatrices
+        )
+        // get the test matrix, make sure it has the client info
+        assertThat(
+            newClientInfo.testMatrices.single().clientInfo
+        ).isEqualTo(clientInfo)
+        assertThat(
+            subject.getTestMatrix(
+                newClientInfo.testMatrices.single().testMatrixId!!
+            )?.clientInfo
+        ).isEqualTo(clientInfo)
     }
 
     @Test

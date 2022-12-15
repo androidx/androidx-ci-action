@@ -23,6 +23,8 @@ import dev.androidx.ci.fake.FakeToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.AndroidDeviceList
+import dev.androidx.ci.generated.ftl.ClientInfo
+import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.testRunner.vo.ApkInfo
@@ -71,10 +73,19 @@ internal class TestMatrixStoreTest {
     fun create() = runBlocking<Unit> {
         val appApk = createFakeApk("app.pak")
         val testApk = createFakeApk("test.apk")
+        val clientInfo = ClientInfo(
+            name = "test",
+            clientInfoDetails = listOf(
+                ClientInfoDetail(
+                    "key1", "value1"
+                )
+            )
+        )
         val testMatrix = store.getOrCreateTestMatrix(
             appApk = appApk,
             testApk = testApk,
-            environmentMatrix = envMatrix1
+            environmentMatrix = envMatrix1,
+            clientInfo = clientInfo
         )
 
         assertThat(firebaseTestLabApi.getTestMatrices()).hasSize(1)
@@ -93,21 +104,35 @@ internal class TestMatrixStoreTest {
         val reUploaded = store.getOrCreateTestMatrix(
             appApk = appApk,
             testApk = testApk,
-            environmentMatrix = envMatrix1
+            environmentMatrix = envMatrix1,
+            clientInfo = clientInfo
         )
         assertThat(reUploaded).isEqualTo(testMatrix)
+
+        val withoutClientInfo = store.getOrCreateTestMatrix(
+            appApk = appApk,
+            testApk = testApk,
+            environmentMatrix = envMatrix1,
+            clientInfo = null
+        )
+        // client info change should be considered as a new test
+        assertThat(
+            withoutClientInfo.testMatrixId
+        ).isNotEqualTo(testMatrix.testMatrixId)
         // upload w/ a new environment, should create a new test matrix
         val newEnvironment = store.getOrCreateTestMatrix(
             appApk = appApk,
             testApk = testApk,
-            environmentMatrix = envMatrix2
+            environmentMatrix = envMatrix2,
+            clientInfo = clientInfo
         )
         assertThat(newEnvironment.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
         val app2 = createFakeApk("app2.apk")
         val newApp = store.getOrCreateTestMatrix(
             appApk = app2,
             testApk = testApk,
-            environmentMatrix = envMatrix1
+            environmentMatrix = envMatrix1,
+            clientInfo = clientInfo
         )
         // should be a new one since app apk changed
         assertThat(newApp.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
@@ -123,7 +148,8 @@ internal class TestMatrixStoreTest {
         val reUploadedAfterDeletion = store.getOrCreateTestMatrix(
             appApk = appApk,
             testApk = testApk,
-            environmentMatrix = envMatrix1
+            environmentMatrix = envMatrix1,
+            clientInfo = clientInfo
         )
         assertThat(reUploadedAfterDeletion.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
     }

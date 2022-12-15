@@ -21,6 +21,7 @@ import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.dto.EnvironmentType
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.AndroidDeviceList
+import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
@@ -101,6 +102,7 @@ internal class FirebaseTestLabController(
     suspend fun submitTests(
         appApk: UploadedApk,
         testApk: UploadedApk,
+        clientInfo: ClientInfo? = null,
         devicePicker: DevicePicker? = null
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
@@ -112,7 +114,8 @@ internal class FirebaseTestLabController(
             testMatrixStore.getOrCreateTestMatrix(
                 appApk = appApk,
                 testApk = testApk,
-                environmentMatrix = listOf(it).createEnvironmentMatrix()
+                environmentMatrix = listOf(it).createEnvironmentMatrix(),
+                clientInfo = clientInfo
             )
         }
     }

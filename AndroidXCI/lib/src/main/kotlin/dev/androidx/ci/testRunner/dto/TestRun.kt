@@ -23,6 +23,7 @@ import com.google.cloud.datastore.Key
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import dev.androidx.ci.datastore.DatastoreApi
+import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.util.sha256
@@ -53,7 +54,7 @@ internal class TestRun(
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()
-            moshi.adapter<Map<String, Any>>(type)
+            moshi.adapter<Map<String, Any?>>(type)
         }
 
         /**
@@ -62,12 +63,14 @@ internal class TestRun(
         fun createId(
             datastoreApi: DatastoreApi,
             environment: EnvironmentMatrix,
+            clientInfo: ClientInfo?,
             appApk: ApkInfo,
             testApk: ApkInfo
         ): Id {
             val json = adapter.toJson(
                 mapOf(
                     "e" to environment,
+                    "clientInfo" to clientInfo,
                     "app" to appApk.idHash,
                     "test" to testApk.idHash
                 )

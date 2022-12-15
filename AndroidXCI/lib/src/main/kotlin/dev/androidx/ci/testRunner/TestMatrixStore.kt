@@ -21,6 +21,7 @@ import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest
+import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
@@ -59,11 +60,13 @@ internal class TestMatrixStore(
     suspend fun getOrCreateTestMatrix(
         appApk: UploadedApk,
         testApk: UploadedApk,
-        environmentMatrix: EnvironmentMatrix
+        environmentMatrix: EnvironmentMatrix,
+        clientInfo: ClientInfo?,
     ): TestMatrix {
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
             environment = environmentMatrix,
+            clientInfo = clientInfo,
             appApk = appApk.apkInfo,
             testApk = testApk.apkInfo
         )
@@ -84,6 +87,7 @@ internal class TestMatrixStore(
             testMatrix = createNewTestMatrix(
                 testRunKey = testRunId,
                 environmentMatrix = environmentMatrix,
+                clientInfo = clientInfo,
                 appApk = appApk,
                 testApk = testApk
             )
@@ -143,6 +147,7 @@ internal class TestMatrixStore(
     private suspend fun createNewTestMatrix(
         testRunKey: TestRun.Id,
         environmentMatrix: EnvironmentMatrix,
+        clientInfo: ClientInfo?,
         appApk: UploadedApk,
         testApk: UploadedApk
     ): TestMatrix {
@@ -167,8 +172,9 @@ internal class TestMatrixStore(
                     testApk = FileReference(
                         gcsPath = testApk.gcsPath.path
                     )
-                )
+                ),
             ),
+            clientInfo = clientInfo,
             environmentMatrix = environmentMatrix,
             resultStorage = ResultStorage(
                 googleCloudStorage = GoogleCloudStorage(

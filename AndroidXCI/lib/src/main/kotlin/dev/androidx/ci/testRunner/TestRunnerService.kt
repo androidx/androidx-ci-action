@@ -9,6 +9,7 @@ import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.AndroidDevice
+import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -46,10 +47,14 @@ interface TestRunnerService {
 
     /**
      * Schedules the tests for the given [testApk] / [appApk] pair using the provided [devicePicker].
+     * If given, [clientInfo] will be preserved in the TestMatrix on the FTL side.
+     * It is part of the test matrix caching key so it is important not to put unnecessarily
+     * changing information into [clientInfo] (e.g. don't put testRunId)
      */
     suspend fun scheduleTests(
         testApk: UploadedApk,
         appApk: UploadedApk?,
+        clientInfo: ClientInfo?,
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>
     ): ScheduleTestsResponse
 
