@@ -33,6 +33,7 @@ import dev.androidx.ci.generated.ftl.ToolResultsHistory
 import dev.androidx.ci.testRunner.dto.TestRun
 import dev.androidx.ci.testRunner.dto.toEntity
 import dev.androidx.ci.testRunner.dto.toTestRun
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import org.apache.logging.log4j.kotlin.logger
 import retrofit2.HttpException
@@ -64,14 +65,17 @@ internal class TestMatrixStore(
         environmentMatrix: EnvironmentMatrix,
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
+        deviceSetup: DeviceSetup?,
     ): TestMatrix {
+
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
             environment = environmentMatrix,
             clientInfo = clientInfo,
             sharding = sharding,
             appApk = appApk.apkInfo,
-            testApk = testApk.apkInfo
+            testApk = testApk.apkInfo,
+            deviceSetup = deviceSetup
         )
         logger.trace {
             "test run id: $testRunId"
@@ -92,8 +96,9 @@ internal class TestMatrixStore(
                 environmentMatrix = environmentMatrix,
                 clientInfo = clientInfo,
                 sharding = sharding,
+                deviceSetup = deviceSetup,
                 appApk = appApk,
-                testApk = testApk
+                testApk = testApk,
             )
         )
         logger.info {
@@ -153,8 +158,9 @@ internal class TestMatrixStore(
         environmentMatrix: EnvironmentMatrix,
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
-        testApk: UploadedApk,
-        appApk: UploadedApk
+        deviceSetup: DeviceSetup?,
+        appApk: UploadedApk,
+        testApk: UploadedApk
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -179,6 +185,7 @@ internal class TestMatrixStore(
                     ),
                     shardingOption = sharding
                 ),
+                testSetup = deviceSetup?.toTestSetup()
             ),
             clientInfo = clientInfo,
             environmentMatrix = environmentMatrix,

@@ -13,6 +13,7 @@ import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +58,7 @@ interface TestRunnerService {
         appApk: UploadedApk?,
         clientInfo: ClientInfo?,
         shardingOption: ShardingOption?,
+        deviceSetup: DeviceSetup?,
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>
     ): ScheduleTestsResponse
 

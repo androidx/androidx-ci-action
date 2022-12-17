@@ -73,6 +73,7 @@ class TestRunnerServiceImplTest {
             appApk = null,
             clientInfo = null,
             sharding = null,
+            deviceSetup = null,
             devicePicker = devicePicker
         )
         assertThat(
@@ -87,6 +88,7 @@ class TestRunnerServiceImplTest {
             appApk = null,
             clientInfo = null,
             sharding = null,
+            deviceSetup = null,
             devicePicker = devicePicker
         )
         assertThat(
@@ -102,8 +104,9 @@ class TestRunnerServiceImplTest {
         val newClientInfo = subject.scheduleTests(
             testApk = upload1,
             appApk = null,
-            sharding = null,
             clientInfo = clientInfo,
+            sharding = null,
+            deviceSetup = null,
             devicePicker = devicePicker
         )
         assertThat(
@@ -134,8 +137,9 @@ class TestRunnerServiceImplTest {
         val shardedTest = subject.scheduleTests(
             testApk = upload1,
             appApk = null,
-            sharding = shardingOption,
             clientInfo = null,
+            sharding = shardingOption,
+            deviceSetup = null,
             devicePicker = devicePicker
         )
         // sharding will invalidate cache as it will change the test matrix response

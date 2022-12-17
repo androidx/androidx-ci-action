@@ -23,6 +23,7 @@ import dev.androidx.ci.fake.FakeToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.AndroidDeviceList
+import dev.androidx.ci.generated.ftl.Apk
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
@@ -30,6 +31,7 @@ import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.UniformSharding
 import dev.androidx.ci.testRunner.vo.ApkInfo
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -75,6 +77,7 @@ internal class TestMatrixStoreTest {
     fun create() = runBlocking<Unit> {
         val appApk = createFakeApk("app.pak")
         val testApk = createFakeApk("test.apk")
+        val extraApk = createFakeApk("extra.apk")
         val clientInfo = ClientInfo(
             name = "test",
             clientInfoDetails = listOf(
@@ -86,11 +89,22 @@ internal class TestMatrixStoreTest {
         val sharding = ShardingOption(
             uniformSharding = UniformSharding(3)
         )
+        val deviceSetup = DeviceSetup(
+            additionalApks = setOf(extraApk),
+            directoriesToPull = setOf("/sdcard/foo/bar"),
+            instrumentationArguments = listOf(
+                DeviceSetup.InstrumentationArgument(
+                    key = "foo",
+                    value = "bar"
+                )
+            )
+        )
         val testMatrix = store.getOrCreateTestMatrix(
             appApk = appApk,
             testApk = testApk,
             environmentMatrix = envMatrix1,
             clientInfo = clientInfo,
+            deviceSetup = deviceSetup,
             sharding = sharding
         )
 
@@ -107,7 +121,27 @@ internal class TestMatrixStoreTest {
                 ShardingOption(uniformSharding = UniformSharding(3))
             )
         }
+        matrix.testSpecification.let {
+            assertThat(
+                it.testSetup?.additionalApks?.singleOrNull()?.location
+            ).isEqualTo(
+                FileReference(
+                    gcsPath = extraApk.gcsPath.path
+                )
+            )
+            assertThat(
+                it.testSetup?.directoriesToPull
+            ).containsExactlyElementsIn(deviceSetup.directoriesToPull)
+            assertThat(
+                it.testSetup?.environmentVariables
+            ).containsExactlyElementsIn(
+                deviceSetup.instrumentationArguments?.map {
+                    it.toEnvironmentVariable()
+                }
+            )
+        }
         assertThat(matrix.environmentMatrix).isEqualTo(envMatrix1)
+        assertThat(matrix.clientInfo).isEqualTo(clientInfo)
 
         // upload again, should not upload but instead return the same matrix
         val reUploaded = store.getOrCreateTestMatrix(
@@ -115,6 +149,7 @@ internal class TestMatrixStoreTest {
             testApk = testApk,
             environmentMatrix = envMatrix1,
             clientInfo = clientInfo,
+            deviceSetup = deviceSetup,
             sharding = sharding
         )
         assertThat(reUploaded).isEqualTo(testMatrix)
@@ -124,6 +159,7 @@ internal class TestMatrixStoreTest {
             testApk = testApk,
             environmentMatrix = envMatrix1,
             clientInfo = null,
+            deviceSetup = deviceSetup,
             sharding = sharding
         )
         // client info change should be considered as a new test
@@ -136,6 +172,7 @@ internal class TestMatrixStoreTest {
             testApk = testApk,
             environmentMatrix = envMatrix1,
             clientInfo = clientInfo,
+            deviceSetup = deviceSetup,
             sharding = null
         )
         // new sharding option should be a new test matrix
@@ -149,6 +186,7 @@ internal class TestMatrixStoreTest {
             testApk = testApk,
             environmentMatrix = envMatrix2,
             clientInfo = clientInfo,
+            deviceSetup = deviceSetup,
             sharding = sharding
         )
         assertThat(newEnvironment.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
@@ -158,6 +196,7 @@ internal class TestMatrixStoreTest {
             testApk = testApk,
             environmentMatrix = envMatrix1,
             clientInfo = clientInfo,
+            deviceSetup = deviceSetup,
             sharding = sharding
         )
         // should be a new one since app apk changed
@@ -176,6 +215,7 @@ internal class TestMatrixStoreTest {
             testApk = testApk,
             environmentMatrix = envMatrix1,
             clientInfo = clientInfo,
+            deviceSetup = deviceSetup,
             sharding = sharding
         )
         assertThat(reUploadedAfterDeletion.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)

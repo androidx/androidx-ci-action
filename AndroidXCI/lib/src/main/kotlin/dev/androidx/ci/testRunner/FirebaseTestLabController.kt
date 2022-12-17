@@ -26,6 +26,7 @@ import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.TestResult
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import dev.androidx.ci.util.LazyComputedValue
@@ -105,6 +106,7 @@ internal class FirebaseTestLabController(
         testApk: UploadedApk,
         clientInfo: ClientInfo? = null,
         sharding: ShardingOption?,
+        deviceSetup: DeviceSetup?,
         devicePicker: DevicePicker? = null
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
@@ -118,7 +120,8 @@ internal class FirebaseTestLabController(
                 testApk = testApk,
                 environmentMatrix = listOf(it).createEnvironmentMatrix(),
                 clientInfo = clientInfo,
-                sharding = sharding
+                sharding = sharding,
+                deviceSetup = deviceSetup
             )
         }
     }
@@ -228,6 +231,7 @@ internal class FirebaseTestLabController(
                 appApk = it.first,
                 testApk = it.second,
                 sharding = null,
+                deviceSetup = null,
                 devicePicker = devicePicker
             )
         }

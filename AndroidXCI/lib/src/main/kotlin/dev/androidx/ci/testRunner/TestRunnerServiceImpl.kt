@@ -26,6 +26,7 @@ import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import java.io.InputStream
 
@@ -81,6 +82,7 @@ internal class TestRunnerServiceImpl internal constructor(
         appApk: UploadedApk?,
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
+        deviceSetup: DeviceSetup?,
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
@@ -88,6 +90,7 @@ internal class TestRunnerServiceImpl internal constructor(
             testApk = testApk,
             clientInfo = clientInfo,
             sharding = sharding,
+            deviceSetup = deviceSetup,
             devicePicker = devicePicker
         )
         return TestRunnerService.ScheduleTestsResponse.create(
