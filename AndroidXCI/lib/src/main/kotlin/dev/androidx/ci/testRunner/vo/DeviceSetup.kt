@@ -42,11 +42,12 @@ data class DeviceSetup(
             }
         )
     }
+
     data class InstrumentationArgument(
         val key: String,
         val value: String
     ) {
-        internal fun toEnvironmentVariable()=EnvironmentVariable(
+        internal fun toEnvironmentVariable() = EnvironmentVariable(
             key = key,
             value = value
         )
