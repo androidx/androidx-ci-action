@@ -23,6 +23,7 @@ import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.ClientInfo
+import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -79,12 +80,14 @@ internal class TestRunnerServiceImpl internal constructor(
         testApk: UploadedApk,
         appApk: UploadedApk?,
         clientInfo: ClientInfo?,
+        sharding: ShardingOption?,
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
             appApk = appApk ?: apkStore.getPlaceholderApk(),
             testApk = testApk,
             clientInfo = clientInfo,
+            sharding = sharding,
             devicePicker = devicePicker
         )
         return TestRunnerService.ScheduleTestsResponse.create(

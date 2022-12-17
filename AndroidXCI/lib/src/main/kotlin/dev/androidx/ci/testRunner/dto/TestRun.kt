@@ -25,6 +25,7 @@ import com.squareup.moshi.Types
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.util.sha256
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
@@ -65,12 +66,14 @@ internal class TestRun(
             environment: EnvironmentMatrix,
             clientInfo: ClientInfo?,
             appApk: ApkInfo,
-            testApk: ApkInfo
+            testApk: ApkInfo,
+            sharding: ShardingOption?
         ): Id {
             val json = adapter.toJson(
                 mapOf(
                     "e" to environment,
                     "clientInfo" to clientInfo,
+                    "sharding" to sharding,
                     "app" to appApk.idHash,
                     "test" to testApk.idHash
                 )

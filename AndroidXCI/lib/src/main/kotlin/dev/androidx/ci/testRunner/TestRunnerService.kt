@@ -10,6 +10,7 @@ import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.ClientInfo
+import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -55,6 +56,7 @@ interface TestRunnerService {
         testApk: UploadedApk,
         appApk: UploadedApk?,
         clientInfo: ClientInfo?,
+        shardingOption: ShardingOption?,
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>
     ): ScheduleTestsResponse
 

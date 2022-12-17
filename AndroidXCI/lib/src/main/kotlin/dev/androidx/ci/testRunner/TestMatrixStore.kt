@@ -26,6 +26,7 @@ import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
+import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.ToolResultsHistory
@@ -62,11 +63,13 @@ internal class TestMatrixStore(
         testApk: UploadedApk,
         environmentMatrix: EnvironmentMatrix,
         clientInfo: ClientInfo?,
+        sharding: ShardingOption?,
     ): TestMatrix {
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
             environment = environmentMatrix,
             clientInfo = clientInfo,
+            sharding = sharding,
             appApk = appApk.apkInfo,
             testApk = testApk.apkInfo
         )
@@ -88,6 +91,7 @@ internal class TestMatrixStore(
                 testRunKey = testRunId,
                 environmentMatrix = environmentMatrix,
                 clientInfo = clientInfo,
+                sharding = sharding,
                 appApk = appApk,
                 testApk = testApk
             )
@@ -148,8 +152,9 @@ internal class TestMatrixStore(
         testRunKey: TestRun.Id,
         environmentMatrix: EnvironmentMatrix,
         clientInfo: ClientInfo?,
-        appApk: UploadedApk,
-        testApk: UploadedApk
+        sharding: ShardingOption?,
+        testApk: UploadedApk,
+        appApk: UploadedApk
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -171,7 +176,8 @@ internal class TestMatrixStore(
                     ),
                     testApk = FileReference(
                         gcsPath = testApk.gcsPath.path
-                    )
+                    ),
+                    shardingOption = sharding
                 ),
             ),
             clientInfo = clientInfo,

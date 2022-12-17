@@ -27,6 +27,8 @@ import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.FileReference
+import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.generated.ftl.UniformSharding
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.runBlocking
@@ -81,11 +83,15 @@ internal class TestMatrixStoreTest {
                 )
             )
         )
+        val sharding = ShardingOption(
+            uniformSharding = UniformSharding(3)
+        )
         val testMatrix = store.getOrCreateTestMatrix(
             appApk = appApk,
             testApk = testApk,
             environmentMatrix = envMatrix1,
-            clientInfo = clientInfo
+            clientInfo = clientInfo,
+            sharding = sharding
         )
 
         assertThat(firebaseTestLabApi.getTestMatrices()).hasSize(1)
@@ -97,6 +103,9 @@ internal class TestMatrixStoreTest {
             assertThat(it.testApk).isEqualTo(
                 FileReference(gcsPath = testApk.gcsPath.path)
             )
+            assertThat(it.shardingOption).isEqualTo(
+                ShardingOption(uniformSharding = UniformSharding(3))
+            )
         }
         assertThat(matrix.environmentMatrix).isEqualTo(envMatrix1)
 
@@ -105,7 +114,8 @@ internal class TestMatrixStoreTest {
             appApk = appApk,
             testApk = testApk,
             environmentMatrix = envMatrix1,
-            clientInfo = clientInfo
+            clientInfo = clientInfo,
+            sharding = sharding
         )
         assertThat(reUploaded).isEqualTo(testMatrix)
 
@@ -113,18 +123,33 @@ internal class TestMatrixStoreTest {
             appApk = appApk,
             testApk = testApk,
             environmentMatrix = envMatrix1,
-            clientInfo = null
+            clientInfo = null,
+            sharding = sharding
         )
         // client info change should be considered as a new test
         assertThat(
             withoutClientInfo.testMatrixId
         ).isNotEqualTo(testMatrix.testMatrixId)
+
+        val withoutSharding = store.getOrCreateTestMatrix(
+            appApk = appApk,
+            testApk = testApk,
+            environmentMatrix = envMatrix1,
+            clientInfo = clientInfo,
+            sharding = null
+        )
+        // new sharding option should be a new test matrix
+        assertThat(
+            withoutSharding.testMatrixId
+        ).isNotEqualTo(testMatrix.testMatrixId)
+
         // upload w/ a new environment, should create a new test matrix
         val newEnvironment = store.getOrCreateTestMatrix(
             appApk = appApk,
             testApk = testApk,
             environmentMatrix = envMatrix2,
-            clientInfo = clientInfo
+            clientInfo = clientInfo,
+            sharding = sharding
         )
         assertThat(newEnvironment.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
         val app2 = createFakeApk("app2.apk")
@@ -132,7 +157,8 @@ internal class TestMatrixStoreTest {
             appApk = app2,
             testApk = testApk,
             environmentMatrix = envMatrix1,
-            clientInfo = clientInfo
+            clientInfo = clientInfo,
+            sharding = sharding
         )
         // should be a new one since app apk changed
         assertThat(newApp.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
@@ -149,7 +175,8 @@ internal class TestMatrixStoreTest {
             appApk = appApk,
             testApk = testApk,
             environmentMatrix = envMatrix1,
-            clientInfo = clientInfo
+            clientInfo = clientInfo,
+            sharding = sharding
         )
         assertThat(reUploadedAfterDeletion.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
     }

@@ -7,9 +7,11 @@ import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
+import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
+import dev.androidx.ci.generated.ftl.UniformSharding
 import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -70,6 +72,7 @@ class TestRunnerServiceImplTest {
             testApk = upload1,
             appApk = null,
             clientInfo = null,
+            sharding = null,
             devicePicker = devicePicker
         )
         assertThat(
@@ -83,6 +86,7 @@ class TestRunnerServiceImplTest {
             testApk = upload1,
             appApk = null,
             clientInfo = null,
+            sharding = null,
             devicePicker = devicePicker
         )
         assertThat(
@@ -98,6 +102,7 @@ class TestRunnerServiceImplTest {
         val newClientInfo = subject.scheduleTests(
             testApk = upload1,
             appApk = null,
+            sharding = null,
             clientInfo = clientInfo,
             devicePicker = devicePicker
         )
@@ -121,6 +126,29 @@ class TestRunnerServiceImplTest {
                 newClientInfo.testMatrices.single().testMatrixId!!
             )?.clientInfo
         ).isEqualTo(clientInfo)
+
+        // shard
+        val shardingOption = ShardingOption(
+            uniformSharding = UniformSharding(3)
+        )
+        val shardedTest = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            sharding = shardingOption,
+            clientInfo = null,
+            devicePicker = devicePicker
+        )
+        // sharding will invalidate cache as it will change the test matrix response
+        // significantly. Otherwise, we'll be returning a TestMatrix with mismatched
+        // sharding information
+        assertThat(
+            shardedTest
+        ).isNotEqualTo(result.testMatrices)
+        assertThat(
+            subject.getTestMatrix(
+                shardedTest.testMatrices.first().testMatrixId!!
+            )?.testSpecification?.androidInstrumentationTest?.shardingOption
+        ).isEqualTo(shardingOption)
     }
 
     @Test
