@@ -5,6 +5,7 @@ import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.EnvironmentVariable
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
 import dev.androidx.ci.generated.ftl.ShardingOption
@@ -12,6 +13,7 @@ import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.UniformSharding
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -31,7 +33,7 @@ class TestRunnerServiceImplTest {
     }
 
     @Test
-    fun uploadApkAndSchedule() = runBlocking<Unit> {
+    fun uploadApk() = runBlocking<Unit> {
         val apk1Bytes = byteArrayOf(1, 2, 3, 4, 5)
         val apk1Sha = sha256(apk1Bytes)
         val upload1 = subject.getOrUploadApk(
@@ -153,6 +155,51 @@ class TestRunnerServiceImplTest {
                 shardedTest.testMatrices.first().testMatrixId!!
             )?.testSpecification?.androidInstrumentationTest?.shardingOption
         ).isEqualTo(shardingOption)
+
+        // put device info
+        val extraApkBytes = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8)
+        val extraApkSha = sha256(extraApkBytes)
+        val extraApk = subject.getOrUploadApk(
+            name = "extra.apk",
+            sha256 = extraApkSha
+        ) {
+            extraApkBytes
+        }
+        val withDeviceInfo = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = DeviceSetup(
+                additionalApks = setOf(extraApk),
+                directoriesToPull = setOf("/sdcard/foo/bar"),
+                instrumentationArguments = listOf(
+                    DeviceSetup.InstrumentationArgument("key1", "value1"),
+                    DeviceSetup.InstrumentationArgument("key2", "value2")
+                )
+            ),
+            devicePicker = devicePicker
+        )
+        withDeviceInfo.testMatrices.single().testSpecification.testSetup!!.let { testSetup ->
+            assertThat(
+                testSetup.environmentVariables
+            ).containsExactly(
+                EnvironmentVariable(key = "key1", value = "value1"),
+                EnvironmentVariable(key = "key2", value = "value2")
+            )
+            assertThat(
+                testSetup.directoriesToPull
+            ).containsExactly(
+                "/sdcard/foo/bar"
+            )
+            assertThat(
+                testSetup.additionalApks?.map {
+                    it.location?.gcsPath
+                }
+            ).containsExactly(
+                extraApk.gcsPath.path
+            )
+        }
     }
 
     @Test
