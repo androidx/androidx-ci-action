@@ -50,6 +50,13 @@ internal class TestRunnerServiceImpl internal constructor(
         testMatrixStore = testMatrixStore
     )
 
+    override suspend fun getApkIfExists(name: String, sha256: String): UploadedApk? {
+        return apkStore.getUploadedApk(
+            name = name,
+            sha256 = sha256
+        )
+    }
+
     override suspend fun getOrUploadApk(
         name: String,
         sha256: String,

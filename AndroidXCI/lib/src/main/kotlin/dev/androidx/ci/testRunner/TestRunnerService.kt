@@ -44,6 +44,11 @@ interface TestRunnerService {
         bytes: () -> ByteArray
     ): UploadedApk
 
+    suspend fun getApkIfExists(
+        name: String,
+        sha256: String
+    ): UploadedApk?
+
     /**
      * Schedules the tests for the given [testApk] / [appApk] pair using the provided [devicePicker].
      */
