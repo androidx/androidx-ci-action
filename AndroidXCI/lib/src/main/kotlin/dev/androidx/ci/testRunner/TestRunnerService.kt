@@ -44,7 +44,7 @@ interface TestRunnerService {
     suspend fun getOrUploadApk(
         name: String,
         sha256: String,
-        bytes: () -> ByteArray
+        bytes: suspend () -> ByteArray
     ): UploadedApk
 
     /**
