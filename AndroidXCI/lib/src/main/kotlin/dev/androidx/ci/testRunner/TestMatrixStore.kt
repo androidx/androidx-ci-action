@@ -21,16 +21,19 @@ import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest
+import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
+import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.ToolResultsHistory
 import dev.androidx.ci.testRunner.dto.TestRun
 import dev.androidx.ci.testRunner.dto.toEntity
 import dev.androidx.ci.testRunner.dto.toTestRun
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import org.apache.logging.log4j.kotlin.logger
 import retrofit2.HttpException
@@ -59,13 +62,20 @@ internal class TestMatrixStore(
     suspend fun getOrCreateTestMatrix(
         appApk: UploadedApk,
         testApk: UploadedApk,
-        environmentMatrix: EnvironmentMatrix
+        environmentMatrix: EnvironmentMatrix,
+        clientInfo: ClientInfo?,
+        sharding: ShardingOption?,
+        deviceSetup: DeviceSetup?,
     ): TestMatrix {
+
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
             environment = environmentMatrix,
+            clientInfo = clientInfo,
+            sharding = sharding,
             appApk = appApk.apkInfo,
-            testApk = testApk.apkInfo
+            testApk = testApk.apkInfo,
+            deviceSetup = deviceSetup
         )
         logger.trace {
             "test run id: $testRunId"
@@ -84,8 +94,11 @@ internal class TestMatrixStore(
             testMatrix = createNewTestMatrix(
                 testRunKey = testRunId,
                 environmentMatrix = environmentMatrix,
+                clientInfo = clientInfo,
+                sharding = sharding,
+                deviceSetup = deviceSetup,
                 appApk = appApk,
-                testApk = testApk
+                testApk = testApk,
             )
         )
         logger.info {
@@ -143,6 +156,9 @@ internal class TestMatrixStore(
     private suspend fun createNewTestMatrix(
         testRunKey: TestRun.Id,
         environmentMatrix: EnvironmentMatrix,
+        clientInfo: ClientInfo?,
+        sharding: ShardingOption?,
+        deviceSetup: DeviceSetup?,
         appApk: UploadedApk,
         testApk: UploadedApk
     ): TestMatrix {
@@ -166,9 +182,12 @@ internal class TestMatrixStore(
                     ),
                     testApk = FileReference(
                         gcsPath = testApk.gcsPath.path
-                    )
-                )
+                    ),
+                    shardingOption = sharding
+                ),
+                testSetup = deviceSetup?.toTestSetup()
             ),
+            clientInfo = clientInfo,
             environmentMatrix = environmentMatrix,
             resultStorage = ResultStorage(
                 googleCloudStorage = GoogleCloudStorage(

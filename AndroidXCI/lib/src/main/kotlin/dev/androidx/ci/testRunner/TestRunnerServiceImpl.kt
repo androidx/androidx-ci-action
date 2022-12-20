@@ -21,7 +21,12 @@ import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.BlobVisitor
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
+import dev.androidx.ci.generated.ftl.AndroidDevice
+import dev.androidx.ci.generated.ftl.ClientInfo
+import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import java.io.InputStream
 
@@ -53,7 +58,7 @@ internal class TestRunnerServiceImpl internal constructor(
     override suspend fun getOrUploadApk(
         name: String,
         sha256: String,
-        bytes: () -> ByteArray
+        bytes: suspend () -> ByteArray
     ): UploadedApk {
         apkStore.getUploadedApk(
             name = name,
@@ -75,11 +80,17 @@ internal class TestRunnerServiceImpl internal constructor(
     override suspend fun scheduleTests(
         testApk: UploadedApk,
         appApk: UploadedApk?,
-        devicePicker: DevicePicker
+        clientInfo: ClientInfo?,
+        sharding: ShardingOption?,
+        deviceSetup: DeviceSetup?,
+        devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
             appApk = appApk ?: apkStore.getPlaceholderApk(),
             testApk = testApk,
+            clientInfo = clientInfo,
+            sharding = sharding,
+            deviceSetup = deviceSetup,
             devicePicker = devicePicker
         )
         return TestRunnerService.ScheduleTestsResponse.create(

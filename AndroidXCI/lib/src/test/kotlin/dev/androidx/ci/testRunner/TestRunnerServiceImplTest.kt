@@ -2,11 +2,18 @@ package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
+import dev.androidx.ci.generated.ftl.ClientInfo
+import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.EnvironmentVariable
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
+import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
+import dev.androidx.ci.generated.ftl.UniformSharding
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -21,6 +28,9 @@ class TestRunnerServiceImplTest {
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
         gcsResultPath = "testRunnerServiceTest"
     )
+    private val devicePicker = { env: TestEnvironmentCatalog ->
+        listOf(FTLTestDevices.BLUELINE_API_28_PHYSICAL)
+    }
 
     @Test
     fun uploadApk() = runBlocking<Unit> {
@@ -48,6 +58,148 @@ class TestRunnerServiceImplTest {
         assertThat(
             fakeBackend.fakeGoogleCloudApi.uploadCount
         ).isEqualTo(1)
+    }
+
+    @Test
+    fun schedule() = runBlocking<Unit> {
+        val apk1Bytes = byteArrayOf(1, 2, 3, 4, 5)
+        val apk1Sha = sha256(apk1Bytes)
+        val upload1 = subject.getOrUploadApk(
+            name = "foo.apk",
+            sha256 = apk1Sha
+        ) {
+            apk1Bytes
+        }
+        val result = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker
+        )
+        assertThat(
+            result.testMatrices
+        ).hasSize(1)
+        assertThat(
+            result.testMatrices.single().clientInfo
+        ).isNull()
+
+        val sameRequest = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker
+        )
+        assertThat(
+            sameRequest.testMatrices
+        ).containsExactlyElementsIn(result.testMatrices)
+        // change client info, it should result in new test matrices
+        val clientInfo = ClientInfo(
+            name = "test",
+            clientInfoDetails = listOf(
+                ClientInfoDetail("key", "value")
+            )
+        )
+        val newClientInfo = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = clientInfo,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker
+        )
+        assertThat(
+            sameRequest.testMatrices
+        ).containsExactlyElementsIn(result.testMatrices)
+        assertThat(
+            newClientInfo.testMatrices
+        ).isNotEmpty()
+        assertThat(
+            newClientInfo.testMatrices
+        ).containsNoneIn(
+            result.testMatrices
+        )
+        // get the test matrix, make sure it has the client info
+        assertThat(
+            newClientInfo.testMatrices.single().clientInfo
+        ).isEqualTo(clientInfo)
+        assertThat(
+            subject.getTestMatrix(
+                newClientInfo.testMatrices.single().testMatrixId!!
+            )?.clientInfo
+        ).isEqualTo(clientInfo)
+
+        // shard
+        val shardingOption = ShardingOption(
+            uniformSharding = UniformSharding(3)
+        )
+        val shardedTest = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = null,
+            sharding = shardingOption,
+            deviceSetup = null,
+            devicePicker = devicePicker
+        )
+        // sharding will invalidate cache as it will change the test matrix response
+        // significantly. Otherwise, we'll be returning a TestMatrix with mismatched
+        // sharding information
+        assertThat(
+            shardedTest
+        ).isNotEqualTo(result.testMatrices)
+        assertThat(
+            subject.getTestMatrix(
+                shardedTest.testMatrices.first().testMatrixId!!
+            )?.testSpecification?.androidInstrumentationTest?.shardingOption
+        ).isEqualTo(shardingOption)
+
+        // put device info
+        val extraApkBytes = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8)
+        val extraApkSha = sha256(extraApkBytes)
+        val extraApk = subject.getOrUploadApk(
+            name = "extra.apk",
+            sha256 = extraApkSha
+        ) {
+            extraApkBytes
+        }
+        val withDeviceInfo = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = DeviceSetup(
+                additionalApks = setOf(extraApk),
+                directoriesToPull = setOf("/sdcard/foo/bar"),
+                instrumentationArguments = listOf(
+                    DeviceSetup.InstrumentationArgument("key1", "value1"),
+                    DeviceSetup.InstrumentationArgument("key2", "value2")
+                )
+            ),
+            devicePicker = devicePicker
+        )
+        withDeviceInfo.testMatrices.single().testSpecification.testSetup!!.let { testSetup ->
+            assertThat(
+                testSetup.environmentVariables
+            ).containsExactly(
+                EnvironmentVariable(key = "key1", value = "value1"),
+                EnvironmentVariable(key = "key2", value = "value2")
+            )
+            assertThat(
+                testSetup.directoriesToPull
+            ).containsExactly(
+                "/sdcard/foo/bar"
+            )
+            assertThat(
+                testSetup.additionalApks?.map {
+                    it.location?.gcsPath
+                }
+            ).containsExactly(
+                extraApk.gcsPath.path
+            )
+        }
     }
 
     @Test

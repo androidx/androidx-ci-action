@@ -23,8 +23,12 @@ import com.google.cloud.datastore.Key
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import dev.androidx.ci.datastore.DatastoreApi
+import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.testRunner.dto.TestRun.Companion.createId
 import dev.androidx.ci.testRunner.vo.ApkInfo
+import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.util.sha256
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 
@@ -38,7 +42,8 @@ internal class TestRun(
     val id: Id,
     val testMatrixId: String
 ) {
-    inline class Id(val key: Key)
+    @JvmInline
+    value class Id(val key: Key)
     /**
      * Unique key for each test run. This is used to de-dup TestMatrix requests such that we won't recreate a TestMatrix
      * if we've already run the exact same test.
@@ -53,7 +58,7 @@ internal class TestRun(
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()
-            moshi.adapter<Map<String, Any>>(type)
+            moshi.adapter<Map<String, Any?>>(type)
         }
 
         /**
@@ -62,14 +67,26 @@ internal class TestRun(
         fun createId(
             datastoreApi: DatastoreApi,
             environment: EnvironmentMatrix,
+            clientInfo: ClientInfo?,
             appApk: ApkInfo,
-            testApk: ApkInfo
+            testApk: ApkInfo,
+            deviceSetup: DeviceSetup?,
+            sharding: ShardingOption?
         ): Id {
             val json = adapter.toJson(
                 mapOf(
                     "e" to environment,
+                    "clientInfo" to clientInfo,
+                    "sharding" to sharding,
                     "app" to appApk.idHash,
-                    "test" to testApk.idHash
+                    "test" to testApk.idHash,
+                    "instrumentationArgs" to deviceSetup?.instrumentationArguments?.flatMap {
+                        listOf(it.key, it.value)
+                    },
+                    "additionalApks" to deviceSetup?.additionalApks?.map {
+                        it.apkInfo.idHash
+                    }?.sorted(),
+                    "directoriesToPull" to deviceSetup?.directoriesToPull?.sorted()
                 )
             )
             val sha = sha256(json.toByteArray(Charsets.UTF_8))
