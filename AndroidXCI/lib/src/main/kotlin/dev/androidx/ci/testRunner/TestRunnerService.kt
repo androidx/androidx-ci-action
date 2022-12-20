@@ -57,7 +57,7 @@ interface TestRunnerService {
         testApk: UploadedApk,
         appApk: UploadedApk?,
         clientInfo: ClientInfo?,
-        shardingOption: ShardingOption?,
+        sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>
     ): ScheduleTestsResponse
