@@ -28,7 +28,16 @@ android {
         targetSdk = 30
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildFeatures {
+        // Makes APK smaller
+        buildConfig = false
+    }
+    signingConfigs {
+        getByName("debug") {
+            // Make sure that we sign with the same checked in keystore, so that this APK is always identical.
+            storeFile = File(projectDir, "debug.keystore")
+        }
     }
 }
