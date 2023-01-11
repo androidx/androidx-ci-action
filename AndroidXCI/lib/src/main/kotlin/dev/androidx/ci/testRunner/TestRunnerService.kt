@@ -244,7 +244,10 @@ interface TestRunnerService {
     interface TestResultFiles {
         /**
          * The device identifier that run the test.
+         * e.g. redfin-30-en-portrait
          * e.g. redfin-30-en-portrait_rerun_1
+         * e.g. redfin-30-en-portrait-shard_0
+         * e.g. redfin-30-en-portrait-shard_2-rerun_2
          */
         val fullDeviceId: String
 
@@ -267,5 +270,10 @@ interface TestRunnerService {
          * The run number. First run is 0 and any subsequent re-run starts from 1.
          */
         val runNumber: Int
+        /**
+         * The shard number. It will be `null` if the test is not sharded. Otherwise,
+         * it will be the shard index starting from 0
+         */
+        val shard: Int?
     }
 }
