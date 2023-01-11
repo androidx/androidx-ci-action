@@ -289,6 +289,150 @@ class TestRunnerServiceImplTest {
         }
     }
 
+    @Test
+    fun results_shardedAndReRun() = runBlocking<Unit> {
+        val resultRelativePath = "my-test-matrix-results"
+        val resultPath = "${fakeBackend.fakeGoogleCloudApi.rootGcsPath}/$resultRelativePath"
+        val testMatrix = fakeBackend.fakeFirebaseTestLabApi.createTestMatrix(
+            projectId = fakeBackend.firebaseProjectId,
+            requestId = "requestId",
+            testMatrix = TestMatrix(
+                resultStorage = ResultStorage(
+                    googleCloudStorage = GoogleCloudStorage(resultPath)
+                ),
+                projectId = fakeBackend.firebaseProjectId,
+                environmentMatrix = EnvironmentMatrix(),
+                testSpecification = TestSpecification()
+            )
+        )
+        val testMatrixId = testMatrix.testMatrixId!!
+        assertThat(
+            subject.getTestMatrix(testMatrixId)
+        ).isEqualTo(
+            testMatrix
+        )
+        // incomplete, no results
+        assertThat(
+            subject.getTestMatrixResults(testMatrix)
+        ).isNull()
+        fakeBackend.finishTest(
+            testMatrixId = testMatrixId,
+            outcome = TestMatrix.OutcomeSummary.SUCCESS
+        )
+        assertThat(
+            subject.getTestMatrixResults(testMatrix)
+        ).isNull()
+
+        // put some results
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-test_results_merged.xml",
+            "merged-results".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_0/test_result_1.xml",
+            "test_result_1 content xml".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_1/test_result_1.xml",
+            "test_result_1 content xml".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_2-rerun_1/test_result_1.xml",
+            "test_result_1 content xml".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_2/test_result_1.xml",
+            "test_result_1 content xml".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_2-rerun_2/test_result_1.xml",
+            "test_result_1 content xml".toByteArray(Charsets.UTF_8)
+        )
+        val results = subject.getTestMatrixResults(testMatrixId)
+        assertThat(results).hasSize(1)
+        val result = results!!.single()
+        assertThat(
+            result.deviceId
+        ).isEqualTo("redfin-30-en-portrait")
+
+        assertThat(
+            result.mergedResults.readFully()
+        ).isEqualTo(
+            "merged-results".toByteArray(Charsets.UTF_8)
+        )
+
+        assertThat(result.testRuns).hasSize(5)
+        assertThat(
+            result.testRuns.find {
+                it.runNumber == 0 && it.shard == 0
+            }?.fullDeviceId
+        ).isEqualTo("redfin-30-en-portrait-shard_0")
+        assertThat(
+            result.testRuns.find {
+                it.runNumber == 0 && it.shard == 1
+            }?.fullDeviceId
+        ).isEqualTo("redfin-30-en-portrait-shard_1")
+        assertThat(
+            result.testRuns.find {
+                it.runNumber == 0 && it.shard == 2
+            }?.fullDeviceId
+        ).isEqualTo("redfin-30-en-portrait-shard_2")
+        assertThat(
+            result.testRuns.find {
+                it.runNumber == 1 && it.shard == 2
+            }?.fullDeviceId
+        ).isEqualTo("redfin-30-en-portrait-shard_2-rerun_1")
+        assertThat(
+            result.testRuns.find {
+                it.runNumber == 2 && it.shard == 2
+            }?.fullDeviceId
+        ).isEqualTo("redfin-30-en-portrait-shard_2-rerun_2")
+    }
+
+    private val fullDeviceIdInputs = listOf(
+        "redfin-30-en-portrait",
+        "redfin-30-en-portrait_rerun_1",
+        "redfin-30-en-portrait-shard_0",
+        "redfin-30-en-portrait-shard_20",
+        "redfin-30-en-portrait-shard_2-rerun_3",
+        "redfin-30-en-portrait-shard_3-rerun_21"
+    )
+    @Test
+    fun parseShard() {
+        assertThat(
+            fullDeviceIdInputs.associateWith {
+                TestRunnerServiceImpl.TestResultFilesImpl.parseShard(it)
+            }
+        ).containsExactlyEntriesIn(
+            mapOf(
+                "redfin-30-en-portrait" to null,
+                "redfin-30-en-portrait_rerun_1" to null,
+                "redfin-30-en-portrait-shard_0" to 0,
+                "redfin-30-en-portrait-shard_20" to 20,
+                "redfin-30-en-portrait-shard_2-rerun_3" to 2,
+                "redfin-30-en-portrait-shard_3-rerun_21" to 3
+            )
+        )
+    }
+
+    @Test
+    fun parseRunNumber() {
+        assertThat(
+            fullDeviceIdInputs.associateWith {
+                TestRunnerServiceImpl.TestResultFilesImpl.parseRunNumber(it)
+            }
+        ).containsExactlyEntriesIn(
+            mapOf(
+                "redfin-30-en-portrait" to 0,
+                "redfin-30-en-portrait_rerun_1" to 1,
+                "redfin-30-en-portrait-shard_0" to 0,
+                "redfin-30-en-portrait-shard_20" to 0,
+                "redfin-30-en-portrait-shard_2-rerun_3" to 3,
+                "redfin-30-en-portrait-shard_3-rerun_21" to 21
+            )
+        )
+    }
+
     private fun TestRunnerService.ResultFileResource.readFully() = openInputStream().use {
         it.readAllBytes()
     }

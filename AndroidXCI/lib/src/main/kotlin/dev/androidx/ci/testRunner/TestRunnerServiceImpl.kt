@@ -217,16 +217,12 @@ internal class TestRunnerServiceImpl internal constructor(
          * Returns the run # for the test.
          * e.g. if the test run 3 times (due to retries), this will return 0, 1 and 2.
          */
-        override val runNumber: Int
+        override val runNumber: Int = parseRunNumber(fullDeviceId)
 
-        init {
-            val rerunNumber = fullDeviceId.substringAfterLast("rerun_", missingDelimiterValue = "")
-            runNumber = if (rerunNumber.isBlank()) {
-                0
-            } else {
-                rerunNumber.toIntOrNull() ?: 0
-            }
-        }
+        /**
+         * Shard number, if the test is sharded
+         */
+        override val shard: Int? = parseShard(fullDeviceId)
 
         internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
             xmlResultBlobs.add(resultFileResource)
@@ -242,6 +238,20 @@ internal class TestRunnerServiceImpl internal constructor(
                   xmlResults=$xmlResults,
                 )
             """.trimIndent()
+        }
+
+        companion object {
+            private val shardRegex = """.*shard_(\d+).*""".toRegex(RegexOption.IGNORE_CASE)
+            private val rerunRegex = """.*rerun_(\d+).*""".toRegex(RegexOption.IGNORE_CASE)
+            fun parseShard(fullDeviceId: String): Int? {
+                val result = shardRegex.matchEntire(fullDeviceId)
+                return result?.groups?.last()?.value?.toIntOrNull()
+            }
+
+            fun parseRunNumber(fullDeviceId: String): Int {
+                val result = rerunRegex.matchEntire(fullDeviceId)
+                return result?.groups?.last()?.value?.toIntOrNull() ?: 0
+            }
         }
     }
 }
