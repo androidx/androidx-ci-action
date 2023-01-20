@@ -34,7 +34,7 @@ val publishRepo = project.layout.buildDirectory.dir("repo")
 subprojects {
     tasks.withType(KotlinCompile::class.java).configureEach {
         kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
             this.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
         }
     }

@@ -194,7 +194,7 @@ private class Cli : CliktCommand() {
         val ctx = LogManager.getContext(false) as LoggerContext
         val config = ctx.configuration
         val layout = PatternLayout.createDefaultLayout(config)
-        val appender = FileAppender.newBuilder<FileAppender.Builder<*>>()
+        val appender: FileAppender = FileAppender.newBuilder()
             .withFileName(logFile.absolutePath)
             .withAppend(false)
             .withImmediateFlush(false)

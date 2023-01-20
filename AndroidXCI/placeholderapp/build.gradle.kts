@@ -15,20 +15,18 @@
  */
 
 plugins {
-    id("com.android.application") version("7.0.0")
+    id("com.android.application") version("7.3.0")
 }
 
 android {
-    compileSdk = 30
-    buildToolsVersion = "30.0.3"
+    compileSdk = 33
 
     defaultConfig {
-        applicationId = "dev.androidx.ci.emptyapp"
+        namespace = "dev.androidx.ci.placeholderapp"
         minSdk = 14
-        targetSdk = 30
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
         // Makes APK smaller
