@@ -32,7 +32,6 @@ import org.junit.runners.JUnit4
  * This is not a real test. Instead, a utility to play with Google Cloud API.
  *
  * To run it, you'll need Google Cloud Authentication in your environment.
- *
  * export ANDROIDX_GCLOUD_CREDENTIALS="<cloud json key from iam>"
  */
 @RunWith(JUnit4::class)
@@ -63,6 +62,27 @@ internal class GoogleCloudApiPlaygroundTest {
             result
         ).isEqualTo(
             GcsPath("gs://androidx-ftl-test-results/testing/unitTest.txt")
+        )
+    }
+
+    @Test
+    fun copyItem() = testScope.runTest {
+        val client = GoogleCloudApi.build(
+            config = Config.CloudStorage(
+                gcp = playgroundCredentialsRule.gcpConfig,
+                bucketName = "androidx-ftl-test-results",
+                bucketPath = "testing",
+            ),
+            context = testScope.coroutineContext
+        )
+        val result = client.copy(
+            GcsPath("gs://androidx-ftl-test-results/github-ci-action/activity-activity-compose_activity-compose-debug-androidTest/02157e027616d078fcfee20a89bba6de355ab9856eda343ce2b0ed08c279e355.apk"),
+            "copy.apk"
+        )
+        Truth.assertThat(
+            result
+        ).isEqualTo(
+            GcsPath("gs://androidx-ftl-test-results/testing/copy.apk")
         )
     }
 

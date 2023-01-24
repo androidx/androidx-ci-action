@@ -117,33 +117,5 @@ internal class ApkStore(
         return null
     }
 
-    suspend fun getUploadedAdditionalApk(
-        filePath: String,
-    ): UploadedApk? {
-        return getUploadedAdditionalApk(
-            ApkInfo(filePath)
-        )
-    }
-
-    private suspend fun getUploadedAdditionalApk(
-        apkInfo: ApkInfo
-    ): UploadedApk? {
-        logger.info {
-            "checking if additinoal apk already exists"
-        }
-        // example filePath: gs://chrome-signed/android-B0urB0N/110.0.5481.23/arm_64/TrichromeLibraryGoogleStable.apk
-        // example relativePath: 110.0.5481.23/arm_64/TrichromeLibraryGoogleStable.apk
-        val relativePath = apkInfo.filePath.split("/").takeLast(3).joinToString("/")
-        val existing = googleCloudApi.existingFilePath(relativePath)
-        if (existing != null) {
-            logger.info { "additional apk exists already, returning without re-upload: $existing" }
-            return UploadedApk(
-                gcsPath = existing,
-                apkInfo = apkInfo
-            )
-        }
-        return null
-    }
-
     private fun ApkInfo.gcpRelativePath() = filePathWithoutExtension + "/" + this.idHash + ".apk"
 }
