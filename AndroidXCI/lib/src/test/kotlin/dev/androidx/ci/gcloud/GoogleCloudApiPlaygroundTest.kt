@@ -32,6 +32,7 @@ import org.junit.runners.JUnit4
  * This is not a real test. Instead, a utility to play with Google Cloud API.
  *
  * To run it, you'll need Google Cloud Authentication in your environment.
+ *
  * export ANDROIDX_GCLOUD_CREDENTIALS="<cloud json key from iam>"
  */
 @RunWith(JUnit4::class)
