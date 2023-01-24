@@ -49,20 +49,19 @@ internal interface GoogleCloudApi {
     ): GcsPath
 
     /**
-     * Downloads data from the given full GCS path.
-     *
-     * @return byte array
-     */
-    suspend fun download(
-        fullGcsPath: String,
-    ): ByteArray
-
-    /**
      * Returns a GcsPath for an object if it exists
      */
     suspend fun existingFilePath(
         relativePath: String
     ): GcsPath?
+
+    /**
+     * Copies data from source GCS path to the target relative path.
+     */
+    suspend fun copy(
+        sourceGcsPath: GcsPath,
+        targetRelativePath: String
+    ): GcsPath
 
     fun getGcsPath(relativePath: String): GcsPath
 
@@ -147,11 +146,17 @@ private class GoogleCloudApiImpl(
         GcsPath.create(blob)
     }
 
-    override suspend fun download(
-        fullGcsPath: String,
-    ): ByteArray = withContext(context) {
-        val blobId = BlobId.fromGsUtilUri(fullGcsPath)
-        service.readAllBytes(blobId)
+    override suspend fun copy(
+        sourceGcsPath: GcsPath,
+        targetRelativePath: String
+    ): GcsPath = withContext(context) {
+        val sourceBlobId = BlobId.fromGsUtilUri(sourceGcsPath.path)
+        val artifactBucketPath = makeBucketPath(targetRelativePath)
+        val targetBlobId = BlobId.of(config.bucketName, artifactBucketPath)
+        service.copy(
+            Storage.CopyRequest.newBuilder().setSource(sourceBlobId).setTarget(targetBlobId).build()
+        )
+        GcsPath.create(config.bucketName, artifactBucketPath)
     }
 
     override suspend fun walkEntires(

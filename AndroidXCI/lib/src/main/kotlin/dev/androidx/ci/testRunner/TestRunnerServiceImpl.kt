@@ -73,34 +73,21 @@ internal class TestRunnerServiceImpl internal constructor(
         )
     }
 
-    override suspend fun getOrUploadAdditionalApk(
-        fullGcsPath: String,
-        relativePath: String
+    override suspend fun getOrCopyApk(
+        sourceGcsPath: GcsPath,
+        targetRelativePath: String,
     ): UploadedApk {
-        val uploadedPath = googleCloudApi.existingFilePath(relativePath)?.let {
-            val bytes = googleCloudApi.download(fullGcsPath)
-            googleCloudApi.upload(relativePath, bytes)
+        val targetGcsPath = googleCloudApi.existingFilePath(targetRelativePath)?.let {
+            googleCloudApi.copy(sourceGcsPath, targetRelativePath)
         }
 
         return UploadedApk(
-            gcsPath = uploadedPath!!,
+            gcsPath = targetGcsPath!!,
             apkInfo = ApkInfo(
-                filePath = fullGcsPath,
+                filePath = targetRelativePath,
             )
         )
     }
-
-//    override suspend fun getExistingFilePath(relativePath: String): GcsPath? {
-//        return googleCloudApi.existingFilePath(relativePath)
-//    }
-//
-//    override suspend fun download(fullGcsPath: String): ByteArray {
-//        return googleCloudApi.download(fullGcsPath)
-//    }
-//
-//    override suspend fun upload(relativePath: String, bytes: ByteArray): GcsPath {
-//        return googleCloudApi.upload(relativePath, bytes)
-//    }
 
     override suspend fun uploadApk(
         name: String,
