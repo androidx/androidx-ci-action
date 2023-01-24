@@ -84,6 +84,34 @@ internal class ApkStore(
         }
     }
 
+    suspend fun uploadAdditionalApk(filePath: String): UploadedApk {
+        val apkInfo = ApkInfo.create(filePath)
+        getUploadedAdditionalApk(apkInfo)?.let {
+            return it
+        }
+        logger.info {
+            "downloading $filePath"
+        }
+        val bytes = googleCloudApi.downloadAdditionalApk(filePath)
+
+        logger.info {
+            "uploading $filePath"
+        }
+        val relativePath = filePath.split("/").takeLast(3).joinToString("/")
+        val gcsPath = googleCloudApi.upload(
+            relativePath = relativePath,
+            bytes = bytes
+        )
+        return UploadedApk(
+            gcsPath = gcsPath,
+            apkInfo = apkInfo
+        ).also {
+            logger.info {
+                "completed uploading apk: $it"
+            }
+        }
+    }
+
     /**
      * Returns the APK for the given [name] and [sha256] if it already exists in the backend.
      */
@@ -109,6 +137,34 @@ internal class ApkStore(
         val existing = googleCloudApi.existingFilePath(relativePath)
         if (existing != null) {
             logger.info { "apk exists already, returning without re-upload: $existing" }
+            return UploadedApk(
+                gcsPath = existing,
+                apkInfo = apkInfo
+            )
+        }
+        return null
+    }
+
+    suspend fun getUploadedAdditionalApk(
+        filePath: String,
+    ): UploadedApk? {
+        return getUploadedAdditionalApk(
+            ApkInfo(filePath)
+        )
+    }
+
+    private suspend fun getUploadedAdditionalApk(
+        apkInfo: ApkInfo
+    ): UploadedApk? {
+        logger.info {
+            "checking if additinoal apk already exists"
+        }
+        // example filePath: gs://chrome-signed/android-B0urB0N/110.0.5481.23/arm_64/TrichromeLibraryGoogleStable.apk
+        // example relativePath: 110.0.5481.23/arm_64/TrichromeLibraryGoogleStable.apk
+        val relativePath = apkInfo.filePath.split("/").takeLast(3).joinToString("/")
+        val existing = googleCloudApi.existingFilePath(relativePath)
+        if (existing != null) {
+            logger.info { "additional apk exists already, returning without re-upload: $existing" }
             return UploadedApk(
                 gcsPath = existing,
                 apkInfo = apkInfo

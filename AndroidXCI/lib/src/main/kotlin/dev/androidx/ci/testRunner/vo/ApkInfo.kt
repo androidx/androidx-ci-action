@@ -29,7 +29,7 @@ data class ApkInfo constructor(
     /**
      * A hash value computed from the contents of the ApkFile. Is good enough to be used as a unique identifier.
      */
-    val idHash: String
+    val idHash: String = ""
 ) {
     val fileName: String by lazy {
         filePath.split('/').last()
@@ -46,7 +46,7 @@ data class ApkInfo constructor(
     companion object {
         fun create(
             filePath: String,
-            contents: ByteArray
+            contents: ByteArray = ByteArray(0),
         ) = ApkInfo(
             filePath = filePath,
             idHash = sha256(contents)

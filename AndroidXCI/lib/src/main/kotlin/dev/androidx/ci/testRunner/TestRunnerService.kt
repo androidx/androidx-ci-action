@@ -48,6 +48,18 @@ interface TestRunnerService {
     ): UploadedApk
 
     /**
+     * Finds the APK in Google Cloud Storage with the given Chrome bucket file path.
+     * If it doesn't exist, download from Chrome bucket and upload to our bucket.
+     *
+     * @param filePath full GCS path of the APK, including the Chrome bucket.
+     *
+     * @return Returns an [UploadedApk] instance that identifies the file in the cloud.
+     */
+    suspend fun getOrUploadAdditionalApk(
+        filePath: String,
+    ): UploadedApk
+
+    /**
      * Schedules the tests for the given [testApk] / [appApk] pair using the provided [devicePicker].
      * If given, [clientInfo] will be preserved in the TestMatrix on the FTL side.
      * It is part of the test matrix caching key so it is important not to put unnecessarily

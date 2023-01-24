@@ -49,6 +49,15 @@ internal interface GoogleCloudApi {
     ): GcsPath
 
     /**
+     * Downloads data from the given [filePath].
+     *
+     * @return byte array
+     */
+    suspend fun downloadAdditionalApk(
+        filePath: String,
+    ): ByteArray
+
+    /**
      * Returns a GcsPath for an object if it exists
      */
     suspend fun existingFilePath(
@@ -136,6 +145,13 @@ private class GoogleCloudApiImpl(
             blobInfo, bytes
         )
         GcsPath.create(blob)
+    }
+
+    override suspend fun downloadAdditionalApk(
+        filePath: String,
+    ): ByteArray = withContext(context) {
+        val blobId = BlobId.fromGsUtilUri(filePath)
+        service.readAllBytes(blobId)
     }
 
     override suspend fun walkEntires(

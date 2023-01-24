@@ -84,7 +84,7 @@ internal class TestRun(
                         listOf(it.key, it.value)
                     },
                     "additionalApks" to deviceSetup?.additionalApks?.map {
-                        it.apkInfo.idHash
+                        it.apkInfo.filePath
                     }?.sorted(),
                     "directoriesToPull" to deviceSetup?.directoriesToPull?.sorted()
                 )

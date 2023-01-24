@@ -72,6 +72,15 @@ internal class TestRunnerServiceImpl internal constructor(
         )
     }
 
+    override suspend fun getOrUploadAdditionalApk(
+        filePath: String,
+    ): UploadedApk {
+        apkStore.getUploadedAdditionalApk(filePath)?.let {
+            return it
+        }
+        return apkStore.uploadAdditionalApk(filePath)
+    }
+
     override suspend fun uploadApk(
         name: String,
         bytes: ByteArray
