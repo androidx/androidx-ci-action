@@ -89,7 +89,7 @@ internal class TestMatrixStoreTest {
             uniformSharding = UniformSharding(3)
         )
         val deviceSetup = DeviceSetup(
-            additionalApks = setOf(extraApk),
+            additionalApks = listOf(extraApk),
             directoriesToPull = setOf("/sdcard/foo/bar"),
             instrumentationArguments = listOf(
                 DeviceSetup.InstrumentationArgument(

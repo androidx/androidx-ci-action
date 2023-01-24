@@ -49,8 +49,11 @@ interface TestRunnerService {
     ): UploadedApk
 
     /**
-     * Finds the APK in Google Cloud Storage.
+     * Finds the APK in Google Cloud Storage based on the targetRelativePath.
      * If it doesn't exist, copy the data from the source GCS path to the target path.
+     *
+     * Note that an APK would be considered to exist as long as the targetRelativePath exists
+     * in our cloud bucket, even if the file content has changed.
      *
      * @param sourceGcsPath the GCS path that we may need to copy file from
      * @param targetRelativePath the GCS that we would write the file to

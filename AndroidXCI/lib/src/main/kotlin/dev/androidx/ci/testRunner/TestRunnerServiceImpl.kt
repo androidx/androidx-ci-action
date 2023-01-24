@@ -26,7 +26,6 @@ import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
-import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -78,11 +77,10 @@ internal class TestRunnerServiceImpl internal constructor(
         sourceGcsPath: GcsPath,
         targetRelativePath: String,
     ): RemoteApk {
-        val targetGcsPath = googleCloudApi.existingFilePath(targetRelativePath)?.let {
-            googleCloudApi.copy(sourceGcsPath, targetRelativePath)
-        }
+        val targetGcsPath = googleCloudApi.existingFilePath(targetRelativePath)
+            ?: googleCloudApi.copy(sourceGcsPath, targetRelativePath)
 
-        return RemoteApk(gcsPath = targetGcsPath!!)
+        return RemoteApk(gcsPath = targetGcsPath)
     }
 
     override suspend fun uploadApk(

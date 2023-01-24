@@ -85,7 +85,7 @@ internal class TestRun(
                     },
                     "additionalApks" to deviceSetup?.additionalApks?.map {
                         it.gcsPath.path
-                    }?.sorted(),
+                    }, // The order we install additional apks is important, so we do not sort here.
                     "directoriesToPull" to deviceSetup?.directoriesToPull?.sorted()
                 )
             )

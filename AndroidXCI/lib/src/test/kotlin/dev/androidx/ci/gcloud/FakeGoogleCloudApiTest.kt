@@ -36,4 +36,11 @@ internal class FakeGoogleCloudApiTest {
         val result = api.upload("/foo/bar", byteArrayOf(1, 2, 3))
         assertThat(api.getArtifact(result)).isEqualTo(byteArrayOf(1, 2, 3))
     }
+
+    @Test
+    fun copyArtifact() = testScope.runBlockingTest {
+        val sourceGcsPath = api.upload("/foo/bar", byteArrayOf(1, 2, 3))
+        val result = api.copy(sourceGcsPath, "/copy/foo/bar")
+        assertThat(api.getArtifact(result)).isEqualTo(byteArrayOf(1, 2, 3))
+    }
 }
