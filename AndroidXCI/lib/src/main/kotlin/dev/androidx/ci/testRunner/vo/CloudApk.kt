@@ -31,11 +31,11 @@ interface CloudApk {
 data class UploadedApk(
     override val gcsPath: GcsPath,
     val apkInfo: ApkInfo
-): CloudApk
+) : CloudApk
 
 /**
  * Wrapper for an APK that comes from another GCS bucket.
  */
 data class RemoteApk(
     override val gcsPath: GcsPath
-): CloudApk
+) : CloudApk

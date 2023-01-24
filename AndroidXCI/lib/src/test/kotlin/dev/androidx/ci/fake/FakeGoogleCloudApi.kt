@@ -76,7 +76,7 @@ internal class FakeGoogleCloudApi(
     override suspend fun copy(sourceGcsPath: GcsPath, targetRelativePath: String): GcsPath {
         uploadCount ++
         val path = makeGcsPath(targetRelativePath)
-        artifacts[path] = getArtifact(sourceGcsPath)!!
+        artifacts[path] = getArtifact(sourceGcsPath) ?: throwNotFound<ByteArray>()
         return path
     }
 
