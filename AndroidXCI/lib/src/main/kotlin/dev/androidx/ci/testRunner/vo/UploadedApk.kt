@@ -19,9 +19,16 @@ package dev.androidx.ci.testRunner.vo
 import dev.androidx.ci.gcloud.GcsPath
 
 /**
- * Wrapper for an Apk that exists in GCP
+ * Wrapper for an APK that we upload to our GCS bucket.
  */
 data class UploadedApk(
-    val gcsPath: GcsPath,
+    override val gcsPath: GcsPath,
     val apkInfo: ApkInfo
-)
+): CloudApk
+
+/**
+ * Wrapper for an APK that comes from another GCS bucket.
+ */
+data class RemoteApk(
+    override val gcsPath: GcsPath
+): CloudApk

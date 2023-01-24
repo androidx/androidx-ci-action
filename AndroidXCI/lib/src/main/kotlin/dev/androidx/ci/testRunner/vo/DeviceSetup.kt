@@ -12,7 +12,7 @@ data class DeviceSetup(
     /**
      * Additional APKs to install before running test.
      */
-    val additionalApks: Set<UploadedApk>? = null,
+    val additionalApks: Set<CloudApk>? = null,
     /**
      * List of directories on the device to upload to GCS at the end of the test; they must be
      * absolute paths under /sdcard, /storage or /data/local/tmp. Path names are restricted to
@@ -29,10 +29,10 @@ data class DeviceSetup(
 ) {
     internal fun toTestSetup(): TestSetup {
         return TestSetup(
-            additionalApks = additionalApks?.map { uploadedApk ->
+            additionalApks = additionalApks?.map { cloudApk ->
                 Apk(
                     location = FileReference(
-                        gcsPath = uploadedApk.gcsPath.path
+                        gcsPath = cloudApk.gcsPath.path
                     )
                 )
             },

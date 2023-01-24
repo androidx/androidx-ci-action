@@ -14,6 +14,7 @@ import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.DeviceSetup
+import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -54,12 +55,12 @@ interface TestRunnerService {
      * @param sourceGcsPath the GCS path that we may need to copy file from
      * @param targetRelativePath the GCS that we would write the file to
      *
-     * @return Returns an [UploadedApk] instance that identifies the file in the cloud.
+     * @return Returns an [RemoteApk] instance that identifies the file in the cloud.
      */
-    suspend fun getOrCopyApk(
+    suspend fun getOrUploadRemoteApk(
         sourceGcsPath: GcsPath,
         targetRelativePath: String,
-    ): UploadedApk
+    ): RemoteApk
 
     /**
      * Schedules the tests for the given [testApk] / [appApk] pair using the provided [devicePicker].
