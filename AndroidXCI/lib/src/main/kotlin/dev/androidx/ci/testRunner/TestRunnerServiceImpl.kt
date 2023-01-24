@@ -26,6 +26,7 @@ import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import java.io.InputStream
@@ -73,13 +74,33 @@ internal class TestRunnerServiceImpl internal constructor(
     }
 
     override suspend fun getOrUploadAdditionalApk(
-        filePath: String,
+        fullGcsPath: String,
+        relativePath: String
     ): UploadedApk {
-        apkStore.getUploadedAdditionalApk(filePath)?.let {
-            return it
+        val uploadedPath = googleCloudApi.existingFilePath(relativePath)?.let {
+            val bytes = googleCloudApi.download(fullGcsPath)
+            googleCloudApi.upload(relativePath, bytes)
         }
-        return apkStore.uploadAdditionalApk(filePath)
+
+        return UploadedApk(
+            gcsPath = uploadedPath!!,
+            apkInfo = ApkInfo(
+                filePath = fullGcsPath,
+            )
+        )
     }
+
+//    override suspend fun getExistingFilePath(relativePath: String): GcsPath? {
+//        return googleCloudApi.existingFilePath(relativePath)
+//    }
+//
+//    override suspend fun download(fullGcsPath: String): ByteArray {
+//        return googleCloudApi.download(fullGcsPath)
+//    }
+//
+//    override suspend fun upload(relativePath: String, bytes: ByteArray): GcsPath {
+//        return googleCloudApi.upload(relativePath, bytes)
+//    }
 
     override suspend fun uploadApk(
         name: String,

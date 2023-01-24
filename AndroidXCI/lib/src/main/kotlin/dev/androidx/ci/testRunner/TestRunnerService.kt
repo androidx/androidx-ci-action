@@ -47,17 +47,39 @@ interface TestRunnerService {
         bytes: suspend () -> ByteArray
     ): UploadedApk
 
-    /**
-     * Finds the APK in Google Cloud Storage with the given Chrome bucket file path.
-     * If it doesn't exist, download from Chrome bucket and upload to our bucket.
-     *
-     * @param filePath full GCS path of the APK, including the Chrome bucket.
-     *
-     * @return Returns an [UploadedApk] instance that identifies the file in the cloud.
-     */
     suspend fun getOrUploadAdditionalApk(
-        filePath: String,
+        fullGcsPath: String,
+        relativePath: String
     ): UploadedApk
+
+//    /**
+//     * Finds the existing file path in Google Cloud Storage with the given relative file path.
+//     * If it doesn't exist, returns null.
+//     *
+//     * @param relativePath the file path of the APK after bucket name and bucket path.
+//     *
+//     * @return Returns the full GCS path of the file
+//     */
+//    suspend fun getExistingFilePath(relativePath: String): GcsPath?
+//
+//    /**
+//     * Downloads the data based on the full GCS path.
+//     *
+//     * @param fullGcsPath the full GCS path to download the data from.
+//     *
+//     * @return Returns the byte array of the data
+//     */
+//    suspend fun download(fullGcsPath: String): ByteArray
+//
+//    /**
+//     * Uploads data to our own GCS based on the relative path.
+//     *
+//     * @param relativePath the file path of the data after bucket name and bucket path.
+//     * @param bytes content of the data
+//     *
+//     * @return Returns the full GCS path of the file
+//     */
+//    suspend fun upload(relativePath: String, bytes: ByteArray): GcsPath
 
     /**
      * Schedules the tests for the given [testApk] / [appApk] pair using the provided [devicePicker].
