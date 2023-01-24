@@ -84,34 +84,6 @@ internal class ApkStore(
         }
     }
 
-    suspend fun uploadAdditionalApk(filePath: String): UploadedApk {
-        val apkInfo = ApkInfo.create(filePath)
-        getUploadedAdditionalApk(apkInfo)?.let {
-            return it
-        }
-        logger.info {
-            "downloading $filePath"
-        }
-        val bytes = googleCloudApi.downloadAdditionalApk(filePath)
-
-        logger.info {
-            "uploading $filePath"
-        }
-        val relativePath = filePath.split("/").takeLast(3).joinToString("/")
-        val gcsPath = googleCloudApi.upload(
-            relativePath = relativePath,
-            bytes = bytes
-        )
-        return UploadedApk(
-            gcsPath = gcsPath,
-            apkInfo = apkInfo
-        ).also {
-            logger.info {
-                "completed uploading apk: $it"
-            }
-        }
-    }
-
     /**
      * Returns the APK for the given [name] and [sha256] if it already exists in the backend.
      */
