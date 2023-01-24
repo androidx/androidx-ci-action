@@ -46,7 +46,7 @@ data class ApkInfo constructor(
     companion object {
         fun create(
             filePath: String,
-            contents: ByteArray,
+            contents: ByteArray
         ) = ApkInfo(
             filePath = filePath,
             idHash = sha256(contents)
