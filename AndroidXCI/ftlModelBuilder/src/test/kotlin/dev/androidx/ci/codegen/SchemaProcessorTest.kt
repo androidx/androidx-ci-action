@@ -18,6 +18,7 @@ package dev.androidx.ci.codegen
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import java.util.TreeMap
 
 class SchemaProcessorTest {
     @Test
@@ -26,7 +27,7 @@ class SchemaProcessorTest {
             id = "MyClass",
             type = "object",
             description = "escape me please % %T %S",
-            properties = emptyMap()
+            properties = TreeMap()
         )
         val processor = SchemaProcessor(
             schemas = listOf(schema),
@@ -56,7 +57,7 @@ class SchemaProcessorTest {
                     enum = listOf("A", "B", "C"),
                     enumDescriptions = listOf("aa", "bb")
                 )
-            )
+            ).let { TreeMap(it) }
         )
         val processor = SchemaProcessor(
             schemas = listOf(schema),

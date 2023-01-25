@@ -89,6 +89,7 @@ internal class DiscoveryDocumentModelGenerator(
             .build()
         val moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
+            .add(SortedMapAdapter.FACTORY)
             .build()
         val discoveryAdapter = moshi.adapter(DiscoveryDto::class.java).lenient()
         return client.newCall(request).execute().use { response ->
