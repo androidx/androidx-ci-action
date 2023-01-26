@@ -27,7 +27,6 @@ import java.lang.reflect.Type
 import java.util.SortedMap
 import java.util.TreeMap
 
-
 // see: https://developers.google.com/discovery/v1/reference/apis
 /**
  * The root discovery class

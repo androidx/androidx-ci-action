@@ -14,7 +14,8 @@ class CodeGenTest {
 
     @Test
     fun generateCode() {
-        val firstOut = generate("""
+        val firstOut = generate(
+            """
             {
               "schemas": {
                 "MyClass": {
@@ -31,8 +32,10 @@ class CodeGenTest {
                 }
               }
             } 
-        """.trimIndent())
-        val secondOut = generate("""
+            """.trimIndent()
+        )
+        val secondOut = generate(
+            """
             {
               "schemas": {
                 "MyClass": {
@@ -49,7 +52,8 @@ class CodeGenTest {
                 }
               }
             } 
-        """.trimIndent())
+            """.trimIndent()
+        )
 
         assertThat(
             firstOut.readText(Charsets.UTF_8)
