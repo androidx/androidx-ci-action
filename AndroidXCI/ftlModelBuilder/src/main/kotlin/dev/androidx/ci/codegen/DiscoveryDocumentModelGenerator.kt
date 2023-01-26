@@ -23,6 +23,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okio.BufferedSource
 import java.io.File
 
 /**
@@ -46,7 +47,7 @@ internal class DiscoveryDocumentModelGenerator(
      * The discovery file url to fetch the models.
      * For firebase test lab: https://testing.googleapis.com/$discovery/rest?version=v1
      */
-    val discoveryUrl: String,
+    val readDiscoverySource: ((BufferedSource) -> DiscoveryDto) -> DiscoveryDto,
     /**
      * The root package for generated classes
      */
@@ -56,6 +57,27 @@ internal class DiscoveryDocumentModelGenerator(
      */
     val typeSpecModifiers: List<KModifier> = emptyList(),
 ) {
+    constructor(
+        outDir: File,
+        discoveryUrl: String,
+        pkg: String,
+        typeSpecModifiers: List<KModifier> = emptyList(),
+    ) : this(
+        outDir = outDir,
+        readDiscoverySource = { block ->
+            val client = OkHttpClient.Builder()
+                .build()
+            val request = Request.Builder()
+                .url(discoveryUrl)
+                .build()
+            client.newCall(request).execute().use { response ->
+                block(response.body!!.source())
+            }
+        },
+        pkg = pkg,
+        typeSpecModifiers = typeSpecModifiers
+    )
+
     fun generate() {
         val discoveryDoc = fetchDiscoveryDocument()
         val processor = SchemaProcessor(
@@ -82,18 +104,14 @@ internal class DiscoveryDocumentModelGenerator(
     }
 
     private fun fetchDiscoveryDocument(): DiscoveryDto {
-        val client = OkHttpClient.Builder()
-            .build()
-        val request = Request.Builder()
-            .url(discoveryUrl)
-            .build()
         val moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .add(SortedMapAdapter.FACTORY)
             .build()
         val discoveryAdapter = moshi.adapter(DiscoveryDto::class.java).lenient()
-        return client.newCall(request).execute().use { response ->
-            discoveryAdapter.fromJson(response.body!!.source())
-        } ?: error("Cannot get discovery document")
+
+        return readDiscoverySource { source ->
+            discoveryAdapter.fromJson(source) ?: error("Cannot get discovery document")
+        }
     }
 }
