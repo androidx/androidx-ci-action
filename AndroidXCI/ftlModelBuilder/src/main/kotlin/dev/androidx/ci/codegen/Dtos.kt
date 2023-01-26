@@ -17,13 +17,22 @@
 package dev.androidx.ci.codegen
 
 import com.squareup.moshi.Json
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.JsonReader
+import com.squareup.moshi.JsonWriter
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
+import java.util.SortedMap
+import java.util.TreeMap
 
 // see: https://developers.google.com/discovery/v1/reference/apis
 /**
  * The root discovery class
  */
 internal class DiscoveryDto(
-    val schemas: Map<String, SchemaDto>
+    val schemas: SortedMap<String, SchemaDto>
 )
 
 /**
@@ -36,7 +45,9 @@ internal data class SchemaDto(
      */
     val type: String,
     val description: String? = null,
-    val properties: Map<String, PropertyDto>? = null
+    // discovery documents are not stable hence we keep properties
+    // sorted by name.
+    val properties: SortedMap<String, PropertyDto>? = null
 ) {
     fun isObject() = type == "object"
 }
@@ -51,3 +62,45 @@ internal data class PropertyDto(
     val items: PropertyDto? = null,
     val format: String? = null
 )
+
+/**
+ * A moshi adapter for generic SortedMaps that delegates to moshi's map
+ * adapter.
+ */
+internal class SortedMapAdapter<K, V>(
+    private val mapAdapter: JsonAdapter<Map<K, V>>
+) : JsonAdapter<SortedMap<K, V>>() {
+    override fun fromJson(reader: JsonReader): SortedMap<K, V>? {
+        val map = mapAdapter.fromJson(reader) ?: return null
+        return TreeMap(map)
+    }
+
+    override fun toJson(writer: JsonWriter, value: SortedMap<K, V>?) {
+        mapAdapter.toJson(value)
+    }
+
+    companion object {
+        val FACTORY = object : Factory {
+            override fun create(
+                type: Type,
+                annotations: MutableSet<out Annotation>,
+                moshi: Moshi
+            ): JsonAdapter<*>? {
+                if (annotations.isNotEmpty()) return null
+                val rawType: Class<*> = Types.getRawType(type)
+                if (rawType != SortedMap::class.java) return null
+                if (type is ParameterizedType) {
+                    val key = type.actualTypeArguments[0]
+                    val value = type.actualTypeArguments[1]
+                    val mapType = Types.newParameterizedType(
+                        Map::class.java,
+                        key,
+                        value
+                    )
+                    return SortedMapAdapter<Any, Any>(moshi.adapter(mapType))
+                }
+                return null
+            }
+        }
+    }
+}
