@@ -1,8 +1,8 @@
 [versions]
 retrofit = "2.9.0"
 okhttp = "4.9.1"
-moshi = "1.13.0"
-moshix = "0.17.1"
+moshi = "1.14.0"
+moshix = "0.21.0"
 kotlin = "1.8.0"
 kotlinpoet = "1.8.0"
 ktlint = "11.0.0"
