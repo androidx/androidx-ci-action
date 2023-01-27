@@ -13,6 +13,7 @@ import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.UniformSharding
+import dev.androidx.ci.testRunner.TestRunnerServiceImpl.TestResultFilesImpl.DeviceIdComponents
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
@@ -389,46 +390,54 @@ class TestRunnerServiceImplTest {
         ).isEqualTo("redfin-30-en-portrait-shard_2-rerun_2")
     }
 
-    private val fullDeviceIdInputs = listOf(
-        "redfin-30-en-portrait",
-        "redfin-30-en-portrait_rerun_1",
-        "redfin-30-en-portrait-shard_0",
-        "redfin-30-en-portrait-shard_20",
-        "redfin-30-en-portrait-shard_2-rerun_3",
-        "redfin-30-en-portrait-shard_3-rerun_21"
-    )
     @Test
-    fun parseShard() {
+    fun parseDeviceId() {
         assertThat(
-            fullDeviceIdInputs.associateWith {
-                TestRunnerServiceImpl.TestResultFilesImpl.parseShard(it)
+            listOf(
+                "redfin-30-en-portrait",
+                "redfin-30-en-portrait_rerun_1",
+                "redfin-30-en-portrait-shard_0",
+                "redfin-30-en-portrait-shard_20",
+                "redfin-30-en-portrait-shard_2-rerun_3",
+                "redfin-30-en-portrait-shard_6-rerun_2",
+                "redfin-30-en-portrait-shard_3-rerun_21"
+            ).associateWith {
+                TestRunnerServiceImpl.TestResultFilesImpl.parseComponents(it)
             }
         ).containsExactlyEntriesIn(
             mapOf(
-                "redfin-30-en-portrait" to null,
-                "redfin-30-en-portrait_rerun_1" to null,
-                "redfin-30-en-portrait-shard_0" to 0,
-                "redfin-30-en-portrait-shard_20" to 20,
-                "redfin-30-en-portrait-shard_2-rerun_3" to 2,
-                "redfin-30-en-portrait-shard_3-rerun_21" to 3
-            )
-        )
-    }
-
-    @Test
-    fun parseRunNumber() {
-        assertThat(
-            fullDeviceIdInputs.associateWith {
-                TestRunnerServiceImpl.TestResultFilesImpl.parseRunNumber(it)
-            }
-        ).containsExactlyEntriesIn(
-            mapOf(
-                "redfin-30-en-portrait" to 0,
-                "redfin-30-en-portrait_rerun_1" to 1,
-                "redfin-30-en-portrait-shard_0" to 0,
-                "redfin-30-en-portrait-shard_20" to 0,
-                "redfin-30-en-portrait-shard_2-rerun_3" to 3,
-                "redfin-30-en-portrait-shard_3-rerun_21" to 21
+                "redfin-30-en-portrait" to DeviceIdComponents(
+                    deviceId = "redfin-30-en-portrait"
+                ),
+                "redfin-30-en-portrait_rerun_1" to DeviceIdComponents(
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 1
+                ),
+                "redfin-30-en-portrait-shard_0" to DeviceIdComponents(
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 0,
+                    shard = 0
+                ),
+                "redfin-30-en-portrait-shard_20" to DeviceIdComponents(
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 0,
+                    shard = 20
+                ),
+                "redfin-30-en-portrait-shard_6-rerun_2" to DeviceIdComponents(
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 2,
+                    shard = 6
+                ),
+                "redfin-30-en-portrait-shard_2-rerun_3" to DeviceIdComponents(
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 3,
+                    shard = 2
+                ),
+                "redfin-30-en-portrait-shard_3-rerun_21" to DeviceIdComponents(
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 21,
+                    shard = 3
+                )
             )
         )
     }

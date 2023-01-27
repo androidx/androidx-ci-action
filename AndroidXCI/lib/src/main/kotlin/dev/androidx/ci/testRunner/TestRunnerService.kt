@@ -252,6 +252,12 @@ interface TestRunnerService {
         val fullDeviceId: String
 
         /**
+         * The device identifier that run the test, excluding shard or rerun numbers.
+         * e.g. redfin-30-en-portrait
+         */
+        val deviceId: String
+
+        /**
          * Full logcat file for the test
          */
         val logcat: ResultFileResource?
