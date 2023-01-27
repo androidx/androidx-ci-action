@@ -176,6 +176,7 @@ internal class TestMatrixStore(
             testSpecification = TestSpecification(
                 testTimeout = "2700s", // Limit for physical devices.
                 disableVideoRecording = false,
+                disablePerformanceMetrics = true, // Not a useful feature for androidx
                 androidInstrumentationTest = AndroidInstrumentationTest(
                     appApk = FileReference(
                         gcsPath = appApk.gcsPath.path
@@ -185,7 +186,7 @@ internal class TestMatrixStore(
                     ),
                     shardingOption = sharding
                 ),
-                testSetup = deviceSetup?.toTestSetup()
+                testSetup = deviceSetup?.toTestSetup(),
             ),
             clientInfo = clientInfo,
             environmentMatrix = environmentMatrix,
