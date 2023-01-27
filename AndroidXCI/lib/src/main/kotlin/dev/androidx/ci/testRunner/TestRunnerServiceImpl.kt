@@ -257,6 +257,8 @@ internal class TestRunnerServiceImpl internal constructor(
             fun parseComponents(
                 fullDeviceId: String
             ): DeviceIdComponents {
+                // the regex, which will turn it into a list of key, value pairs.
+                // later we'll scan it below to update values.
                 val match = regex.matchEntire(fullDeviceId)
                 var deviceId = fullDeviceId
                 var runNumber = 0
