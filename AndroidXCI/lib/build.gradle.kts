@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktlint)
@@ -71,7 +69,6 @@ val copyPlaceholderApkTask = tasks.register("copyPlaceholderApk", Copy::class.ja
         "placeholderApp.apk"
     }
 }
-val compileKotlin: KotlinCompile by tasks
 tasks.named("processResources").configure {
     dependsOn(copyPlaceholderApkTask)
 }
@@ -83,7 +80,4 @@ java {
             )
         }
     }
-}
-compileKotlin.kotlinOptions {
-    freeCompilerArgs = listOf("-Xinline-classes")
 }
