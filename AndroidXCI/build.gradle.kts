@@ -35,7 +35,6 @@ subprojects {
     tasks.withType(KotlinCompile::class.java).configureEach {
         kotlinOptions {
             jvmTarget = "11"
-            this.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
         }
     }
     pluginManager.withPlugin("maven-publish") {
