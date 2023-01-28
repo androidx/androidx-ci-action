@@ -29,6 +29,8 @@ jobs:
           gradle-home-cache-excludes: |
             caches/jars-9
             caches/transforms-3
+          # disable configuration cache due to
+          # https://github.com/gradle/gradle/issues/21088
           arguments: check :ftlModelBuilder:check publish --stacktrace --no-configuration-cache
           build-root-directory: AndroidXCI
       - name: "Upload build repository"
