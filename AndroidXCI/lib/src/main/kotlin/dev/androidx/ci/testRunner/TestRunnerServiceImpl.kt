@@ -150,13 +150,13 @@ internal class TestRunnerServiceImpl internal constructor(
             } else if (fileName == LOGCAT_FILE_NAME) {
                 getTestResultFiles(visitor).logcat = ResultFileResourceImpl(visitor)
             } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
-                getTestResultFiles(visitor).intrumentationResult = ResultFileResourceImpl(visitor)
+                getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
             }
         }
         return mergedXmlBlobs.map { mergedXmlEntry ->
             val relatedRuns = byFullDeviceId.entries.filter {
                 it.key.startsWith(mergedXmlEntry.key)
-            }.map { it.value }.sortedBy { it.runNumber }
+            }.map { it.value }.sortedBy { it.deviceRun.runNumber }
             TestRunnerService.TestRunResult(
                 deviceId = mergedXmlEntry.key,
                 mergedResults = ResultFileResourceImpl(mergedXmlEntry.value),
@@ -204,25 +204,16 @@ internal class TestRunnerServiceImpl internal constructor(
          * e.g. redfin-30-en-portrait
          * e.g. redfin-30-en-portrait-rerun_1/
          */
-        override val fullDeviceId: String,
+        fullDeviceId: String,
     ) : TestRunnerService.TestResultFiles {
         private val xmlResultBlobs = mutableListOf<TestRunnerService.ResultFileResource>()
+
         override var logcat: TestRunnerService.ResultFileResource? = null
             internal set
-        override var intrumentationResult: TestRunnerService.ResultFileResource? = null
+        override var instrumentationResult: TestRunnerService.ResultFileResource? = null
             internal set
         override val xmlResults: List<TestRunnerService.ResultFileResource> = xmlResultBlobs
-
-        /**
-         * Returns the run # for the test.
-         * e.g. if the test run 3 times (due to retries), this will return 0, 1 and 2.
-         */
-        override val runNumber: Int = parseRunNumber(fullDeviceId)
-
-        /**
-         * Shard number, if the test is sharded
-         */
-        override val shard: Int? = parseShard(fullDeviceId)
+        override val deviceRun: DeviceRun = DeviceRun.create(fullDeviceId)
 
         internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
             xmlResultBlobs.add(resultFileResource)
@@ -231,27 +222,12 @@ internal class TestRunnerServiceImpl internal constructor(
         override fun toString(): String {
             return """
                 TestResultFiles(
-                  fullDeviceId='$fullDeviceId',
-                  runNumber=$runNumber,
+                  device='$deviceRun',
                   logcat=$logcat,
-                  intrumentationResult=$intrumentationResult,
+                  intrumentationResult=$instrumentationResult,
                   xmlResults=$xmlResults,
                 )
             """.trimIndent()
-        }
-
-        companion object {
-            private val shardRegex = """.*shard_(\d+).*""".toRegex(RegexOption.IGNORE_CASE)
-            private val rerunRegex = """.*rerun_(\d+).*""".toRegex(RegexOption.IGNORE_CASE)
-            fun parseShard(fullDeviceId: String): Int? {
-                val result = shardRegex.matchEntire(fullDeviceId)
-                return result?.groups?.last()?.value?.toIntOrNull()
-            }
-
-            fun parseRunNumber(fullDeviceId: String): Int {
-                val result = rerunRegex.matchEntire(fullDeviceId)
-                return result?.groups?.last()?.value?.toIntOrNull() ?: 0
-            }
         }
     }
 }

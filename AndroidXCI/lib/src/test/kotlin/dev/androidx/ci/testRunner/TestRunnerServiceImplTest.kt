@@ -269,7 +269,7 @@ class TestRunnerServiceImplTest {
         assertThat(result.testRuns).hasSize(1)
         result.testRuns.first().let { testRun ->
             assertThat(
-                testRun.fullDeviceId
+                testRun.deviceRun.deviceId
             ).isEqualTo(
                 "redfin-30-en-portrait"
             )
@@ -363,72 +363,99 @@ class TestRunnerServiceImplTest {
 
         assertThat(result.testRuns).hasSize(5)
         assertThat(
-            result.testRuns.find {
-                it.runNumber == 0 && it.shard == 0
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_0")
-        assertThat(
-            result.testRuns.find {
-                it.runNumber == 0 && it.shard == 1
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_1")
-        assertThat(
-            result.testRuns.find {
-                it.runNumber == 0 && it.shard == 2
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_2")
-        assertThat(
-            result.testRuns.find {
-                it.runNumber == 1 && it.shard == 2
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_2-rerun_1")
-        assertThat(
-            result.testRuns.find {
-                it.runNumber == 2 && it.shard == 2
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_2-rerun_2")
-    }
-
-    private val fullDeviceIdInputs = listOf(
-        "redfin-30-en-portrait",
-        "redfin-30-en-portrait_rerun_1",
-        "redfin-30-en-portrait-shard_0",
-        "redfin-30-en-portrait-shard_20",
-        "redfin-30-en-portrait-shard_2-rerun_3",
-        "redfin-30-en-portrait-shard_3-rerun_21"
-    )
-    @Test
-    fun parseShard() {
-        assertThat(
-            fullDeviceIdInputs.associateWith {
-                TestRunnerServiceImpl.TestResultFilesImpl.parseShard(it)
-            }
-        ).containsExactlyEntriesIn(
-            mapOf(
-                "redfin-30-en-portrait" to null,
-                "redfin-30-en-portrait_rerun_1" to null,
-                "redfin-30-en-portrait-shard_0" to 0,
-                "redfin-30-en-portrait-shard_20" to 20,
-                "redfin-30-en-portrait-shard_2-rerun_3" to 2,
-                "redfin-30-en-portrait-shard_3-rerun_21" to 3
-            )
+            result.testRuns.map { it.deviceRun }
+        ).containsExactly(
+            DeviceRun(
+                id = "redfin-30-en-portrait-shard_0",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 0,
+                shard = 0
+            ),
+            DeviceRun(
+                id = "redfin-30-en-portrait-shard_1",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 0,
+                shard = 1
+            ),
+            DeviceRun(
+                id = "redfin-30-en-portrait-shard_2",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 0,
+                shard = 2
+            ),
+            DeviceRun(
+                id = "redfin-30-en-portrait-shard_2-rerun_1",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 1,
+                shard = 2
+            ),
+            DeviceRun(
+                id = "redfin-30-en-portrait-shard_2-rerun_2",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 2,
+                shard = 2
+            ),
         )
     }
 
     @Test
-    fun parseRunNumber() {
+    fun parseDeviceId() {
         assertThat(
-            fullDeviceIdInputs.associateWith {
-                TestRunnerServiceImpl.TestResultFilesImpl.parseRunNumber(it)
+            listOf(
+                "redfin-30-en-portrait",
+                "redfin-30-en-portrait_rerun_1",
+                "redfin-30-en-portrait-shard_0",
+                "redfin-30-en-portrait-shard_20",
+                "redfin-30-en-portrait-shard_2-rerun_3",
+                "redfin-30-en-portrait-shard_6-rerun_2",
+                "redfin-30-en-portrait-shard_3-rerun_21"
+            ).associateWith {
+                DeviceRun.create(it)
             }
         ).containsExactlyEntriesIn(
             mapOf(
-                "redfin-30-en-portrait" to 0,
-                "redfin-30-en-portrait_rerun_1" to 1,
-                "redfin-30-en-portrait-shard_0" to 0,
-                "redfin-30-en-portrait-shard_20" to 0,
-                "redfin-30-en-portrait-shard_2-rerun_3" to 3,
-                "redfin-30-en-portrait-shard_3-rerun_21" to 21
+                "redfin-30-en-portrait" to DeviceRun(
+                    id = "redfin-30-en-portrait",
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 0,
+                    shard = null
+                ),
+                "redfin-30-en-portrait_rerun_1" to DeviceRun(
+                    id = "redfin-30-en-portrait_rerun_1",
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 1,
+                    shard = null
+                ),
+                "redfin-30-en-portrait-shard_0" to DeviceRun(
+                    id = "redfin-30-en-portrait-shard_0",
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 0,
+                    shard = 0
+                ),
+                "redfin-30-en-portrait-shard_20" to DeviceRun(
+                    id = "redfin-30-en-portrait-shard_20",
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 0,
+                    shard = 20
+                ),
+                "redfin-30-en-portrait-shard_6-rerun_2" to DeviceRun(
+                    id = "redfin-30-en-portrait-shard_6-rerun_2",
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 2,
+                    shard = 6
+                ),
+                "redfin-30-en-portrait-shard_2-rerun_3" to DeviceRun(
+                    id = "redfin-30-en-portrait-shard_2-rerun_3",
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 3,
+                    shard = 2
+                ),
+                "redfin-30-en-portrait-shard_3-rerun_21" to DeviceRun(
+                    id = "redfin-30-en-portrait-shard_3-rerun_21",
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 21,
+                    shard = 3
+                )
             )
         )
     }
