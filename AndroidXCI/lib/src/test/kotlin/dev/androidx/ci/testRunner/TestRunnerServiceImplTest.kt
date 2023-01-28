@@ -13,7 +13,6 @@ import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.UniformSharding
-import dev.androidx.ci.testRunner.TestRunnerServiceImpl.TestResultFilesImpl.DeviceIdComponents
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
@@ -270,7 +269,7 @@ class TestRunnerServiceImplTest {
         assertThat(result.testRuns).hasSize(1)
         result.testRuns.first().let { testRun ->
             assertThat(
-                testRun.fullDeviceId
+                testRun.deviceRun.deviceId
             ).isEqualTo(
                 "redfin-30-en-portrait"
             )
@@ -364,30 +363,39 @@ class TestRunnerServiceImplTest {
 
         assertThat(result.testRuns).hasSize(5)
         assertThat(
-            result.testRuns.find {
-                it.runNumber == 0 && it.shard == 0
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_0")
-        assertThat(
-            result.testRuns.find {
-                it.runNumber == 0 && it.shard == 1
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_1")
-        assertThat(
-            result.testRuns.find {
-                it.runNumber == 0 && it.shard == 2
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_2")
-        assertThat(
-            result.testRuns.find {
-                it.runNumber == 1 && it.shard == 2
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_2-rerun_1")
-        assertThat(
-            result.testRuns.find {
-                it.runNumber == 2 && it.shard == 2
-            }?.fullDeviceId
-        ).isEqualTo("redfin-30-en-portrait-shard_2-rerun_2")
+            result.testRuns.map { it.deviceRun }
+        ).containsExactly(
+            DeviceRun(
+                fullDeviceId = "redfin-30-en-portrait-shard_0",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 0,
+                shard = 0
+            ),
+            DeviceRun(
+                fullDeviceId = "redfin-30-en-portrait-shard_1",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 0,
+                shard = 1
+            ),
+            DeviceRun(
+                fullDeviceId = "redfin-30-en-portrait-shard_2",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 0,
+                shard = 2
+            ),
+            DeviceRun(
+                fullDeviceId = "redfin-30-en-portrait-shard_2-rerun_1",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 1,
+                shard = 2
+            ),
+            DeviceRun(
+                fullDeviceId = "redfin-30-en-portrait-shard_2-rerun_2",
+                deviceId = "redfin-30-en-portrait",
+                runNumber = 2,
+                shard = 2
+            ),
+        )
     }
 
     @Test
@@ -402,38 +410,48 @@ class TestRunnerServiceImplTest {
                 "redfin-30-en-portrait-shard_6-rerun_2",
                 "redfin-30-en-portrait-shard_3-rerun_21"
             ).associateWith {
-                TestRunnerServiceImpl.TestResultFilesImpl.parseComponents(it)
+                DeviceRun.create(it)
             }
         ).containsExactlyEntriesIn(
             mapOf(
-                "redfin-30-en-portrait" to DeviceIdComponents(
-                    deviceId = "redfin-30-en-portrait"
-                ),
-                "redfin-30-en-portrait_rerun_1" to DeviceIdComponents(
+                "redfin-30-en-portrait" to DeviceRun(
+                    fullDeviceId = "redfin-30-en-portrait",
                     deviceId = "redfin-30-en-portrait",
-                    runNumber = 1
+                    runNumber = 0,
+                    shard = null
                 ),
-                "redfin-30-en-portrait-shard_0" to DeviceIdComponents(
+                "redfin-30-en-portrait_rerun_1" to DeviceRun(
+                    fullDeviceId = "redfin-30-en-portrait_rerun_1",
+                    deviceId = "redfin-30-en-portrait",
+                    runNumber = 1,
+                    shard = null
+                ),
+                "redfin-30-en-portrait-shard_0" to DeviceRun(
+                    fullDeviceId = "redfin-30-en-portrait-shard_0",
                     deviceId = "redfin-30-en-portrait",
                     runNumber = 0,
                     shard = 0
                 ),
-                "redfin-30-en-portrait-shard_20" to DeviceIdComponents(
+                "redfin-30-en-portrait-shard_20" to DeviceRun(
+                    fullDeviceId = "redfin-30-en-portrait-shard_20",
                     deviceId = "redfin-30-en-portrait",
                     runNumber = 0,
                     shard = 20
                 ),
-                "redfin-30-en-portrait-shard_6-rerun_2" to DeviceIdComponents(
+                "redfin-30-en-portrait-shard_6-rerun_2" to DeviceRun(
+                    fullDeviceId = "redfin-30-en-portrait-shard_6-rerun_2",
                     deviceId = "redfin-30-en-portrait",
                     runNumber = 2,
                     shard = 6
                 ),
-                "redfin-30-en-portrait-shard_2-rerun_3" to DeviceIdComponents(
+                "redfin-30-en-portrait-shard_2-rerun_3" to DeviceRun(
+                    fullDeviceId = "redfin-30-en-portrait-shard_2-rerun_3",
                     deviceId = "redfin-30-en-portrait",
                     runNumber = 3,
                     shard = 2
                 ),
-                "redfin-30-en-portrait-shard_3-rerun_21" to DeviceIdComponents(
+                "redfin-30-en-portrait-shard_3-rerun_21" to DeviceRun(
+                    fullDeviceId = "redfin-30-en-portrait-shard_3-rerun_21",
                     deviceId = "redfin-30-en-portrait",
                     runNumber = 21,
                     shard = 3

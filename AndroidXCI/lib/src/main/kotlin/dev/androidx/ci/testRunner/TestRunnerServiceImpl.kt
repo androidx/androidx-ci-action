@@ -150,13 +150,13 @@ internal class TestRunnerServiceImpl internal constructor(
             } else if (fileName == LOGCAT_FILE_NAME) {
                 getTestResultFiles(visitor).logcat = ResultFileResourceImpl(visitor)
             } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
-                getTestResultFiles(visitor).intrumentationResult = ResultFileResourceImpl(visitor)
+                getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
             }
         }
         return mergedXmlBlobs.map { mergedXmlEntry ->
             val relatedRuns = byFullDeviceId.entries.filter {
                 it.key.startsWith(mergedXmlEntry.key)
-            }.map { it.value }.sortedBy { it.runNumber }
+            }.map { it.value }.sortedBy { it.deviceRun.runNumber }
             TestRunnerService.TestRunResult(
                 deviceId = mergedXmlEntry.key,
                 mergedResults = ResultFileResourceImpl(mergedXmlEntry.value),
@@ -204,31 +204,16 @@ internal class TestRunnerServiceImpl internal constructor(
          * e.g. redfin-30-en-portrait
          * e.g. redfin-30-en-portrait-rerun_1/
          */
-        override val fullDeviceId: String,
+        fullDeviceId: String,
     ) : TestRunnerService.TestResultFiles {
         private val xmlResultBlobs = mutableListOf<TestRunnerService.ResultFileResource>()
 
         override var logcat: TestRunnerService.ResultFileResource? = null
             internal set
-        override var intrumentationResult: TestRunnerService.ResultFileResource? = null
+        override var instrumentationResult: TestRunnerService.ResultFileResource? = null
             internal set
         override val xmlResults: List<TestRunnerService.ResultFileResource> = xmlResultBlobs
-        private val components = parseComponents(fullDeviceId)
-        override val deviceId: String
-            get() = components.deviceId
-
-        /**
-         * Returns the run # for the test.
-         * e.g. if the test run 3 times (due to retries), this will return 0, 1 and 2.
-         */
-        override val runNumber: Int
-            get() = components.runNumber
-
-        /**
-         * Shard number, if the test is sharded
-         */
-        override val shard: Int?
-            get() = components.shard
+        override val deviceRun: DeviceRun = DeviceRun.create(fullDeviceId)
 
         internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
             xmlResultBlobs.add(resultFileResource)
@@ -237,63 +222,12 @@ internal class TestRunnerServiceImpl internal constructor(
         override fun toString(): String {
             return """
                 TestResultFiles(
-                  fullDeviceId='$fullDeviceId',
-                  deviceId='${deviceId}'
-                  runNumber=$runNumber,
+                  device='$deviceRun',
                   logcat=$logcat,
-                  intrumentationResult=$intrumentationResult,
+                  intrumentationResult=$instrumentationResult,
                   xmlResults=$xmlResults,
                 )
             """.trimIndent()
         }
-
-        companion object {
-            private val regex = listOf(
-                """^(.*?)""", // non greedy beginning of the text
-                """([_-](shard|rerun)_(\d+))?""", // rerun or shard, if it exists
-                """([_-](shard|rerun)_(\d+))?""", // rerun or shard, if it exists
-            ).joinToString("").toRegex(RegexOption.IGNORE_CASE)
-
-            fun parseComponents(
-                fullDeviceId: String
-            ): DeviceIdComponents {
-                // the regex, which will turn it into a list of key, value pairs.
-                // later we'll scan it below to update values.
-                val match = regex.matchEntire(fullDeviceId)
-                var deviceId = fullDeviceId
-                var runNumber = 0
-                var shard:Int? = null
-                match?.let { result ->
-                    result.groupValues.scanIndexed("") { index, prev, next ->
-                        when(prev) {
-                            fullDeviceId -> {
-                                if (index == 1) {
-                                    deviceId = next
-                                }
-                            }
-                            "rerun" -> {
-                                runNumber = next.toIntOrNull() ?: 0
-                            }
-                            "shard" -> {
-                                shard = next.toIntOrNull()
-                            }
-                        }
-                        // return next as accumulated so it becomes previous
-                        next
-                    }
-                }
-                return DeviceIdComponents(
-                    deviceId = deviceId,
-                    runNumber = runNumber,
-                    shard = shard
-                )
-            }
-        }
-
-        data class DeviceIdComponents(
-            val deviceId: String,
-            val runNumber: Int = 0,
-            val shard: Int? = null
-        )
     }
 }
