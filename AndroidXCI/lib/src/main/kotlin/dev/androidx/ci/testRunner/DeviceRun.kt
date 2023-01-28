@@ -21,12 +21,13 @@ package dev.androidx.ci.testRunner
 data class DeviceRun internal constructor(
     /**
      * The device identifier that run the test.
+     * This is unique within the `TestMatrix` results.
      * e.g. redfin-30-en-portrait
      * e.g. redfin-30-en-portrait_rerun_1
      * e.g. redfin-30-en-portrait-shard_0
      * e.g. redfin-30-en-portrait-shard_2-rerun_2
      */
-    val fullDeviceId: String,
+    val id: String,
     /**
      * The device identifier that run the test, excluding shard or rerun numbers.
      * e.g. redfin-30-en-portrait
@@ -84,7 +85,7 @@ data class DeviceRun internal constructor(
                 }
             }
             return DeviceRun(
-                fullDeviceId = fullDeviceId,
+                id = fullDeviceId,
                 deviceId = deviceId,
                 runNumber = runNumber,
                 shard = shard
