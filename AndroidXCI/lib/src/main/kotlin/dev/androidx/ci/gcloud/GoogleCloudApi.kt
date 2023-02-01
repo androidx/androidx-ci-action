@@ -55,6 +55,14 @@ internal interface GoogleCloudApi {
         relativePath: String
     ): GcsPath?
 
+    /**
+     * Copies data from source GCS path to the target relative path.
+     */
+    suspend fun copy(
+        sourceGcsPath: GcsPath,
+        targetRelativePath: String
+    ): GcsPath
+
     fun getGcsPath(relativePath: String): GcsPath
 
     companion object {
@@ -136,6 +144,19 @@ private class GoogleCloudApiImpl(
             blobInfo, bytes
         )
         GcsPath.create(blob)
+    }
+
+    override suspend fun copy(
+        sourceGcsPath: GcsPath,
+        targetRelativePath: String
+    ): GcsPath = withContext(context) {
+        val sourceBlobId = BlobId.fromGsUtilUri(sourceGcsPath.path)
+        val artifactBucketPath = makeBucketPath(targetRelativePath)
+        val targetBlobId = BlobId.of(config.bucketName, artifactBucketPath)
+        service.copy(
+            Storage.CopyRequest.newBuilder().setSource(sourceBlobId).setTarget(targetBlobId).build()
+        )
+        GcsPath.create(config.bucketName, artifactBucketPath)
     }
 
     override suspend fun walkEntires(

@@ -10,9 +10,9 @@ import dev.androidx.ci.generated.ftl.TestSetup
  */
 data class DeviceSetup(
     /**
-     * Additional APKs to install before running test.
+     * Additional APKs to install before running test. The order we install them has to be preserved.
      */
-    val additionalApks: Set<UploadedApk>? = null,
+    val additionalApks: List<CloudApk>? = null,
     /**
      * List of directories on the device to upload to GCS at the end of the test; they must be
      * absolute paths under /sdcard, /storage or /data/local/tmp. Path names are restricted to
@@ -29,10 +29,10 @@ data class DeviceSetup(
 ) {
     internal fun toTestSetup(): TestSetup {
         return TestSetup(
-            additionalApks = additionalApks?.map { uploadedApk ->
+            additionalApks = additionalApks?.map { cloudApk ->
                 Apk(
                     location = FileReference(
-                        gcsPath = uploadedApk.gcsPath.path
+                        gcsPath = cloudApk.gcsPath.path
                     )
                 )
             },

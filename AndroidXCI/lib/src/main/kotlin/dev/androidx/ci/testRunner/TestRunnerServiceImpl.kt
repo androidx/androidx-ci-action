@@ -27,6 +27,7 @@ import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.DeviceSetup
+import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import java.io.InputStream
 
@@ -70,6 +71,16 @@ internal class TestRunnerServiceImpl internal constructor(
             name = name,
             bytes = bytes()
         )
+    }
+
+    override suspend fun getOrUploadRemoteApk(
+        sourceGcsPath: GcsPath,
+        targetRelativePath: String,
+    ): RemoteApk {
+        val targetGcsPath = googleCloudApi.existingFilePath(targetRelativePath)
+            ?: googleCloudApi.copy(sourceGcsPath, targetRelativePath)
+
+        return RemoteApk(gcsPath = targetGcsPath)
     }
 
     override suspend fun uploadApk(

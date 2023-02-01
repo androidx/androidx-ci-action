@@ -67,6 +67,27 @@ internal class GoogleCloudApiPlaygroundTest {
     }
 
     @Test
+    fun copyItem() = testScope.runTest {
+        val client = GoogleCloudApi.build(
+            config = Config.CloudStorage(
+                gcp = playgroundCredentialsRule.gcpConfig,
+                bucketName = "androidx-ftl-test-results",
+                bucketPath = "testing",
+            ),
+            context = testScope.coroutineContext
+        )
+        val result = client.copy(
+            GcsPath("gs://androidx-ftl-test-results/github-ci-action/activity-activity-compose_activity-compose-debug-androidTest/02157e027616d078fcfee20a89bba6de355ab9856eda343ce2b0ed08c279e355.apk"),
+            "copy.apk"
+        )
+        Truth.assertThat(
+            result
+        ).isEqualTo(
+            GcsPath("gs://androidx-ftl-test-results/testing/copy.apk")
+        )
+    }
+
+    @Test
     fun downloadFolder() = testScope.runTest {
         val folder = tmpFolder.newFolder()
         val client = GoogleCloudApi.build(

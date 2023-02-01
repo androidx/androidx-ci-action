@@ -61,6 +61,38 @@ class TestRunnerServiceImplTest {
     }
 
     @Test
+    fun uploadRemoteApk() = runBlocking<Unit> {
+        // upload the source file
+        val apkBytes = byteArrayOf(1, 2, 3, 4, 5)
+        val apkSha = sha256(apkBytes)
+        val upload1 = subject.getOrUploadApk(
+            name = "foo.apk",
+            sha256 = apkSha
+        ) {
+            apkBytes
+        }
+        assertThat(
+            fakeBackend.fakeGoogleCloudApi.uploadCount
+        ).isEqualTo(1)
+        // copy
+        subject.getOrUploadRemoteApk(upload1.gcsPath, "/copy/foo.apk")
+        assertThat(
+            fakeBackend.fakeGoogleCloudApi.uploadCount
+        ).isEqualTo(2)
+        // attempt to copy again
+        subject.getOrUploadRemoteApk(upload1.gcsPath, "/copy/foo.apk")
+        // found the apk - no copying needed
+        assertThat(
+            fakeBackend.fakeGoogleCloudApi.uploadCount
+        ).isEqualTo(2)
+        // copy to a different path
+        subject.getOrUploadRemoteApk(upload1.gcsPath, "/copy_new/foo.apk")
+        assertThat(
+            fakeBackend.fakeGoogleCloudApi.uploadCount
+        ).isEqualTo(3)
+    }
+
+    @Test
     fun schedule() = runBlocking<Unit> {
         val apk1Bytes = byteArrayOf(1, 2, 3, 4, 5)
         val apk1Sha = sha256(apk1Bytes)
@@ -171,7 +203,7 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = null,
             deviceSetup = DeviceSetup(
-                additionalApks = setOf(extraApk),
+                additionalApks = listOf(extraApk),
                 directoriesToPull = setOf("/sdcard/foo/bar"),
                 instrumentationArguments = listOf(
                     DeviceSetup.InstrumentationArgument("key1", "value1"),

@@ -14,6 +14,7 @@ import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.DeviceSetup
+import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,23 @@ interface TestRunnerService {
         sha256: String,
         bytes: suspend () -> ByteArray
     ): UploadedApk
+
+    /**
+     * Finds the APK in Google Cloud Storage based on the targetRelativePath.
+     * If it doesn't exist, copy the data from the source GCS path to the target path.
+     *
+     * Note that an APK would be considered to exist as long as the targetRelativePath exists
+     * in our cloud bucket, even if the file content has changed.
+     *
+     * @param sourceGcsPath the GCS path that we may need to copy file from
+     * @param targetRelativePath the GCS that we would write the file to
+     *
+     * @return Returns an [RemoteApk] instance that identifies the file in the cloud.
+     */
+    suspend fun getOrUploadRemoteApk(
+        sourceGcsPath: GcsPath,
+        targetRelativePath: String,
+    ): RemoteApk
 
     /**
      * Schedules the tests for the given [testApk] / [appApk] pair using the provided [devicePicker].
