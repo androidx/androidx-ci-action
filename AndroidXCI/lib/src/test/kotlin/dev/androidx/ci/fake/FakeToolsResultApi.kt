@@ -20,6 +20,7 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.generated.testResults.History
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
+import dev.androidx.ci.generated.testResults.ListStepsResponse
 import java.util.UUID
 
 internal class FakeToolsResultApi : ToolsResultApi {
@@ -47,5 +48,20 @@ internal class FakeToolsResultApi : ToolsResultApi {
             created
         )
         return created
+    }
+
+    override suspend fun listSteps(
+        projectId: String,
+        historyId: String,
+        executionId: String,
+        pageSize: Int
+    ): ListStepsResponse {
+
+        return listSteps(
+            projectId = projectId,
+            historyId = historyId,
+            executionId = executionId,
+            pageSize = pageSize
+        )
     }
 }

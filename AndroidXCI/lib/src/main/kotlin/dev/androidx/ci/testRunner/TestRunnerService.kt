@@ -19,6 +19,7 @@ import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.logging.HttpLoggingInterceptor
+import java.io.File
 import java.io.InputStream
 
 interface TestRunnerService {
@@ -90,6 +91,11 @@ interface TestRunnerService {
      * (logs, junit xml files etc)
      */
     suspend fun getTestMatrixResults(testMatrix: TestMatrix): List<TestRunResult>?
+
+    /**
+     * Downloads the file for the given [inputFile] GcsPath to the outputFile.
+     */
+    suspend fun downLoadFileFromGcloud(outputFile: File, inputFile: GcsPath)
 
     companion object {
         /**
@@ -275,5 +281,10 @@ interface TestRunnerService {
          * XML result files produced by the test.
          */
         val xmlResults: List<ResultFileResource>
+
+        /**
+         * Test case log files produced by the test.
+         */
+        val testCaseLogcats: Map<String, ResultFileResource>
     }
 }

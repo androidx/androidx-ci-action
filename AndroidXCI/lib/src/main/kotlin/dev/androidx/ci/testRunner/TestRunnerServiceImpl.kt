@@ -15,6 +15,7 @@
  */
 package dev.androidx.ci.testRunner
 
+import com.squareup.moshi.JsonClass
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
@@ -29,12 +30,13 @@ import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
+import java.io.File
 import java.io.InputStream
 
 /**
  * Real implementation of [TestRunnerService].
  */
-internal class TestRunnerServiceImpl internal constructor(
+class TestRunnerServiceImpl internal constructor(
     private val googleCloudApi: GoogleCloudApi,
     firebaseProjectId: String,
     datastoreApi: DatastoreApi,
@@ -55,6 +57,18 @@ internal class TestRunnerServiceImpl internal constructor(
         firebaseProjectId = firebaseProjectId,
         testMatrixStore = testMatrixStore
     )
+    private val testExecutionStore = TestExecutionStore(
+        toolsResultApi = toolsResultApi,
+        googleCloudApi = googleCloudApi,
+        firebaseTestLabApi = firebaseTestLabApi,
+        firebaseProjectId = firebaseProjectId,
+        datastoreApi = datastoreApi,
+        gcsResultPath = gcsResultPath
+    )
+    private val testResultDownloader = TestResultDownloader(
+        googleCloudApi = googleCloudApi
+    )
+
 
     override suspend fun getOrUploadApk(
         name: String,
@@ -123,7 +137,8 @@ internal class TestRunnerServiceImpl internal constructor(
     }
 
     internal suspend fun findResultFiles(
-        resultPath: GcsPath
+        resultPath: GcsPath,
+        testMatrixId: String = "test"
     ): List<TestRunnerService.TestRunResult> {
         val byFullDeviceId = mutableMapOf<String, TestResultFilesImpl>()
         fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
@@ -146,6 +161,7 @@ internal class TestRunnerServiceImpl internal constructor(
         // redfin-30-en-portrait_rerun_1/test_result_1.xml
         // redfin-30-en-portrait_rerun_2/logcat
         // redfin-30-en-portrait_rerun_2/test_result_1.xml
+        val testCaseLogcatMap = testExecutionStore.getTestExecutionStepsLogcats(testMatrixId)
         googleCloudApi.walkEntires(
             gcsPath = resultPath
         ).forEach { visitor ->
@@ -162,6 +178,14 @@ internal class TestRunnerServiceImpl internal constructor(
                 getTestResultFiles(visitor).logcat = ResultFileResourceImpl(visitor)
             } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
                 getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
+            }
+            else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
+                testCaseLogcatMap.get(visitor.gcsPath.toString())?.let {
+                    getTestResultFiles(visitor).addTestCaseLogcat(
+                        it,
+                        ResultFileResourceImpl(visitor)
+                    )
+                }
             }
         }
         return mergedXmlBlobs.map { mergedXmlEntry ->
@@ -188,18 +212,27 @@ internal class TestRunnerServiceImpl internal constructor(
     ): List<TestRunnerService.TestRunResult>? {
         if (!testMatrix.isComplete()) return null
         val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
-        return findResultFiles(resultPath)
+        return testMatrix.testMatrixId?.let { findResultFiles(resultPath, it) }
+    }
+
+    /**
+     * Downloads the file for the given [inputFile] to the outputFile.
+     */
+    override suspend fun downLoadFileFromGcloud(outputFile: File, inputFile: GcsPath){
+        return testResultDownloader.downloadFile(outputFile, inputFile)
     }
 
     companion object {
         private const val MERGED_TEST_RESULT_SUFFIX = "-test_results_merged.xml"
         private const val LOGCAT_FILE_NAME = "logcat"
+        private const val LOGCAT_FILE_NAME_SUFFIX = "_logcat"
         private const val TEST_RESULT_XML_PREFIX = "test_result_"
         private const val TEST_RESULT_XML_SUFFIX = ".xml"
         private const val INSTRUMENTATION_RESULTS_FILE_NAME = "instrumentation.results"
     }
 
-    private class ResultFileResourceImpl(
+    @JsonClass(generateAdapter = true)
+    class ResultFileResourceImpl(
         private val blobVisitor: BlobVisitor
     ) : TestRunnerService.ResultFileResource {
         override val gcsPath = blobVisitor.gcsPath
@@ -218,16 +251,22 @@ internal class TestRunnerServiceImpl internal constructor(
         fullDeviceId: String,
     ) : TestRunnerService.TestResultFiles {
         private val xmlResultBlobs = mutableListOf<TestRunnerService.ResultFileResource>()
+        private val testCaseLogcatBlobs = mutableMapOf<String, TestRunnerService.ResultFileResource>()
 
         override var logcat: TestRunnerService.ResultFileResource? = null
             internal set
         override var instrumentationResult: TestRunnerService.ResultFileResource? = null
             internal set
         override val xmlResults: List<TestRunnerService.ResultFileResource> = xmlResultBlobs
+        override val testCaseLogcats: Map<String, TestRunnerService.ResultFileResource> = testCaseLogcatBlobs
         override val deviceRun: DeviceRun = DeviceRun.create(fullDeviceId)
 
         internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
             xmlResultBlobs.add(resultFileResource)
+        }
+
+        internal fun addTestCaseLogcat(testCase: String, resultFileResource: TestRunnerService.ResultFileResource) {
+            testCaseLogcatBlobs[testCase] = resultFileResource
         }
 
         override fun toString(): String {
@@ -237,6 +276,7 @@ internal class TestRunnerServiceImpl internal constructor(
                   logcat=$logcat,
                   intrumentationResult=$instrumentationResult,
                   xmlResults=$xmlResults,
+                  testCaseLogcats=$testCaseLogcats
                 )
             """.trimIndent()
         }

@@ -224,7 +224,7 @@ private class GoogleCloudApiImpl(
 /**
  * Provides access to a Blob returned from a [GoogleCloudApi.walkEntires] method.
  */
-internal interface BlobVisitor {
+interface BlobVisitor {
     /**
      * Returns true if this Blob is the root blob that matches the `gcsPath` parameter of [GoogleCloudApi.walkEntires].
      */

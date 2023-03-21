@@ -36,7 +36,8 @@ internal class TestResultDownloader(
     suspend fun downloadTestResults(
         outputFolder: File,
         result: TestResult,
-        clearOutputFolder: Boolean
+        clearOutputFolder: Boolean,
+        includeTestCaseArtifacts: Boolean = false
     ): List<DownloadedTestResults> {
         if (clearOutputFolder) {
             if (outputFolder.exists()) {
@@ -66,7 +67,7 @@ internal class TestResultDownloader(
                             target = downloadFolder,
                             filter = { name ->
                                 // these are logs per test, they are plenty in numbers so lets not download them
-                                !name.contains("test_cases")
+                                includeTestCaseArtifacts || !name.contains("test_cases")
                             }
                         )
                         logger.info {
@@ -82,5 +83,18 @@ internal class TestResultDownloader(
             }
         }
         return emptyList()
+    }
+
+    suspend fun downloadFile(
+        outputFile: File,
+        inputFile: GcsPath
+    ) {
+        return googleCloudApi.download(
+            gcsPath = inputFile,
+            target = outputFile,
+            filter = {
+                true
+            }
+        )
     }
 }

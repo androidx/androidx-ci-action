@@ -20,6 +20,7 @@ import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.generated.testResults.History
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
+import dev.androidx.ci.generated.testResults.ListStepsResponse
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
 import dev.androidx.ci.util.withLog4J
@@ -49,6 +50,15 @@ internal interface ToolsResultApi {
         @Query("requestId") requestId: String? = null,
         @Body history: History
     ): History
+
+    @Retry
+    @GET("projects/{projectId}/histories/{historyId}/executions/{executionId}/steps")
+    suspend fun listSteps(
+        @Path("projectId") projectId: String,
+        @Path("historyId") historyId: String,
+        @Path("executionId") executionId: String,
+        @Query("pageSize") pageSize: Int = 100
+    ): ListStepsResponse
 
     companion object {
         fun build(
