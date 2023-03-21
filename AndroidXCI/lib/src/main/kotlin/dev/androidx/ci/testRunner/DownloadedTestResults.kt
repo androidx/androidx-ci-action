@@ -27,7 +27,8 @@ data class DownloadedTestResults(
     val rootFolder: File,
     val mergedTestResults: List<File>,
     val instrumentationResults: List<File>,
-    val logFiles: List<File>
+    val logFiles: List<File>,
+    val testcaseLogFiles: List<File>
 ) {
     companion object {
         /**
@@ -46,12 +47,16 @@ data class DownloadedTestResults(
             val logFiles = folder.walkBottomUp().filter {
                 it.name == "logcat"
             }
+            val testcaseLogFiles = folder.walkBottomUp().filter {
+                it.name.endsWith("_logcat")
+            }
             return DownloadedTestResults(
                 testMatrixId = testMatrixId,
                 rootFolder = folder,
                 mergedTestResults = mergedResults.toList(),
                 instrumentationResults = instrumentationResultFiles.toList(),
-                logFiles = logFiles.toList()
+                logFiles = logFiles.toList(),
+                testcaseLogFiles = testcaseLogFiles.toList()
             )
         }
     }
