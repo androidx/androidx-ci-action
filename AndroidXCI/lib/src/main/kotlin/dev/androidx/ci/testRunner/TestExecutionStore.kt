@@ -35,8 +35,8 @@ internal class TestExecutionStore(
         val output = HashMap<String, String>()
         steps?.forEach { step ->
             step.testExecutionStep?.toolExecution?.toolOutputs?.forEach {
-                if(it.testCase != null){
-                    it.output?.fileUri?.let { it1 -> output.put(it1, it.testCase.className+'_'+it.testCase.name) }
+                if (it.testCase != null) {
+                    it.output?.fileUri?.let { it1 -> output.put(it1, it.testCase.className + '_' + it.testCase.name) }
                 }
             }
         }
@@ -46,12 +46,14 @@ internal class TestExecutionStore(
     suspend fun getTestExecutionStepsLogcats(
         testMatrixId: String
     ): Map<String, String> {
-        val testMatrix =  testLabController.getTestMatrix(testMatrixId)
-        testMatrix?.projectId?.let { testMatrix.resultStorage.toolResultsExecution?.historyId?.let { it1 ->
-            testMatrix.resultStorage.toolResultsExecution?.executionId?.let { it2 ->
-                return getTestExecutionStepsLogcats(it, it1, it2)
+        val testMatrix = testLabController.getTestMatrix(testMatrixId)
+        testMatrix?.projectId?.let {
+            testMatrix.resultStorage.toolResultsExecution?.historyId?.let { it1 ->
+                testMatrix.resultStorage.toolResultsExecution?.executionId?.let { it2 ->
+                    return getTestExecutionStepsLogcats(it, it1, it2)
+                }
             }
-        } }
+        }
         return emptyMap()
     }
 }

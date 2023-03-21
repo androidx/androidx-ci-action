@@ -69,7 +69,6 @@ class TestRunnerServiceImpl internal constructor(
         googleCloudApi = googleCloudApi
     )
 
-
     override suspend fun getOrUploadApk(
         name: String,
         sha256: String,
@@ -178,8 +177,7 @@ class TestRunnerServiceImpl internal constructor(
                 getTestResultFiles(visitor).logcat = ResultFileResourceImpl(visitor)
             } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
                 getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
-            }
-            else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
+            } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
                 testCaseLogcatMap.get(visitor.gcsPath.toString())?.let {
                     getTestResultFiles(visitor).addTestCaseLogcat(
                         it,
@@ -218,7 +216,7 @@ class TestRunnerServiceImpl internal constructor(
     /**
      * Downloads the file for the given [inputFile] to the outputFile.
      */
-    override suspend fun downLoadFileFromGcloud(outputFile: File, inputFile: GcsPath){
+    override suspend fun downLoadFileFromGcloud(outputFile: File, inputFile: GcsPath) {
         return testResultDownloader.downloadFile(outputFile, inputFile)
     }
 
