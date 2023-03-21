@@ -137,7 +137,7 @@ class TestRunnerServiceImpl internal constructor(
 
     internal suspend fun findResultFiles(
         resultPath: GcsPath,
-        testMatrixId: String = "test"
+        testMatrixId: String? = null
     ): List<TestRunnerService.TestRunResult> {
         val byFullDeviceId = mutableMapOf<String, TestResultFilesImpl>()
         fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
@@ -160,7 +160,7 @@ class TestRunnerServiceImpl internal constructor(
         // redfin-30-en-portrait_rerun_1/test_result_1.xml
         // redfin-30-en-portrait_rerun_2/logcat
         // redfin-30-en-portrait_rerun_2/test_result_1.xml
-        val testCaseLogcatMap = testExecutionStore.getTestExecutionStepsLogcats(testMatrixId)
+        val testCaseLogcatMap = testMatrixId?.let { testExecutionStore.getTestExecutionStepsLogcats(it) }
         googleCloudApi.walkEntires(
             gcsPath = resultPath
         ).forEach { visitor ->
@@ -178,11 +178,13 @@ class TestRunnerServiceImpl internal constructor(
             } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
                 getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
             } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
-                testCaseLogcatMap.get(visitor.gcsPath.toString())?.let {
-                    getTestResultFiles(visitor).addTestCaseLogcat(
-                        it,
-                        ResultFileResourceImpl(visitor)
-                    )
+                if (testCaseLogcatMap != null) {
+                    testCaseLogcatMap.get(visitor.gcsPath.toString())?.let {
+                        getTestResultFiles(visitor).addTestCaseLogcat(
+                            it,
+                            ResultFileResourceImpl(visitor)
+                        )
+                    }
                 }
             }
         }
@@ -210,7 +212,7 @@ class TestRunnerServiceImpl internal constructor(
     ): List<TestRunnerService.TestRunResult>? {
         if (!testMatrix.isComplete()) return null
         val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
-        return testMatrix.testMatrixId?.let { findResultFiles(resultPath, it) }
+        return findResultFiles(resultPath, testMatrix.testMatrixId)
     }
 
     /**
