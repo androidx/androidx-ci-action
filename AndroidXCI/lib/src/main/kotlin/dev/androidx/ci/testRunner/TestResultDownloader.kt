@@ -84,17 +84,4 @@ internal class TestResultDownloader(
         }
         return emptyList()
     }
-
-    suspend fun downloadFile(
-        outputFile: File,
-        inputFile: GcsPath
-    ) {
-        return googleCloudApi.download(
-            gcsPath = inputFile,
-            target = outputFile,
-            filter = {
-                true
-            }
-        )
-    }
 }
