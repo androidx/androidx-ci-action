@@ -18,12 +18,19 @@ package dev.androidx.ci.firebase
 
 import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
+import dev.androidx.ci.generated.testResults.Execution
 import dev.androidx.ci.generated.testResults.History
+import dev.androidx.ci.generated.testResults.ListExecutionsResponse
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
+import dev.androidx.ci.generated.testResults.ListTestCasesResponse
+import dev.androidx.ci.generated.testResults.TestCase
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
 import dev.androidx.ci.util.withLog4J
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -49,6 +56,25 @@ internal interface ToolsResultApi {
         @Query("requestId") requestId: String? = null,
         @Body history: History
     ): History
+
+    @Retry
+    @GET("projects/{projectId}/histories/{historyId}/executions/{executionId}")
+    suspend fun getExecution(
+        @Path("projectId") projectId: String,
+        @Path("historyId") historyId: String,
+        @Path("executionId") executionId: String
+    ): Execution
+
+    @Retry
+    @GET("projects/{projectId}/histories/{historyId}/executions/{executionId}/steps/{stepId}/testCases")
+    suspend fun getTestCases(
+        @Path("projectId") projectId: String,
+        @Path("historyId") historyId: String,
+        @Path("executionId") executionId: String,
+        @Path("stepId") stepId: String,
+        @Query("pageToken") pageToken: String?,
+        @Query("pageSize") pageSize: Int = 500
+    ): ListTestCasesResponse
 
     companion object {
         fun build(
@@ -83,4 +109,27 @@ internal interface ToolsResultApi {
                 .create(ToolsResultApi::class.java)
         }
     }
+}
+
+
+internal fun ToolsResultApi.getAllTestCases(
+    projectId: String,
+    historyId: String,
+    executionId: String,
+    stepId: String
+) : Flow<TestCase> = flow {
+    var nextPageToken: String? = null
+    do {
+        val response = getTestCases(
+            projectId = projectId,
+            historyId = historyId,
+            executionId = executionId,
+            stepId = stepId,
+            pageToken = nextPageToken
+        )
+        response.testCases?.let {
+            it.forEach { emit(it) }
+        }
+        nextPageToken = response.nextPageToken
+    } while (nextPageToken != null)
 }

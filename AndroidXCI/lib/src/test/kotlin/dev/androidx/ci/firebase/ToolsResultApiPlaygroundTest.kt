@@ -16,9 +16,11 @@
 
 package dev.androidx.ci.firebase
 
+import com.google.auth.oauth2.GoogleCredentials
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.testRunner.ToolsResultStore
 import dev.androidx.ci.util.GoogleCloudCredentialsRule
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -26,7 +28,10 @@ import org.junit.Test
 internal class ToolsResultApiPlaygroundTest {
     private val projectId = "androidx-dev-prod"
     @get:Rule
-    val playgroundCredentialsRule = GoogleCloudCredentialsRule()
+    val playgroundCredentialsRule = GoogleCloudCredentialsRule {
+        "androidx-dev-prod" to GoogleCredentials
+            .getApplicationDefault()
+    }
 
     private val api by lazy {
         ToolsResultApi.build(
@@ -36,10 +41,50 @@ internal class ToolsResultApiPlaygroundTest {
         )
     }
 
+    private val ftlApi by lazy {
+        FirebaseTestLabApi.build(
+            Config.FirebaseTestLab(
+                gcp = playgroundCredentialsRule.gcpConfig
+            )
+        )
+    }
+
     @Test
     fun getHistories() = runBlocking<Unit> {
-        val histories = api.getHistories(projectId = projectId, name = "androidx.room.integration.noappcompat")
+        val histories = api.getHistories(projectId = projectId, name = "androidx.recyclerview.test")
         println(histories)
+    }
+
+    @Test
+    fun shardedRuns() = runBlocking<Unit> {
+        val testMatrix = ftlApi.getTestMatrix(
+            projectId = projectId,
+            testMatrixId = "matrix-87zgcban3oosa"
+        )
+        val execution = testMatrix.testExecutions!!.first() // to this for all
+        val testCases = execution.toolResultsStep?.let {
+            // TODO get all pages
+            api.getAllTestCases(
+                projectId = it.projectId!!,
+                historyId = it.historyId!!,
+                executionId = it.executionId!!,
+                stepId = it.stepId!!
+            ).toList()
+        }
+
+        println(execution)
+        println("---")
+        println(testCases)
+        println("---")
+        println("total test cases :${testCases?.size}")
+        testCases?.forEach {
+            println("${it.testCaseReference} / ${it.status} / files (logs): ${it.toolOutputs?.firstOrNull()?.output?.fileUri}")
+        }
+
+
+
+//        val response = api.getExecution(projectId = projectId, historyId = testMatrix.testExecutions, executionId = "")
+//        println(response)
     }
 
     @Test

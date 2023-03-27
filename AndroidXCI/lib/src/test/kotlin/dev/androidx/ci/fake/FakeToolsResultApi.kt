@@ -18,8 +18,11 @@ package dev.androidx.ci.fake
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.firebase.ToolsResultApi
+import dev.androidx.ci.generated.testResults.Execution
 import dev.androidx.ci.generated.testResults.History
+import dev.androidx.ci.generated.testResults.ListExecutionsResponse
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
+import dev.androidx.ci.generated.testResults.ListTestCasesResponse
 import java.util.UUID
 
 internal class FakeToolsResultApi : ToolsResultApi {
@@ -47,5 +50,20 @@ internal class FakeToolsResultApi : ToolsResultApi {
             created
         )
         return created
+    }
+
+    override suspend fun getExecution(projectId: String, historyId: String, executionId: String): Execution {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getTestCases(
+        projectId: String,
+        historyId: String,
+        executionId: String,
+        stepId: String,
+        pageToken: String?,
+        pageSize: Int
+    ): ListTestCasesResponse {
+        TODO("Not yet implemented")
     }
 }

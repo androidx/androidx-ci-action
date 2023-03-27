@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.util
 
+import com.google.auth.Credentials
 import com.google.auth.oauth2.ServiceAccountCredentials
 import dev.androidx.ci.config.Config
 import org.junit.AssumptionViolatedException
@@ -26,18 +27,25 @@ import org.junit.runners.model.Statement
 /**
  * A common rule to read Github token from environment variables for local testing.
  */
-internal class GoogleCloudCredentialsRule : TestRule {
+internal class GoogleCloudCredentialsRule(
+    val credentialsProvider: (() -> Pair<String, Credentials>)? = null
+) : TestRule {
     lateinit var gcpConfig: Config.Gcp
         private set
     private fun loadCredentials() {
         val envValue = System.getenv("ANDROIDX_GCLOUD_CREDENTIALS")
             ?: throw AssumptionViolatedException("skip test without credentials")
-        val credentials = ServiceAccountCredentials.fromStream(
-            envValue.byteInputStream(Charsets.UTF_8)
-        )
+        val (projectId, credentials) = credentialsProvider?.let {
+            it()
+        } ?: ServiceAccountCredentials.fromStream(
+                envValue.byteInputStream(Charsets.UTF_8)
+            ).let { serviceAccount ->
+                serviceAccount.projectId to serviceAccount
+            }
+
         gcpConfig = Config.Gcp(
             credentials = credentials,
-            projectId = credentials.projectId
+            projectId = projectId
         )
     }
 
