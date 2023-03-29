@@ -131,7 +131,7 @@ class TestRunnerServiceImpl internal constructor(
 
     internal suspend fun findResultFiles(
         resultPath: GcsPath,
-        testMatrixId: String? = null
+        testMatrix: TestMatrix
     ): List<TestRunnerService.TestRunResult> {
         val byFullDeviceId = mutableMapOf<String, TestResultFilesImpl>()
         fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
@@ -154,8 +154,8 @@ class TestRunnerServiceImpl internal constructor(
         // redfin-30-en-portrait_rerun_1/test_result_1.xml
         // redfin-30-en-portrait_rerun_2/logcat
         // redfin-30-en-portrait_rerun_2/test_result_1.xml
-        val testMatrix = testMatrixId?.let { testLabController.getTestMatrix(it) }
-        val steps = testMatrix?.let { testExecutionStore.getTestExecutionSteps(testMatrix) }
+
+        val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
         googleCloudApi.walkEntires(
             gcsPath = resultPath
         ).forEach { visitor ->
@@ -173,26 +173,33 @@ class TestRunnerServiceImpl internal constructor(
             } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
                 getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
             } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
-                val step = steps?.flatMap {
+                val step = steps.flatMap {
                     it.testExecutionStep?.toolExecution?.toolOutputs!!
-                }?.find { tor ->
-                    (tor.output?.fileUri == visitor.gcsPath.toString())
+                }?.find {
+                    (it.output?.fileUri == visitor.gcsPath.toString())
                 }
                 val fileUri = step?.output?.fileUri
-                var attemptnumber = 0
+                var attemptNumber = 0
                 if (fileUri?.contains("rerun_1") == true) {
-                    attemptnumber = 1
+                    attemptNumber = 1
                 } else if (fileUri?.contains("rerun_2") == true) {
-                    attemptnumber = 2
+                    attemptNumber = 2
                 }
-                getTestResultFiles(visitor).addTestCaseLogcat(
-                    TestRunnerService.TestIdentifier(
-                        step?.testCase?.className,
-                        step?.testCase?.name,
-                        attemptnumber
-                    ),
-                    ResultFileResourceImpl(visitor)
-                )
+
+                step?.testCase?.className?.let { className ->
+                    step?.testCase?.name?.let { name ->
+                        TestRunnerService.TestIdentifier(
+                            className,
+                            name,
+                            attemptNumber
+                        )
+                    }
+                }?.let { testIdentifier ->
+                    getTestResultFiles(visitor).addTestCaseLogcat(
+                        testIdentifier,
+                        ResultFileResourceImpl(visitor)
+                    )
+                }
             }
         }
         return mergedXmlBlobs.map { mergedXmlEntry ->
@@ -219,7 +226,7 @@ class TestRunnerServiceImpl internal constructor(
     ): List<TestRunnerService.TestRunResult>? {
         if (!testMatrix.isComplete()) return null
         val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
-        return findResultFiles(resultPath, testMatrix.testMatrixId)
+        return findResultFiles(resultPath, testMatrix)
     }
 
     companion object {
@@ -274,7 +281,7 @@ class TestRunnerServiceImpl internal constructor(
                   device='$deviceRun',
                   logcat=$logcat,
                   intrumentationResult=$instrumentationResult,
-                  xmlResults=$xmlResults
+                  xmlResults=$xmlResults,
                 )
             """.trimIndent()
         }

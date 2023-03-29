@@ -227,15 +227,15 @@ interface TestRunnerService {
         /**
          * The name of the class.
          */
-        public val className: String? = null,
+        public val className: String,
         /**
          * The name of the test case.
          */
-        public val name: String? = null,
+        public val name: String,
         /**
          * Run number associated with the test case run
          */
-        public val attemptNumber: Int? = 0
+        public val attemptNumber: Int = 0
     )
 
     /**
