@@ -54,8 +54,12 @@ internal class TestRunnerServicePlayground {
     fun log2() = runBlocking<Unit> {
         val gcsPath =
             GcsPath("gs://androidx-ftl-test-results/github-ci-action/ftl/2490462699/fd6c9f30215965b0b00aa99c98dfb6bef4b5ea849b07f3b7a3c8869360279dde/")
-        subject.findResultFiles(gcsPath).forEach {
-            println(it)
+        val testMatrixId = "matrix-hzjx70s88liva"
+        val testMatrix = subject.getTestMatrix(testMatrixId)
+        if (testMatrix != null) {
+            subject.findResultFiles(gcsPath, testMatrix).forEach {
+                println(it)
+            }
         }
     }
 }
