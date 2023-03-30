@@ -56,12 +56,8 @@ internal class FakeToolsResultApi : ToolsResultApi {
         executionId: String,
         pageSize: Int
     ): ListStepsResponse {
-
-        return listSteps(
-            projectId = projectId,
-            historyId = historyId,
-            executionId = executionId,
-            pageSize = pageSize
+        return ListStepsResponse(
+            steps = emptyList()
         )
     }
 }

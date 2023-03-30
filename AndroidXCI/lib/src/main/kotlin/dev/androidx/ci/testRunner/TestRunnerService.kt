@@ -235,7 +235,7 @@ interface TestRunnerService {
         /**
          * Run number associated with the test case run
          */
-        public val attemptNumber: Int = 0
+        public val runNumber: Int = 0
     )
 
     /**

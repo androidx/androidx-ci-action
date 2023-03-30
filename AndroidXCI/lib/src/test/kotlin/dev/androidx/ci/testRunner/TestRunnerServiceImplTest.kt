@@ -12,6 +12,7 @@ import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
+import dev.androidx.ci.generated.ftl.ToolResultsExecution
 import dev.androidx.ci.generated.ftl.UniformSharding
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.util.sha256
@@ -243,7 +244,11 @@ class TestRunnerServiceImplTest {
             requestId = "requestId",
             testMatrix = TestMatrix(
                 resultStorage = ResultStorage(
-                    googleCloudStorage = GoogleCloudStorage(resultPath)
+                    googleCloudStorage = GoogleCloudStorage(resultPath),
+                    toolResultsExecution = ToolResultsExecution(
+                        executionId = "test_executionId",
+                        historyId = "test_historyId"
+                    )
                 ),
                 projectId = fakeBackend.firebaseProjectId,
                 environmentMatrix = EnvironmentMatrix(),
@@ -330,7 +335,11 @@ class TestRunnerServiceImplTest {
             requestId = "requestId",
             testMatrix = TestMatrix(
                 resultStorage = ResultStorage(
-                    googleCloudStorage = GoogleCloudStorage(resultPath)
+                    googleCloudStorage = GoogleCloudStorage(resultPath),
+                    toolResultsExecution = ToolResultsExecution(
+                        executionId = "test_executionId",
+                        historyId = "test_historyId"
+                    )
                 ),
                 projectId = fakeBackend.firebaseProjectId,
                 environmentMatrix = EnvironmentMatrix(),

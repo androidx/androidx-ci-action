@@ -35,7 +35,7 @@ import java.io.InputStream
 /**
  * Real implementation of [TestRunnerService].
  */
-class TestRunnerServiceImpl internal constructor(
+internal class TestRunnerServiceImpl internal constructor(
     private val googleCloudApi: GoogleCloudApi,
     firebaseProjectId: String,
     datastoreApi: DatastoreApi,
@@ -141,6 +141,7 @@ class TestRunnerServiceImpl internal constructor(
         ) = byFullDeviceId.getOrPut(visitor.fullDeviceId()) {
             TestResultFilesImpl(fullDeviceId = visitor.fullDeviceId())
         }
+
         // sample output looks like:
         // redfin-30-en-portrait-test_results_merged.xml
         // redfin-30-en-portrait/instrumentation.results
@@ -174,24 +175,17 @@ class TestRunnerServiceImpl internal constructor(
                 getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
             } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
                 val step = steps.flatMap {
-                    it.testExecutionStep?.toolExecution?.toolOutputs!!
+                    it.testExecutionStep?.toolExecution?.toolOutputs?: emptyList()
                 }?.find {
                     (it.output?.fileUri == visitor.gcsPath.toString())
                 }
-                val fileUri = step?.output?.fileUri
-                var attemptNumber = 0
-                if (fileUri?.contains("rerun_1") == true) {
-                    attemptNumber = 1
-                } else if (fileUri?.contains("rerun_2") == true) {
-                    attemptNumber = 2
-                }
-
+                val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
                 step?.testCase?.className?.let { className ->
                     step?.testCase?.name?.let { name ->
                         TestRunnerService.TestIdentifier(
                             className,
                             name,
-                            attemptNumber
+                            runNumber
                         )
                     }
                 }?.let { testIdentifier ->
