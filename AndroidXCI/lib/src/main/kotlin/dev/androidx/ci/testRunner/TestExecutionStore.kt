@@ -28,7 +28,19 @@ internal class TestExecutionStore(
         historyId: String,
         executionId: String
     ): List<Step> {
-        return toolsResultApi.listSteps(projectId, historyId, executionId).steps ?: emptyList()
+        val steps = mutableListOf<Step>()
+        var nextPageToken: String? = null
+        do {
+            val response = toolsResultApi.listSteps(
+                projectId = projectId,
+                historyId = historyId,
+                executionId = executionId,
+                pageToken = nextPageToken
+            )
+            response.steps?.let { steps.addAll(it) }
+            nextPageToken = response.nextPageToken
+        } while (nextPageToken != null)
+        return steps
     }
 
     suspend fun getTestExecutionSteps(

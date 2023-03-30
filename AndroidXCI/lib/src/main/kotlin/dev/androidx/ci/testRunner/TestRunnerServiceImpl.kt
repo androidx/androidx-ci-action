@@ -175,7 +175,7 @@ internal class TestRunnerServiceImpl internal constructor(
                 getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
             } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
                 val step = steps.flatMap {
-                    it.testExecutionStep?.toolExecution?.toolOutputs?: emptyList()
+                    it.testExecutionStep?.toolExecution?.toolOutputs ?: emptyList()
                 }?.find {
                     (it.output?.fileUri == visitor.gcsPath.toString())
                 }

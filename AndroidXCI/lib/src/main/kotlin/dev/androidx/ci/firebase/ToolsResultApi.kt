@@ -57,6 +57,7 @@ internal interface ToolsResultApi {
         @Path("projectId") projectId: String,
         @Path("historyId") historyId: String,
         @Path("executionId") executionId: String,
+        @Query("pageToken") pageToken: String?,
         @Query("pageSize") pageSize: Int = 100
     ): ListStepsResponse
 
