@@ -39,6 +39,7 @@ internal class FirebaseTestLabControllerTest {
             resultsGcsPrefix = GcsPath("gs://test-results")
         )
     )
+    private val toolsResultApi = fakeBackend.fakeToolsResultApi
 
     @Test
     fun testPairing() = runBlocking<Unit> {
@@ -96,6 +97,16 @@ internal class FirebaseTestLabControllerTest {
             assertWithMessage(
                 "Default device ($androidDevice) should be in the catalog"
             ).that(validEnvironment).isTrue()
+        }
+    }
+
+    @Test
+    fun getTestExecutionSteps() {
+        runBlocking {
+            val response = toolsResultApi.listSteps("projectId", "historyId", "executionId", pageToken = null)
+            assertThat(
+                response.steps?.size
+            ).isEqualTo(1)
         }
     }
 

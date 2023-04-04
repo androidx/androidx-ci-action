@@ -15,7 +15,6 @@
  */
 package dev.androidx.ci.testRunner
 
-import com.squareup.moshi.JsonClass
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
@@ -231,8 +230,6 @@ internal class TestRunnerServiceImpl internal constructor(
         private const val TEST_RESULT_XML_SUFFIX = ".xml"
         private const val INSTRUMENTATION_RESULTS_FILE_NAME = "instrumentation.results"
     }
-
-    @JsonClass(generateAdapter = true)
     class ResultFileResourceImpl(
         private val blobVisitor: BlobVisitor
     ) : TestRunnerService.ResultFileResource {

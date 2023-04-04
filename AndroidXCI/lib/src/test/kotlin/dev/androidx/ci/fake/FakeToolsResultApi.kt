@@ -21,6 +21,7 @@ import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.generated.testResults.History
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
 import dev.androidx.ci.generated.testResults.ListStepsResponse
+import dev.androidx.ci.generated.testResults.Step
 import java.util.UUID
 
 internal class FakeToolsResultApi : ToolsResultApi {
@@ -58,7 +59,9 @@ internal class FakeToolsResultApi : ToolsResultApi {
         pageSize: Int
     ): ListStepsResponse {
         return ListStepsResponse(
-            steps = emptyList()
+            steps = listOf(
+                Step(stepId = UUID.randomUUID().toString())
+            )
         )
     }
 }
