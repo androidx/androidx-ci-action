@@ -204,7 +204,7 @@ class TestRunnerServiceImplTest {
             sharding = null,
             deviceSetup = DeviceSetup(
                 additionalApks = listOf(extraApk),
-                directoriesToPull = setOf("/sdcard/foo/bar"),
+                directoriesToPull = listOf("/sdcard/foo/bar"),
                 instrumentationArguments = listOf(
                     DeviceSetup.InstrumentationArgument("key1", "value1"),
                     DeviceSetup.InstrumentationArgument("key2", "value2")

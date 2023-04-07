@@ -90,7 +90,7 @@ internal class TestMatrixStoreTest {
         )
         val deviceSetup = DeviceSetup(
             additionalApks = listOf(extraApk),
-            directoriesToPull = setOf("/sdcard/foo/bar"),
+            directoriesToPull = listOf("/sdcard/foo/bar"),
             instrumentationArguments = listOf(
                 DeviceSetup.InstrumentationArgument(
                     key = "foo",
