@@ -100,16 +100,6 @@ internal class FirebaseTestLabControllerTest {
         }
     }
 
-    @Test
-    fun getTestExecutionSteps() {
-        runBlocking {
-            val response = toolsResultApi.listSteps("projectId", "historyId", "executionId", pageToken = null)
-            assertThat(
-                response.steps?.size
-            ).isEqualTo(1)
-        }
-    }
-
     private fun createUploadedApk(
         name: String,
     ) = UploadedApk(

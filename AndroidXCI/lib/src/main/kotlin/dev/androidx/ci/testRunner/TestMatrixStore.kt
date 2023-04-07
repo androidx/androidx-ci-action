@@ -29,6 +29,7 @@ import dev.androidx.ci.generated.ftl.ResultStorage
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
+import dev.androidx.ci.generated.ftl.ToolResultsExecution
 import dev.androidx.ci.generated.ftl.ToolResultsHistory
 import dev.androidx.ci.testRunner.dto.TestRun
 import dev.androidx.ci.testRunner.dto.toEntity
@@ -197,6 +198,11 @@ internal class TestMatrixStore(
                 toolResultsHistory = ToolResultsHistory(
                     projectId = firebaseProjectId,
                     historyId = historyId
+                ),
+                toolResultsExecution = ToolResultsExecution(
+                    executionId = UUID.randomUUID().toString(),
+                    historyId = historyId,
+                    projectId = firebaseProjectId
                 )
             )
         )

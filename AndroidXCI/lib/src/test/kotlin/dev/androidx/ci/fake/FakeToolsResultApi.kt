@@ -26,6 +26,7 @@ import java.util.UUID
 
 internal class FakeToolsResultApi : ToolsResultApi {
     private val histories = mutableListOf<History>()
+    private val steps = mutableMapOf<ExecutionStepIdentifier, MutableList<Step>>()
     override suspend fun getHistories(projectId: String, name: String?, pageSize: Int): ListHistoriesResponse {
         return ListHistoriesResponse(
             nextPageToken = null,
@@ -59,9 +60,36 @@ internal class FakeToolsResultApi : ToolsResultApi {
         pageSize: Int
     ): ListStepsResponse {
         return ListStepsResponse(
-            steps = listOf(
-                Step(stepId = UUID.randomUUID().toString())
-            )
+            steps = steps[
+                ExecutionStepIdentifier(
+                    projectId = projectId,
+                    historyId = historyId,
+                    executionId = executionId
+                )
+            ]
         )
     }
+
+    suspend fun createSteps(projectId: String, historyId: String, executionId: String, step: Step?) {
+        val executionStepIdentifier = ExecutionStepIdentifier(
+            projectId,
+            historyId,
+            executionId
+        )
+        steps.putIfAbsent(
+            executionStepIdentifier,
+            mutableListOf()
+        )
+        if (step != null) {
+            steps[executionStepIdentifier]?.add(step)
+        } else {
+            steps[executionStepIdentifier]?.add(Step(stepId = UUID.randomUUID().toString()))
+        }
+    }
+
+    internal data class ExecutionStepIdentifier(
+        val projectId: String,
+        val historyId: String,
+        val executionId: String
+    )
 }
