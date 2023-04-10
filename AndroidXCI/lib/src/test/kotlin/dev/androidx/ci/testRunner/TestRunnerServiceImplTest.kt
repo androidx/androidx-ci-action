@@ -14,18 +14,26 @@ import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.ToolResultsExecution
 import dev.androidx.ci.generated.ftl.UniformSharding
+import dev.androidx.ci.generated.testResults.FileReference
+import dev.androidx.ci.generated.testResults.Step
+import dev.androidx.ci.generated.testResults.TestCaseReference
+import dev.androidx.ci.generated.testResults.TestExecutionStep
+import dev.androidx.ci.generated.testResults.ToolExecution
+import dev.androidx.ci.generated.testResults.ToolOutputReference
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import java.util.UUID
 
 class TestRunnerServiceImplTest {
     private val fakeBackend = FakeBackend()
+    private val fakeToolsResultApi = fakeBackend.fakeToolsResultApi
     private val subject = TestRunnerServiceImpl(
         googleCloudApi = fakeBackend.fakeGoogleCloudApi,
         firebaseProjectId = fakeBackend.firebaseProjectId,
         datastoreApi = fakeBackend.datastoreApi,
-        toolsResultApi = fakeBackend.fakeToolsResultApi,
+        toolsResultApi = fakeToolsResultApi,
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
         gcsResultPath = "testRunnerServiceTest"
     )
@@ -290,6 +298,46 @@ class TestRunnerServiceImplTest {
             "$resultRelativePath/redfin-30-en-portrait/test_result_2.xml",
             "test_result_2 content xml".toByteArray(Charsets.UTF_8)
         )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/test_cases/0000_logcat",
+            "test1 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/test_cases/0001_logcat",
+            "test2 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeToolsResultApi.createSteps(
+            projectId = fakeBackend.firebaseProjectId,
+            executionId = "test_executionId",
+            historyId = "test_historyId",
+            step = Step(
+                stepId = UUID.randomUUID().toString(),
+                testExecutionStep = TestExecutionStep(
+                    toolExecution = ToolExecution(
+                        toolOutputs = listOf(
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class1",
+                                    name = "name1"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait/test_cases/0000_logcat"
+                                )
+                            ),
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class3",
+                                    name = "name3"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait/test_cases/0002_logcat"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
         val results = subject.getTestMatrixResults(testMatrixId)
         assertThat(results).hasSize(1)
         val result = results!!.single()
@@ -323,6 +371,56 @@ class TestRunnerServiceImplTest {
                 "test_result_1 content xml",
                 "test_result_2 content xml",
             )
+
+            assertThat(
+                testRun.testCaseLogcats.size
+            ).isEqualTo(
+                1
+            )
+            // step and logcat both have valid values for test1
+            assertThat(
+                testRun.testCaseLogcats[
+                    TestRunnerService.TestIdentifier(
+                        className = "class1",
+                        name = "name1",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]?.gcsPath.toString()
+            ).isEqualTo(
+                "$resultPath/redfin-30-en-portrait/test_cases/0000_logcat"
+            )
+            assertThat(
+                testRun.testCaseLogcats[
+                    TestRunnerService.TestIdentifier(
+                        className = "class1",
+                        name = "name1",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]?.readFully()?.toString(Charsets.UTF_8)
+            ).isEqualTo(
+                "test1 logcat"
+            )
+
+            // step for test2 is missing
+            assertThat(
+                testRun.testCaseLogcats[
+                    TestRunnerService.TestIdentifier(
+                        className = "class2",
+                        name = "name2",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]
+            ).isNull()
+            // logcat for test3 is missing from gcloud folder
+            assertThat(
+                testRun.testCaseLogcats[
+                    TestRunnerService.TestIdentifier(
+                        className = "class3",
+                        name = "name3",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]
+            ).isNull()
         }
     }
 
@@ -389,6 +487,142 @@ class TestRunnerServiceImplTest {
             "$resultRelativePath/redfin-30-en-portrait-shard_2-rerun_2/test_result_1.xml",
             "test_result_1 content xml".toByteArray(Charsets.UTF_8)
         )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_0/test_cases/0000_logcat",
+            "test1 in shard0 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_1/test_cases/0000_logcat",
+            "test2 in shard1 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_2/test_cases/0000_logcat",
+            "test3 in shard2 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_2-rerun_1/test_cases/0000_logcat",
+            "test3 in shard2 rerun1 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_2-rerun_2/test_cases/0000_logcat",
+            "test3 in shard2 rerun2 logcat".toByteArray(Charsets.UTF_8)
+        )
+        // every shard and rerun has its own step
+        fakeToolsResultApi.createSteps(
+            projectId = fakeBackend.firebaseProjectId,
+            executionId = "test_executionId",
+            historyId = "test_historyId",
+            step = Step(
+                stepId = UUID.randomUUID().toString(),
+                testExecutionStep = TestExecutionStep(
+                    toolExecution = ToolExecution(
+                        toolOutputs = listOf(
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class1",
+                                    name = "name1"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait-shard_0/test_cases/0000_logcat"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        fakeToolsResultApi.createSteps(
+            projectId = fakeBackend.firebaseProjectId,
+            executionId = "test_executionId",
+            historyId = "test_historyId",
+            step = Step(
+                stepId = UUID.randomUUID().toString(),
+                testExecutionStep = TestExecutionStep(
+                    toolExecution = ToolExecution(
+                        toolOutputs = listOf(
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class1",
+                                    name = "name1"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait-shard_1/test_cases/0000_logcat"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        fakeToolsResultApi.createSteps(
+            projectId = fakeBackend.firebaseProjectId,
+            executionId = "test_executionId",
+            historyId = "test_historyId",
+            step = Step(
+                stepId = UUID.randomUUID().toString(),
+                testExecutionStep = TestExecutionStep(
+                    toolExecution = ToolExecution(
+                        toolOutputs = listOf(
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class1",
+                                    name = "name1"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait-shard_2/test_cases/0000_logcat"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        fakeToolsResultApi.createSteps(
+            projectId = fakeBackend.firebaseProjectId,
+            executionId = "test_executionId",
+            historyId = "test_historyId",
+            step = Step(
+                stepId = UUID.randomUUID().toString(),
+                testExecutionStep = TestExecutionStep(
+                    toolExecution = ToolExecution(
+                        toolOutputs = listOf(
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class1",
+                                    name = "name1"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait-shard_2-rerun_1/test_cases/0000_logcat"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        fakeToolsResultApi.createSteps(
+            projectId = fakeBackend.firebaseProjectId,
+            executionId = "test_executionId",
+            historyId = "test_historyId",
+            step = Step(
+                stepId = UUID.randomUUID().toString(),
+                testExecutionStep = TestExecutionStep(
+                    toolExecution = ToolExecution(
+                        toolOutputs = listOf(
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class1",
+                                    name = "name1"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait-shard_2-rerun_2/test_cases/0000_logcat"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
         val results = subject.getTestMatrixResults(testMatrixId)
         assertThat(results).hasSize(1)
         val result = results!!.single()
@@ -436,6 +670,79 @@ class TestRunnerServiceImplTest {
                 runNumber = 2,
                 shard = 2
             ),
+        )
+        result.testRuns.forEach { testRun ->
+            assertThat(
+                testRun.testCaseLogcats.size
+            ).isEqualTo(
+                1
+            )
+            assertThat(
+                testRun.testCaseLogcats[
+                    TestRunnerService.TestIdentifier(
+                        className = "class1",
+                        name = "name1",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]?.gcsPath.toString()
+            ).isEqualTo(
+                "$resultPath/${testRun.deviceRun.id}/test_cases/0000_logcat"
+            )
+        }
+        assertThat(
+            result.testRuns[0].testCaseLogcats[
+                TestRunnerService.TestIdentifier(
+                    className = "class1",
+                    name = "name1",
+                    runNumber = 0
+                )
+            ]?.readFully()?.toString(Charsets.UTF_8)
+        ).isEqualTo(
+            "test1 in shard0 logcat"
+        )
+        assertThat(
+            result.testRuns[1].testCaseLogcats[
+                TestRunnerService.TestIdentifier(
+                    className = "class1",
+                    name = "name1",
+                    runNumber = 0
+                )
+            ]?.readFully()?.toString(Charsets.UTF_8)
+        ).isEqualTo(
+            "test2 in shard1 logcat"
+        )
+        assertThat(
+            result.testRuns[2].testCaseLogcats[
+                TestRunnerService.TestIdentifier(
+                    className = "class1",
+                    name = "name1",
+                    runNumber = 0
+                )
+            ]?.readFully()?.toString(Charsets.UTF_8)
+        ).isEqualTo(
+            "test3 in shard2 logcat"
+        )
+        assertThat(
+            result.testRuns[3].testCaseLogcats[
+                TestRunnerService.TestIdentifier(
+                    className = "class1",
+                    name = "name1",
+                    runNumber = 1
+                )
+            ]?.readFully()?.toString(Charsets.UTF_8)
+        ).isEqualTo(
+            "test3 in shard2 rerun1 logcat"
+        )
+        assertThat(
+            result.testRuns[4].testCaseLogcats[
+                TestRunnerService.TestIdentifier(
+                    className = "class1",
+                    name = "name1",
+                    runNumber = 2
+                )
+            ]?.readFully()?.toString(Charsets.UTF_8)
+        ).isEqualTo(
+            "test3 in shard2 rerun2 logcat"
         )
     }
 

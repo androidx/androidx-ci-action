@@ -58,9 +58,6 @@ internal class TestRunnerServiceImpl internal constructor(
     private val testExecutionStore = TestExecutionStore(
         toolsResultApi = toolsResultApi
     )
-    private val testResultDownloader = TestResultDownloader(
-        googleCloudApi = googleCloudApi
-    )
 
     override suspend fun getOrUploadApk(
         name: String,

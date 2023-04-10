@@ -39,7 +39,6 @@ internal class FirebaseTestLabControllerTest {
             resultsGcsPrefix = GcsPath("gs://test-results")
         )
     )
-    private val toolsResultApi = fakeBackend.fakeToolsResultApi
 
     @Test
     fun testPairing() = runBlocking<Unit> {

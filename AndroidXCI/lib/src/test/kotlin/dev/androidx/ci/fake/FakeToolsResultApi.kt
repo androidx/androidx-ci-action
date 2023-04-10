@@ -69,8 +69,7 @@ internal class FakeToolsResultApi : ToolsResultApi {
             ]
         )
     }
-
-    suspend fun createSteps(projectId: String, historyId: String, executionId: String, step: Step?) {
+    fun createSteps(projectId: String, historyId: String, executionId: String, step: Step?) {
         val executionStepIdentifier = ExecutionStepIdentifier(
             projectId,
             historyId,
