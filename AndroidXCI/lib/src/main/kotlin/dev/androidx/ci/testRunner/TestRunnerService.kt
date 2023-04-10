@@ -223,6 +223,20 @@ interface TestRunnerService {
             )
         }
     }
+    data class TestIdentifier(
+        /**
+         * The name of the class.
+         */
+        public val className: String,
+        /**
+         * The name of the test case.
+         */
+        public val name: String,
+        /**
+         * Run number associated with the test case run
+         */
+        public val runNumber: Int = 0
+    )
 
     /**
      * Represents the result of a [TestMatrix].
@@ -275,5 +289,10 @@ interface TestRunnerService {
          * XML result files produced by the test.
          */
         val xmlResults: List<ResultFileResource>
+
+        /**
+         * Test case log files produced by the test.
+         */
+        val testCaseLogcats: Map<TestIdentifier, ResultFileResource>
     }
 }

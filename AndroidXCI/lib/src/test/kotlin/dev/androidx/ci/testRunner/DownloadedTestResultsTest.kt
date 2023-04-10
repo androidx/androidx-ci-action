@@ -36,6 +36,7 @@ internal class DownloadedTestResultsTest {
         assertThat(downloads.logFiles).isEmpty()
         assertThat(downloads.mergedTestResults).isEmpty()
         assertThat(downloads.testMatrixId).isEqualTo("abc")
+        assertThat(downloads.testcaseLogFiles).isEmpty()
     }
 
     @Test
@@ -52,6 +53,9 @@ internal class DownloadedTestResultsTest {
                         resolve("instrumentation.results").createNewFile()
                         resolve("logcat").createNewFile()
                         resolve("test_result_1.xml").createNewFile()
+                        resolve("test_cases").also(File::mkdirs).apply {
+                            resolve("0000_logcat").createNewFile()
+                        }
                     }
                 }
             }
@@ -71,5 +75,8 @@ internal class DownloadedTestResultsTest {
             rootFolder.resolve("testMatrices/matrix-abc/Nexus5-19-en-portrait-test_results_merged.xml")
         )
         assertThat(downloads.rootFolder).isEqualTo(rootFolder)
+        assertThat(downloads.testcaseLogFiles).containsExactly(
+            rootFolder.resolve("testMatrices/matrix-abc/Nexus5-19-en-portrait/test_cases/0000_logcat")
+        )
     }
 }

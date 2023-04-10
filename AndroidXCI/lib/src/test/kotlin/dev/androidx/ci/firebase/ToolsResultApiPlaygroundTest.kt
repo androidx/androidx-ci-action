@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.firebase
 
+import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.testRunner.ToolsResultStore
 import dev.androidx.ci.util.GoogleCloudCredentialsRule
@@ -50,5 +51,14 @@ internal class ToolsResultApiPlaygroundTest {
         )
         val historyId = store.getHistoryId("androidx.compose.testutils.test")
         println(historyId)
+    }
+
+    @Test
+    fun getSteps() = runBlocking<Unit> {
+        // this testrun has 8 steps
+        val steps = api.listSteps(projectId, "bh.3d8b75bbc1050bf7", "6570812128705264798", null, 5)
+        assertThat(steps.steps?.size).isEqualTo(5)
+        val nextSteps = api.listSteps(projectId, "bh.3d8b75bbc1050bf7", "6570812128705264798", steps.nextPageToken, 5)
+        assertThat(nextSteps.steps?.size).isEqualTo(3)
     }
 }

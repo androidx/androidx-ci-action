@@ -20,10 +20,13 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.generated.testResults.History
 import dev.androidx.ci.generated.testResults.ListHistoriesResponse
+import dev.androidx.ci.generated.testResults.ListStepsResponse
+import dev.androidx.ci.generated.testResults.Step
 import java.util.UUID
 
 internal class FakeToolsResultApi : ToolsResultApi {
     private val histories = mutableListOf<History>()
+    private val steps = mutableMapOf<ExecutionStepIdentifier, MutableList<Step>>()
     override suspend fun getHistories(projectId: String, name: String?, pageSize: Int): ListHistoriesResponse {
         return ListHistoriesResponse(
             nextPageToken = null,
@@ -48,4 +51,45 @@ internal class FakeToolsResultApi : ToolsResultApi {
         )
         return created
     }
+
+    override suspend fun listSteps(
+        projectId: String,
+        historyId: String,
+        executionId: String,
+        pageToken: String?,
+        pageSize: Int
+    ): ListStepsResponse {
+        return ListStepsResponse(
+            steps = steps[
+                ExecutionStepIdentifier(
+                    projectId = projectId,
+                    historyId = historyId,
+                    executionId = executionId
+                )
+            ]
+        )
+    }
+    fun addStep(
+        projectId: String,
+        historyId: String,
+        executionId: String,
+        step: Step = Step(
+            stepId = UUID.randomUUID().toString()
+        )
+    ) {
+        val executionStepIdentifier = ExecutionStepIdentifier(
+            projectId,
+            historyId,
+            executionId
+        )
+        steps.getOrPut(executionStepIdentifier) {
+            mutableListOf()
+        }.add(step)
+    }
+
+    private data class ExecutionStepIdentifier(
+        val projectId: String,
+        val historyId: String,
+        val executionId: String
+    )
 }
