@@ -84,8 +84,8 @@ internal class TestExecutionStoreTest {
         val executionId = testMatrix.resultStorage.toolResultsExecution?.executionId!!
 
         // Add 2 steps for this execution
-        inputSteps.forEach() {
-            toolsResultApi.createSteps(
+        inputSteps.forEach {
+            toolsResultApi.addStep(
                 projectId = projectId,
                 historyId = historyId,
                 executionId = executionId,
@@ -94,8 +94,7 @@ internal class TestExecutionStoreTest {
         }
         val outputSteps = testExecutionStore.getTestExecutionSteps(testMatrix)
         assertThat(outputSteps).hasSize(2)
-        assertThat(outputSteps.first().stepId).isEqualTo(inputSteps.first().stepId)
-        assertThat(outputSteps.last().stepId).isEqualTo(inputSteps.last().stepId)
+        assertThat(outputSteps).containsExactlyElementsIn(inputSteps)
     }
 
     private fun createFakeApk(name: String) = UploadedApk(

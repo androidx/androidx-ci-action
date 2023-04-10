@@ -69,24 +69,25 @@ internal class FakeToolsResultApi : ToolsResultApi {
             ]
         )
     }
-    fun createSteps(projectId: String, historyId: String, executionId: String, step: Step?) {
+    fun addStep(
+        projectId: String,
+        historyId: String,
+        executionId: String,
+        step: Step = Step(
+            stepId = UUID.randomUUID().toString()
+        )
+    ) {
         val executionStepIdentifier = ExecutionStepIdentifier(
             projectId,
             historyId,
             executionId
         )
-        steps.putIfAbsent(
-            executionStepIdentifier,
+        steps.getOrPut(executionStepIdentifier) {
             mutableListOf()
-        )
-        if (step != null) {
-            steps[executionStepIdentifier]?.add(step)
-        } else {
-            steps[executionStepIdentifier]?.add(Step(stepId = UUID.randomUUID().toString()))
-        }
+        }.add(step)
     }
 
-    internal data class ExecutionStepIdentifier(
+    private data class ExecutionStepIdentifier(
         val projectId: String,
         val historyId: String,
         val executionId: String

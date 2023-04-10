@@ -306,7 +306,7 @@ class TestRunnerServiceImplTest {
             "$resultRelativePath/redfin-30-en-portrait/test_cases/0001_logcat",
             "test2 logcat".toByteArray(Charsets.UTF_8)
         )
-        fakeToolsResultApi.createSteps(
+        fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,
             executionId = "test_executionId",
             historyId = "test_historyId",
@@ -508,7 +508,7 @@ class TestRunnerServiceImplTest {
             "test3 in shard2 rerun2 logcat".toByteArray(Charsets.UTF_8)
         )
         // every shard and rerun has its own step
-        fakeToolsResultApi.createSteps(
+        fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,
             executionId = "test_executionId",
             historyId = "test_historyId",
@@ -531,7 +531,7 @@ class TestRunnerServiceImplTest {
                 )
             )
         )
-        fakeToolsResultApi.createSteps(
+        fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,
             executionId = "test_executionId",
             historyId = "test_historyId",
@@ -554,7 +554,7 @@ class TestRunnerServiceImplTest {
                 )
             )
         )
-        fakeToolsResultApi.createSteps(
+        fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,
             executionId = "test_executionId",
             historyId = "test_historyId",
@@ -577,7 +577,7 @@ class TestRunnerServiceImplTest {
                 )
             )
         )
-        fakeToolsResultApi.createSteps(
+        fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,
             executionId = "test_executionId",
             historyId = "test_historyId",
@@ -600,7 +600,7 @@ class TestRunnerServiceImplTest {
                 )
             )
         )
-        fakeToolsResultApi.createSteps(
+        fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,
             executionId = "test_executionId",
             historyId = "test_historyId",
