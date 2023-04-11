@@ -17,16 +17,14 @@
 package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
-import dev.androidx.ci.fake.FakeDatastore
-import dev.androidx.ci.fake.FakeFirebaseTestLabApi
-import dev.androidx.ci.fake.FakeToolsResultApi
-import dev.androidx.ci.gcloud.GcsPath
-import dev.androidx.ci.generated.ftl.AndroidDevice
-import dev.androidx.ci.generated.ftl.AndroidDeviceList
+import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.GoogleCloudStorage
+import dev.androidx.ci.generated.ftl.ResultStorage
+import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.generated.ftl.TestSpecification
+import dev.androidx.ci.generated.ftl.ToolResultsExecution
 import dev.androidx.ci.generated.testResults.Step
-import dev.androidx.ci.testRunner.vo.ApkInfo
-import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,43 +33,30 @@ import java.util.UUID
 
 @RunWith(JUnit4::class)
 internal class TestExecutionStoreTest {
-    private val firebaseTestLabApi = FakeFirebaseTestLabApi()
-    private val datastoreApi = FakeDatastore()
-    private val toolsResultApi = FakeToolsResultApi()
-
-    private val store = TestMatrixStore(
-        firebaseProjectId = "p1",
-        firebaseTestLabApi = firebaseTestLabApi,
-        datastoreApi = datastoreApi,
-        toolsResultApi = toolsResultApi,
-        resultsGcsPrefix = GcsPath("gs://test")
-    )
-
+    private val fakeBackend = FakeBackend()
+    private val fakeToolsResultApi = fakeBackend.fakeToolsResultApi
     private val testExecutionStore = TestExecutionStore(
-        toolsResultApi = toolsResultApi
+        toolsResultApi = fakeToolsResultApi
     )
 
     @Test
     fun getExecutionSteps() = runBlocking<Unit> {
-        val envMatrix1 = EnvironmentMatrix(
-            androidDeviceList = AndroidDeviceList(
-                androidDevices = listOf(
-                    AndroidDevice(
-                        orientation = "land",
-                        androidVersionId = "27",
-                        locale = "us",
-                        androidModelId = "model1"
+        val resultPath = "${fakeBackend.fakeGoogleCloudApi.rootGcsPath}/my-test-matrix-results"
+        val testMatrix = fakeBackend.fakeFirebaseTestLabApi.createTestMatrix(
+            projectId = fakeBackend.firebaseProjectId,
+            requestId = "requestId",
+            testMatrix = TestMatrix(
+                resultStorage = ResultStorage(
+                    googleCloudStorage = GoogleCloudStorage(resultPath),
+                    toolResultsExecution = ToolResultsExecution(
+                        executionId = "test_executionId",
+                        historyId = "test_historyId"
                     )
-                )
+                ),
+                projectId = fakeBackend.firebaseProjectId,
+                environmentMatrix = EnvironmentMatrix(),
+                testSpecification = TestSpecification()
             )
-        )
-        val testMatrix = store.getOrCreateTestMatrix(
-            appApk = createFakeApk("app.pak"),
-            testApk = createFakeApk("test.apk"),
-            environmentMatrix = envMatrix1,
-            clientInfo = null,
-            deviceSetup = null,
-            sharding = null
         )
 
         val inputSteps = mutableListOf<Step>(
@@ -85,7 +70,7 @@ internal class TestExecutionStoreTest {
 
         // Add 2 steps for this execution
         inputSteps.forEach {
-            toolsResultApi.addStep(
+            fakeToolsResultApi.addStep(
                 projectId = projectId,
                 historyId = historyId,
                 executionId = executionId,
@@ -96,12 +81,4 @@ internal class TestExecutionStoreTest {
         assertThat(outputSteps).hasSize(2)
         assertThat(outputSteps).containsExactlyElementsIn(inputSteps)
     }
-
-    private fun createFakeApk(name: String) = UploadedApk(
-        gcsPath = GcsPath("gs://foo/bar/$name"),
-        apkInfo = ApkInfo(
-            filePath = "foo/bar/$name",
-            idHash = name
-        )
-    )
 }
