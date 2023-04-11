@@ -19,7 +19,6 @@ import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import okhttp3.logging.HttpLoggingInterceptor
 import java.io.InputStream
 
 interface TestRunnerService {
