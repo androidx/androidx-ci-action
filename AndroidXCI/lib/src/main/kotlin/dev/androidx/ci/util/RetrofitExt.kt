@@ -16,15 +16,13 @@
 
 package dev.androidx.ci.util
 
+import dev.androidx.ci.config.HttpConfigAdapter
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.logging.HttpLoggingInterceptor
 import okio.Timeout
-import org.apache.logging.log4j.kotlin.logger
-import org.apache.logging.log4j.kotlin.loggerOf
 import retrofit2.Call
 import retrofit2.CallAdapter
 import retrofit2.Callback
@@ -33,7 +31,6 @@ import retrofit2.Retrofit
 import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.FUNCTION)
 internal annotation class Retry(val times: Int = 3)
@@ -183,22 +180,12 @@ internal class RetryCallAdapterFactory(
 }
 
 /**
- * Add a log4j logger for the given level to all requests.
+ * Configures the OkHttp builder with the given [config].
  */
-internal fun OkHttpClient.Builder.withLog4J(
-    level: HttpLoggingInterceptor.Level,
-    klass: KClass<*>
-): OkHttpClient.Builder {
-    return if (level == HttpLoggingInterceptor.Level.NONE) {
-        this
-    } else {
-        val log4jLogger = loggerOf(klass.java)
-        val loggingInterceptor = HttpLoggingInterceptor(
-            logger = {
-                log4jLogger.info(it)
-            }
-        )
-        loggingInterceptor.level = level
-        this.addInterceptor(loggingInterceptor)
+internal fun OkHttpClient.Builder.withConfig(
+    config: HttpConfigAdapter
+): OkHttpClient.Builder = apply {
+    config.interceptors().forEach {
+        addInterceptor(it)
     }
 }

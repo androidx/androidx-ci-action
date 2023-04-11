@@ -25,7 +25,7 @@ import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
-import dev.androidx.ci.util.withLog4J
+import dev.androidx.ci.util.withConfig
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -68,23 +68,23 @@ internal interface FirebaseTestLabApi {
         fun build(
             config: Config.FirebaseTestLab
         ): FirebaseTestLabApi {
-            val client = OkHttpClient.Builder().authenticateWith(
-                config.gcp
-            ).addInterceptor {
-                val newBuilder = it.request().newBuilder()
-                newBuilder.addHeader(
-                    "Content-Type", "application/json;charset=utf-8",
-                )
-                newBuilder.addHeader(
-                    "Accept", "application/json"
-                )
-                it.proceed(
-                    newBuilder.build()
-                )
-            }.withLog4J(
-                level = config.httpLogLevel,
-                klass = FirebaseTestLabApi::class
-            ).build()
+            val httpAdapter = config.httpConfigAdapterFactory.create(FirebaseTestLabApi::class)
+            val client = OkHttpClient.Builder().withConfig(
+                    httpAdapter
+                ).authenticateWith(
+                    config.gcp
+                ).addInterceptor {
+                    val newBuilder = it.request().newBuilder()
+                    newBuilder.addHeader(
+                        "Content-Type", "application/json;charset=utf-8",
+                    )
+                    newBuilder.addHeader(
+                        "Accept", "application/json"
+                    )
+                    it.proceed(
+                        newBuilder.build()
+                    )
+                }.build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()
@@ -93,6 +93,7 @@ internal interface FirebaseTestLabApi {
                 .baseUrl(config.endPoint)
                 .addConverterFactory(MoshiConverterFactory.create(moshi).asLenient())
                 .addCallAdapterFactory(RetryCallAdapterFactory.GLOBAL)
+                .callFactory(httpAdapter.createCallFactory(client))
                 .build()
                 .create(FirebaseTestLabApi::class.java)
         }
