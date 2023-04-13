@@ -107,7 +107,8 @@ internal class FirebaseTestLabController(
         clientInfo: ClientInfo? = null,
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
-        devicePicker: DevicePicker? = null
+        devicePicker: DevicePicker? = null,
+        pullScreenshots: Boolean? = false
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
@@ -121,7 +122,8 @@ internal class FirebaseTestLabController(
                 environmentMatrix = listOf(it).createEnvironmentMatrix(),
                 clientInfo = clientInfo,
                 sharding = sharding,
-                deviceSetup = deviceSetup
+                deviceSetup = deviceSetup,
+                pullScreenshots = pullScreenshots
             )
         }
     }

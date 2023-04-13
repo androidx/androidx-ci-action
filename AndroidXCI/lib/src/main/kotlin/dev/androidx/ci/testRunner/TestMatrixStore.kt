@@ -66,6 +66,7 @@ internal class TestMatrixStore(
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
+        pullScreenshots: Boolean? = false
     ): TestMatrix {
 
         val testRunId = TestRun.createId(
@@ -99,6 +100,7 @@ internal class TestMatrixStore(
                 deviceSetup = deviceSetup,
                 appApk = appApk,
                 testApk = testApk,
+                pullScreenshots = pullScreenshots
             )
         )
         logger.info {
@@ -160,7 +162,8 @@ internal class TestMatrixStore(
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
         appApk: UploadedApk,
-        testApk: UploadedApk
+        testApk: UploadedApk,
+        pullScreenshots: Boolean? = false
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -170,6 +173,9 @@ internal class TestMatrixStore(
         val historyId = toolsResultStore.getHistoryId(
             packageName
         )
+        if(pullScreenshots == true){
+            deviceSetup?.directoriesToPull?.add("/sdcard/Android/data/${packageName}/cache/androidx_screenshots")
+        }
         return TestMatrix(
             projectId = firebaseProjectId,
             flakyTestAttempts = 2,

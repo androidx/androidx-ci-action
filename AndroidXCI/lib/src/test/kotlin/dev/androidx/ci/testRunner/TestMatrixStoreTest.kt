@@ -90,7 +90,7 @@ internal class TestMatrixStoreTest {
         )
         val deviceSetup = DeviceSetup(
             additionalApks = listOf(extraApk),
-            directoriesToPull = listOf("/sdcard/foo/bar"),
+            directoriesToPull = mutableListOf("/sdcard/foo/bar"),
             instrumentationArguments = listOf(
                 DeviceSetup.InstrumentationArgument(
                     key = "foo",
@@ -220,6 +220,37 @@ internal class TestMatrixStoreTest {
         assertThat(reUploadedAfterDeletion.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
     }
 
+    @Test
+    fun pullScreenshots() = runBlocking<Unit> {
+        val appApk = createFakeApk("app.pak")
+        val testApk = createFakeApk("test.apk")
+        val testPackageName = firebaseTestLabApi.getApkDetails(
+            FileReference(testApk.gcsPath.path)
+        ).apkDetail?.apkManifest?.packageName
+        val deviceSetup = DeviceSetup(
+            directoriesToPull = mutableListOf("/sdcard/foo1/bar1")
+        )
+        store.getOrCreateTestMatrix(
+            appApk = appApk,
+            testApk = testApk,
+            environmentMatrix = envMatrix1,
+            clientInfo = null,
+            deviceSetup = deviceSetup,
+            sharding = null,
+            pullScreenshots = true
+        )
+
+        assertThat(firebaseTestLabApi.getTestMatrices()).hasSize(1)
+        val matrix = firebaseTestLabApi.getTestMatrices().first()
+        matrix.testSpecification.let {
+            assertThat(
+                it.testSetup?.directoriesToPull
+            ).containsAtLeastElementsIn(deviceSetup.directoriesToPull)
+            assertThat(
+                it.testSetup?.directoriesToPull
+            ).contains("/sdcard/Android/data/$testPackageName/cache/androidx_screenshots")
+        }
+    }
     private fun createFakeApk(name: String) = UploadedApk(
         gcsPath = GcsPath("gs://foo/bar/$name"),
         apkInfo = ApkInfo(
