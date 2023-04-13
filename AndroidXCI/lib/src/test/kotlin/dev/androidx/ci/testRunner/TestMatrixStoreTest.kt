@@ -251,6 +251,32 @@ internal class TestMatrixStoreTest {
             ).contains("/sdcard/Android/data/$testPackageName/cache/androidx_screenshots")
         }
     }
+
+    @Test
+    fun pullScreenshotsWithoutDeviceSetup() = runBlocking<Unit> {
+        val appApk = createFakeApk("app.pak")
+        val testApk = createFakeApk("test.apk")
+        val testPackageName = firebaseTestLabApi.getApkDetails(
+            FileReference(testApk.gcsPath.path)
+        ).apkDetail?.apkManifest?.packageName
+        store.getOrCreateTestMatrix(
+            appApk = appApk,
+            testApk = testApk,
+            environmentMatrix = envMatrix1,
+            clientInfo = null,
+            deviceSetup = null,
+            sharding = null,
+            pullScreenshots = true
+        )
+
+        assertThat(firebaseTestLabApi.getTestMatrices()).hasSize(1)
+        val matrix = firebaseTestLabApi.getTestMatrices().first()
+        matrix.testSpecification.let {
+            assertThat(
+                it.testSetup?.directoriesToPull
+            ).containsExactly("/sdcard/Android/data/$testPackageName/cache/androidx_screenshots")
+        }
+    }
     private fun createFakeApk(name: String) = UploadedApk(
         gcsPath = GcsPath("gs://foo/bar/$name"),
         apkInfo = ApkInfo(

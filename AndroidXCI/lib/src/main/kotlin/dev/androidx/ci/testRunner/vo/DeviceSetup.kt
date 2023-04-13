@@ -21,7 +21,7 @@ data class DeviceSetup(
      * to external storage, the system will replace it with the external storage path prefix for that
      * device.
      */
-    var directoriesToPull: MutableList<String>? = null,
+    var directoriesToPull: MutableList<String> = mutableListOf(),
     /**
      * List of instrumentation arguments to be passed into the runner.
      */
