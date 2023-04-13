@@ -152,7 +152,7 @@ internal class TestRunnerServiceImpl internal constructor(
         // redfin-30-en-portrait_rerun_2/logcat
         // redfin-30-en-portrait_rerun_2/test_result_1.xml
 
-        val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
+        //val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
         googleCloudApi.walkEntires(
             gcsPath = resultPath
         ).forEach { visitor ->
@@ -169,7 +169,7 @@ internal class TestRunnerServiceImpl internal constructor(
                 getTestResultFiles(visitor).logcat = ResultFileResourceImpl(visitor)
             } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
                 getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
-            } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
+            } /*else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
                 val step = steps.flatMap {
                     it.testExecutionStep?.toolExecution?.toolOutputs ?: emptyList()
                 }?.find {
@@ -190,7 +190,7 @@ internal class TestRunnerServiceImpl internal constructor(
                         ResultFileResourceImpl(visitor)
                     )
                 }
-            }
+            }*/
         }
         return mergedXmlBlobs.map { mergedXmlEntry ->
             val relatedRuns = byFullDeviceId.entries.filter {
