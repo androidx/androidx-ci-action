@@ -180,13 +180,9 @@ internal class TestMatrixStore(
             }
             deviceSetup.toTestSetup()
         } else {
-            if (pullScreenshots == true) {
-                TestSetup(
-                    directoriesToPull = listOf("/sdcard/Android/data/$packageName/cache/androidx_screenshots")
-                )
-            } else {
-                null
-            }
+            TestSetup(
+                directoriesToPull = if (pullScreenshots == true) listOf("/sdcard/Android/data/$packageName/cache/androidx_screenshots") else null
+            )
         }
         return TestMatrix(
             projectId = firebaseProjectId,
