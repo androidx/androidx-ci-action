@@ -91,6 +91,11 @@ interface TestRunnerService {
      */
     suspend fun getTestMatrixResults(testMatrix: TestMatrix): List<TestRunResult>?
 
+    /**
+     * Gets the mapping tests to logcats for the given [testMatrix].
+     */
+    suspend fun getTestMatrixLogcats(testMatrix: TestMatrix): MutableMap<TestIdentifier, ResultFileResource>?
+
     companion object {
         /**
          * Creates an implementation of [TestRunnerService].
@@ -236,7 +241,13 @@ interface TestRunnerService {
          * Run number associated with the test case run
          */
         public val runNumber: Int = 0
-    )
+    ) {
+        override fun toString(): String {
+            return buildString {
+                append("$className#$name#$runNumber")
+            }
+        }
+    }
 
     /**
      * Represents the result of a [TestMatrix].
@@ -289,10 +300,5 @@ interface TestRunnerService {
          * XML result files produced by the test.
          */
         val xmlResults: List<ResultFileResource>
-
-        /**
-         * Test case log files produced by the test.
-         */
-        val testCaseLogcats: Map<TestIdentifier, ResultFileResource>
     }
 }

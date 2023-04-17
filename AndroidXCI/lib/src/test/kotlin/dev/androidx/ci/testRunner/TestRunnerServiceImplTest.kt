@@ -339,6 +339,12 @@ class TestRunnerServiceImplTest {
             )
         )
         val results = subject.getTestMatrixResults(testMatrixId)
+
+        // Before we fetch logcats from testMatrix for the first time, logcats file should not be present in gcloud bucket
+        var logcatPath = fakeBackend.fakeGoogleCloudApi.existingFilePath("$resultRelativePath/logcats")
+        assertThat(logcatPath).isNull()
+        val testCaseLogcats = subject.getTestMatrixLogcats(testMatrixId)
+
         assertThat(results).hasSize(1)
         val result = results!!.single()
         assertThat(
@@ -373,55 +379,58 @@ class TestRunnerServiceImplTest {
             )
 
             assertThat(
-                testRun.testCaseLogcats.size
+                testCaseLogcats?.size
             ).isEqualTo(
                 1
             )
             // step and logcat both have valid values for test1
             assertThat(
-                testRun.testCaseLogcats[
+                testCaseLogcats?.get(
                     TestRunnerService.TestIdentifier(
                         className = "class1",
                         name = "name1",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.gcsPath.toString()
+                )?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/redfin-30-en-portrait/test_cases/0000_logcat"
             )
             assertThat(
-                testRun.testCaseLogcats[
+                testCaseLogcats?.get(
                     TestRunnerService.TestIdentifier(
                         className = "class1",
                         name = "name1",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.readFully()?.toString(Charsets.UTF_8)
+                )?.readFully()?.toString(Charsets.UTF_8)
             ).isEqualTo(
                 "test1 logcat"
             )
 
             // step for test2 is missing
             assertThat(
-                testRun.testCaseLogcats[
+                testCaseLogcats?.get(
                     TestRunnerService.TestIdentifier(
                         className = "class2",
                         name = "name2",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]
+                )
             ).isNull()
             // logcat for test3 is missing from gcloud folder
             assertThat(
-                testRun.testCaseLogcats[
+                testCaseLogcats?.get(
                     TestRunnerService.TestIdentifier(
                         className = "class3",
                         name = "name3",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]
+                )
             ).isNull()
         }
+        // since we have fetched the logcats once, gcloud bucket should have results ready to use for next time
+        logcatPath = fakeBackend.fakeGoogleCloudApi.existingFilePath("$resultRelativePath/logcats")
+        assertThat(logcatPath).isNotNull()
     }
 
     @Test
@@ -489,23 +498,23 @@ class TestRunnerServiceImplTest {
         )
         fakeBackend.fakeGoogleCloudApi.upload(
             "$resultRelativePath/redfin-30-en-portrait-shard_0/test_cases/0000_logcat",
-            "test1 in shard0 logcat".toByteArray(Charsets.UTF_8)
+            "test0 in shard0 logcat".toByteArray(Charsets.UTF_8)
         )
         fakeBackend.fakeGoogleCloudApi.upload(
             "$resultRelativePath/redfin-30-en-portrait-shard_1/test_cases/0000_logcat",
-            "test2 in shard1 logcat".toByteArray(Charsets.UTF_8)
+            "test1 in shard1 logcat".toByteArray(Charsets.UTF_8)
         )
         fakeBackend.fakeGoogleCloudApi.upload(
             "$resultRelativePath/redfin-30-en-portrait-shard_2/test_cases/0000_logcat",
-            "test3 in shard2 logcat".toByteArray(Charsets.UTF_8)
+            "test2 in shard2 logcat".toByteArray(Charsets.UTF_8)
         )
         fakeBackend.fakeGoogleCloudApi.upload(
             "$resultRelativePath/redfin-30-en-portrait-shard_2-rerun_1/test_cases/0000_logcat",
-            "test3 in shard2 rerun1 logcat".toByteArray(Charsets.UTF_8)
+            "test2 in shard2 rerun1 logcat".toByteArray(Charsets.UTF_8)
         )
         fakeBackend.fakeGoogleCloudApi.upload(
             "$resultRelativePath/redfin-30-en-portrait-shard_2-rerun_2/test_cases/0000_logcat",
-            "test3 in shard2 rerun2 logcat".toByteArray(Charsets.UTF_8)
+            "test2 in shard2 rerun2 logcat".toByteArray(Charsets.UTF_8)
         )
         // every shard and rerun has its own step
         fakeToolsResultApi.addStep(
@@ -519,8 +528,8 @@ class TestRunnerServiceImplTest {
                         toolOutputs = listOf(
                             ToolOutputReference(
                                 testCase = TestCaseReference(
-                                    className = "class1",
-                                    name = "name1"
+                                    className = "class0",
+                                    name = "name0"
                                 ),
                                 output = FileReference(
                                     fileUri = "$resultPath/redfin-30-en-portrait-shard_0/test_cases/0000_logcat"
@@ -565,8 +574,8 @@ class TestRunnerServiceImplTest {
                         toolOutputs = listOf(
                             ToolOutputReference(
                                 testCase = TestCaseReference(
-                                    className = "class1",
-                                    name = "name1"
+                                    className = "class2",
+                                    name = "name2"
                                 ),
                                 output = FileReference(
                                     fileUri = "$resultPath/redfin-30-en-portrait-shard_2/test_cases/0000_logcat"
@@ -588,8 +597,8 @@ class TestRunnerServiceImplTest {
                         toolOutputs = listOf(
                             ToolOutputReference(
                                 testCase = TestCaseReference(
-                                    className = "class1",
-                                    name = "name1"
+                                    className = "class2",
+                                    name = "name2"
                                 ),
                                 output = FileReference(
                                     fileUri = "$resultPath/redfin-30-en-portrait-shard_2-rerun_1/test_cases/0000_logcat"
@@ -611,8 +620,8 @@ class TestRunnerServiceImplTest {
                         toolOutputs = listOf(
                             ToolOutputReference(
                                 testCase = TestCaseReference(
-                                    className = "class1",
-                                    name = "name1"
+                                    className = "class2",
+                                    name = "name2"
                                 ),
                                 output = FileReference(
                                     fileUri = "$resultPath/redfin-30-en-portrait-shard_2-rerun_2/test_cases/0000_logcat"
@@ -624,6 +633,7 @@ class TestRunnerServiceImplTest {
             )
         )
         val results = subject.getTestMatrixResults(testMatrixId)
+        val testCaseLogcats = subject.getTestMatrixLogcats(testMatrixId)
         assertThat(results).hasSize(1)
         val result = results!!.single()
         assertThat(
@@ -671,79 +681,42 @@ class TestRunnerServiceImplTest {
                 shard = 2
             ),
         )
+        assertThat(
+            testCaseLogcats?.size
+        ).isEqualTo(
+            5
+        )
         result.testRuns.forEach { testRun ->
             assertThat(
-                testRun.testCaseLogcats.size
-            ).isEqualTo(
-                1
-            )
-            assertThat(
-                testRun.testCaseLogcats[
+                testCaseLogcats?.get(
                     TestRunnerService.TestIdentifier(
-                        className = "class1",
-                        name = "name1",
+                        className = "class${testRun.deviceRun.shard}",
+                        name = "name${testRun.deviceRun.shard}",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.gcsPath.toString()
+                )?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/${testRun.deviceRun.id}/test_cases/0000_logcat"
             )
+
+            val expected = if (testRun.deviceRun.runNumber.toInt() > 0) {
+                "test${testRun.deviceRun.shard} in shard${testRun.deviceRun.shard} rerun${testRun.deviceRun.runNumber} logcat"
+            } else {
+                "test${testRun.deviceRun.shard} in shard${testRun.deviceRun.shard} logcat"
+            }
+
+            assertThat(
+                testCaseLogcats?.get(
+                    TestRunnerService.TestIdentifier(
+                        className = "class${testRun.deviceRun.shard}",
+                        name = "name${testRun.deviceRun.shard}",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                )?.readFully()?.toString(Charsets.UTF_8)
+            ).isEqualTo(
+                expected
+            )
         }
-        assertThat(
-            result.testRuns[0].testCaseLogcats[
-                TestRunnerService.TestIdentifier(
-                    className = "class1",
-                    name = "name1",
-                    runNumber = 0
-                )
-            ]?.readFully()?.toString(Charsets.UTF_8)
-        ).isEqualTo(
-            "test1 in shard0 logcat"
-        )
-        assertThat(
-            result.testRuns[1].testCaseLogcats[
-                TestRunnerService.TestIdentifier(
-                    className = "class1",
-                    name = "name1",
-                    runNumber = 0
-                )
-            ]?.readFully()?.toString(Charsets.UTF_8)
-        ).isEqualTo(
-            "test2 in shard1 logcat"
-        )
-        assertThat(
-            result.testRuns[2].testCaseLogcats[
-                TestRunnerService.TestIdentifier(
-                    className = "class1",
-                    name = "name1",
-                    runNumber = 0
-                )
-            ]?.readFully()?.toString(Charsets.UTF_8)
-        ).isEqualTo(
-            "test3 in shard2 logcat"
-        )
-        assertThat(
-            result.testRuns[3].testCaseLogcats[
-                TestRunnerService.TestIdentifier(
-                    className = "class1",
-                    name = "name1",
-                    runNumber = 1
-                )
-            ]?.readFully()?.toString(Charsets.UTF_8)
-        ).isEqualTo(
-            "test3 in shard2 rerun1 logcat"
-        )
-        assertThat(
-            result.testRuns[4].testCaseLogcats[
-                TestRunnerService.TestIdentifier(
-                    className = "class1",
-                    name = "name1",
-                    runNumber = 2
-                )
-            ]?.readFully()?.toString(Charsets.UTF_8)
-        ).isEqualTo(
-            "test3 in shard2 rerun2 logcat"
-        )
     }
 
     @Test

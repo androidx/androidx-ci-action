@@ -57,7 +57,7 @@ internal class TestRunnerServicePlayground {
         val testMatrixId = "matrix-hzjx70s88liva"
         val testMatrix = subject.getTestMatrix(testMatrixId)
         if (testMatrix != null) {
-            subject.findResultFiles(gcsPath, testMatrix).forEach {
+            subject.findResultFiles(gcsPath).forEach {
                 println(it)
             }
         }

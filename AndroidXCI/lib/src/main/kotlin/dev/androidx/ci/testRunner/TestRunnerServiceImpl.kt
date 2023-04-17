@@ -126,8 +126,7 @@ internal class TestRunnerServiceImpl internal constructor(
     }
 
     internal suspend fun findResultFiles(
-        resultPath: GcsPath,
-        testMatrix: TestMatrix
+        resultPath: GcsPath
     ): List<TestRunnerService.TestRunResult> {
         val byFullDeviceId = mutableMapOf<String, TestResultFilesImpl>()
         fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
@@ -152,7 +151,6 @@ internal class TestRunnerServiceImpl internal constructor(
         // redfin-30-en-portrait_rerun_2/logcat
         // redfin-30-en-portrait_rerun_2/test_result_1.xml
 
-        val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
         googleCloudApi.walkEntires(
             gcsPath = resultPath
         ).forEach { visitor ->
@@ -169,27 +167,6 @@ internal class TestRunnerServiceImpl internal constructor(
                 getTestResultFiles(visitor).logcat = ResultFileResourceImpl(visitor)
             } else if (fileName == INSTRUMENTATION_RESULTS_FILE_NAME) {
                 getTestResultFiles(visitor).instrumentationResult = ResultFileResourceImpl(visitor)
-            } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
-                val step = steps.flatMap {
-                    it.testExecutionStep?.toolExecution?.toolOutputs ?: emptyList()
-                }?.find {
-                    (it.output?.fileUri == visitor.gcsPath.toString())
-                }
-                val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
-                step?.testCase?.className?.let { className ->
-                    step?.testCase?.name?.let { name ->
-                        TestRunnerService.TestIdentifier(
-                            className,
-                            name,
-                            runNumber
-                        )
-                    }
-                }?.let { testIdentifier ->
-                    getTestResultFiles(visitor).addTestCaseLogcat(
-                        testIdentifier,
-                        ResultFileResourceImpl(visitor)
-                    )
-                }
             }
         }
         return mergedXmlBlobs.map { mergedXmlEntry ->
@@ -204,6 +181,61 @@ internal class TestRunnerServiceImpl internal constructor(
         }
     }
 
+    private suspend fun findLogcats(
+        testMatrix: TestMatrix
+    ): MutableMap<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource> {
+        var testCaseLogcatBlobs = mutableMapOf<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource>()
+        val resultPath = testMatrix.resultStorage.googleCloudStorage.gcsPath
+
+        //get cached result if available, else invoke tool results apis to get test execution steps and store them in glcoud bucket
+        val logcatsFilePath = "$resultPath/logcats"
+        val logcatsRelativePath = logcatsFilePath.substringAfter("gs://").substringAfter("/")
+        if(googleCloudApi.existingFilePath(logcatsRelativePath) != null) {
+            googleCloudApi.walkEntires(GcsPath(logcatsFilePath)).first().obtainInputStream().reader().readLines().forEach {
+                val className = it.split("#")[0]
+                val name = it.split("#")[1]
+                val runNumber = it.split("#")[2]
+                val path = it.split("#")[3]
+                testCaseLogcatBlobs[
+                        TestRunnerService.TestIdentifier(
+                            className,
+                            name,
+                            runNumber.toInt()
+                        )
+                ] = ResultFileResourceImpl(googleCloudApi.walkEntires(GcsPath(path)).first())
+            }
+        } else {
+            fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
+            val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
+            val out: java.lang.StringBuilder = StringBuilder()
+            googleCloudApi.walkEntires(
+                gcsPath = GcsPath(resultPath)
+            ).forEach { visitor ->
+                if (visitor.fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
+                    val step = steps.flatMap {
+                        it.testExecutionStep?.toolExecution?.toolOutputs ?: emptyList()
+                    }?.find {
+                        (it.output?.fileUri == visitor.gcsPath.toString())
+                    }
+                    val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
+                    step?.testCase?.className?.let { className ->
+                        step?.testCase?.name?.let { name ->
+                            TestRunnerService.TestIdentifier(
+                                className,
+                                name,
+                                runNumber
+                            )
+                        }
+                    }?.let { testIdentifier ->
+                        testCaseLogcatBlobs[testIdentifier] = ResultFileResourceImpl(visitor)
+                        out.appendLine("$testIdentifier#${visitor.gcsPath.path}")
+                    }
+                }
+            }
+            googleCloudApi.upload(logcatsRelativePath, out.toString().toByteArray())
+        }
+        return testCaseLogcatBlobs
+    }
     suspend fun getTestMatrixResults(
         testMatrixId: String
     ): List<TestRunnerService.TestRunResult>? {
@@ -216,7 +248,21 @@ internal class TestRunnerServiceImpl internal constructor(
     ): List<TestRunnerService.TestRunResult>? {
         if (!testMatrix.isComplete()) return null
         val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
-        return findResultFiles(resultPath, testMatrix)
+        return findResultFiles(resultPath)
+    }
+
+    override suspend fun getTestMatrixLogcats(
+        testMatrix: TestMatrix
+    ): MutableMap<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource>? {
+        if (!testMatrix.isComplete()) return null
+        return findLogcats(testMatrix)
+    }
+
+    suspend fun getTestMatrixLogcats(
+        testMatrixId: String
+    ): Map<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource>? {
+        val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
+        return getTestMatrixLogcats(testMatrix)
     }
 
     companion object {
@@ -246,21 +292,16 @@ internal class TestRunnerServiceImpl internal constructor(
         fullDeviceId: String,
     ) : TestRunnerService.TestResultFiles {
         private val xmlResultBlobs = mutableListOf<TestRunnerService.ResultFileResource>()
-        private val testCaseLogcatBlobs = mutableMapOf<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource>()
 
         override var logcat: TestRunnerService.ResultFileResource? = null
             internal set
         override var instrumentationResult: TestRunnerService.ResultFileResource? = null
             internal set
         override val xmlResults: List<TestRunnerService.ResultFileResource> = xmlResultBlobs
-        override val testCaseLogcats: Map<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource> = testCaseLogcatBlobs
         override val deviceRun: DeviceRun = DeviceRun.create(fullDeviceId)
 
         internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
             xmlResultBlobs.add(resultFileResource)
-        }
-        internal fun addTestCaseLogcat(testCase: TestRunnerService.TestIdentifier, resultFileResource: TestRunnerService.ResultFileResource) {
-            testCaseLogcatBlobs[testCase] = resultFileResource
         }
 
         override fun toString(): String {
