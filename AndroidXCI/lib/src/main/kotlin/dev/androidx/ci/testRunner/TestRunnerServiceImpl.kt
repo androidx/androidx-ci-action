@@ -122,7 +122,7 @@ internal class TestRunnerServiceImpl internal constructor(
         gcsPath: String = "gs://androidx-ftl-test-results/github-ci-action/ftl"
     ): Sequence<BlobVisitor> {
         val path = GcsPath(path = gcsPath)
-        return googleCloudApi.walkEntires(path)
+        return googleCloudApi.walkEntries(path)
     }
 
     internal suspend fun findResultFiles(
@@ -151,7 +151,7 @@ internal class TestRunnerServiceImpl internal constructor(
         // redfin-30-en-portrait_rerun_2/logcat
         // redfin-30-en-portrait_rerun_2/test_result_1.xml
 
-        googleCloudApi.walkEntires(
+        googleCloudApi.walkEntries(
             gcsPath = resultPath
         ).forEach { visitor ->
             val fileName = visitor.fileName
@@ -191,7 +191,7 @@ internal class TestRunnerServiceImpl internal constructor(
         val logcatsFilePath = "$resultPath/logcats"
         val logcatsRelativePath = logcatsFilePath.substringAfter("gs://").substringAfter("/")
         if(googleCloudApi.existingFilePath(logcatsRelativePath) != null) {
-            googleCloudApi.walkEntires(GcsPath(logcatsFilePath)).first().obtainInputStream().reader().readLines().forEach {
+            googleCloudApi.walkEntries(GcsPath(logcatsFilePath)).first().obtainInputStream().reader().readLines().forEach {
                 val className = it.split("#")[0]
                 val name = it.split("#")[1]
                 val runNumber = it.split("#")[2]
@@ -202,13 +202,13 @@ internal class TestRunnerServiceImpl internal constructor(
                             name,
                             runNumber.toInt()
                         )
-                ] = ResultFileResourceImpl(googleCloudApi.walkEntires(GcsPath(path)).first())
+                ] = ResultFileResourceImpl(googleCloudApi.walkEntries(GcsPath(path)).first())
             }
         } else {
             fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
             val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
             val out: java.lang.StringBuilder = StringBuilder()
-            googleCloudApi.walkEntires(
+            googleCloudApi.walkEntries(
                 gcsPath = GcsPath(resultPath)
             ).forEach { visitor ->
                 if (visitor.fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
