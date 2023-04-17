@@ -187,21 +187,21 @@ internal class TestRunnerServiceImpl internal constructor(
         var testCaseLogcatBlobs = mutableMapOf<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource>()
         val resultPath = testMatrix.resultStorage.googleCloudStorage.gcsPath
 
-        //get cached result if available, else invoke tool results apis to get test execution steps and store them in glcoud bucket
+        // get cached result if available, else invoke tool results apis to get test execution steps and store them in glcoud bucket
         val logcatsFilePath = "$resultPath/logcats"
         val logcatsRelativePath = logcatsFilePath.substringAfter("gs://").substringAfter("/")
-        if(googleCloudApi.existingFilePath(logcatsRelativePath) != null) {
+        if (googleCloudApi.existingFilePath(logcatsRelativePath) != null) {
             googleCloudApi.walkEntries(GcsPath(logcatsFilePath)).first().obtainInputStream().reader().readLines().forEach {
                 val className = it.split("#")[0]
                 val name = it.split("#")[1]
                 val runNumber = it.split("#")[2]
                 val path = it.split("#")[3]
                 testCaseLogcatBlobs[
-                        TestRunnerService.TestIdentifier(
-                            className,
-                            name,
-                            runNumber.toInt()
-                        )
+                    TestRunnerService.TestIdentifier(
+                        className,
+                        name,
+                        runNumber.toInt()
+                    )
                 ] = ResultFileResourceImpl(googleCloudApi.walkEntries(GcsPath(path)).first())
             }
         } else {
