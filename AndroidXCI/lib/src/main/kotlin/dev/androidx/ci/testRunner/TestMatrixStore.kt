@@ -176,12 +176,16 @@ internal class TestMatrixStore(
         )
         val testSetup = if (deviceSetup != null) {
             if (pullScreenshots == true) {
-                deviceSetup.directoriesToPull.add("/sdcard/Android/data/$packageName/cache/androidx_screenshots")
+                deviceSetup
+                    .directoriesToPull
+                    .add("/sdcard/Android/data/$packageName/cache/androidx_screenshots")
             }
             deviceSetup.toTestSetup()
         } else {
             TestSetup(
-                directoriesToPull = if (pullScreenshots == true) listOf("/sdcard/Android/data/$packageName/cache/androidx_screenshots") else null
+                directoriesToPull = if (pullScreenshots == true)
+                    listOf("/sdcard/Android/data/$packageName/cache/androidx_screenshots")
+                else null
             )
         }
         return TestMatrix(
