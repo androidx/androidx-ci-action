@@ -6,7 +6,6 @@ import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.EnvironmentVariable
-import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
 import dev.androidx.ci.generated.ftl.ShardingOption
@@ -104,7 +103,7 @@ class TestRunnerServiceImplTest {
             apk1Bytes
         }
         val testPackageName = fakeBackend.fakeFirebaseTestLabApi.getApkDetails(
-            FileReference(upload1.gcsPath.path)
+            dev.androidx.ci.generated.ftl.FileReference(upload1.gcsPath.path)
         ).apkDetail?.apkManifest?.packageName
         val result = subject.scheduleTests(
             testApk = upload1,

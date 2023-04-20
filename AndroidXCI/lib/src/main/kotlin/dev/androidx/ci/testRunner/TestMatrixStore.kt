@@ -67,7 +67,7 @@ internal class TestMatrixStore(
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
-        pullScreenshots: Boolean? = false
+        pullScreenshots: Boolean = false
     ): TestMatrix {
 
         val testRunId = TestRun.createId(
@@ -164,7 +164,7 @@ internal class TestMatrixStore(
         deviceSetup: DeviceSetup?,
         appApk: UploadedApk,
         testApk: UploadedApk,
-        pullScreenshots: Boolean? = false
+        pullScreenshots: Boolean = false
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -174,17 +174,20 @@ internal class TestMatrixStore(
         val historyId = toolsResultStore.getHistoryId(
             packageName
         )
+        // Directory on the device that is used to store the output files as defined here:
+        // https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:test/screenshot/screenshot/src/main/java/androidx/test/screenshot/ScreenshotTestRule.kt;l=90
+        val screenshotsDirectory = "/sdcard/Android/data/$packageName/cache/androidx_screenshots"
         val testSetup = if (deviceSetup != null) {
-            if (pullScreenshots == true) {
+            if (pullScreenshots) {
                 deviceSetup
                     .directoriesToPull
-                    .add("/sdcard/Android/data/$packageName/cache/androidx_screenshots")
+                    .add(screenshotsDirectory)
             }
             deviceSetup.toTestSetup()
         } else {
             TestSetup(
-                directoriesToPull = if (pullScreenshots == true)
-                    listOf("/sdcard/Android/data/$packageName/cache/androidx_screenshots")
+                directoriesToPull = if (pullScreenshots)
+                    listOf(screenshotsDirectory)
                 else null
             )
         }

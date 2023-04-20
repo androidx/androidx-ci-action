@@ -95,7 +95,7 @@ internal class TestRunnerServiceImpl internal constructor(
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>,
-        pullScreenshots: Boolean?
+        pullScreenshots: Boolean
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
             appApk = appApk ?: apkStore.getPlaceholderApk(),
