@@ -28,6 +28,7 @@ import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.generated.ftl.TestSetup
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.ToolResultsHistory
 import dev.androidx.ci.testRunner.dto.TestRun
@@ -66,6 +67,7 @@ internal class TestMatrixStore(
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
+        pullScreenshots: Boolean = false
     ): TestMatrix {
 
         val testRunId = TestRun.createId(
@@ -99,6 +101,7 @@ internal class TestMatrixStore(
                 deviceSetup = deviceSetup,
                 appApk = appApk,
                 testApk = testApk,
+                pullScreenshots = pullScreenshots
             )
         )
         logger.info {
@@ -160,7 +163,8 @@ internal class TestMatrixStore(
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
         appApk: UploadedApk,
-        testApk: UploadedApk
+        testApk: UploadedApk,
+        pullScreenshots: Boolean = false
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -170,6 +174,23 @@ internal class TestMatrixStore(
         val historyId = toolsResultStore.getHistoryId(
             packageName
         )
+        // Directory on the device that is used to store the output files as defined here:
+        // https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:test/screenshot/screenshot/src/main/java/androidx/test/screenshot/ScreenshotTestRule.kt;l=90
+        val screenshotsDirectory = "/sdcard/Android/data/$packageName/cache/androidx_screenshots"
+        val testSetup = if (deviceSetup != null) {
+            if (pullScreenshots) {
+                deviceSetup
+                    .directoriesToPull
+                    .add(screenshotsDirectory)
+            }
+            deviceSetup.toTestSetup()
+        } else {
+            TestSetup(
+                directoriesToPull = if (pullScreenshots)
+                    listOf(screenshotsDirectory)
+                else null
+            )
+        }
         return TestMatrix(
             projectId = firebaseProjectId,
             flakyTestAttempts = 2,
@@ -186,7 +207,7 @@ internal class TestMatrixStore(
                     ),
                     shardingOption = sharding
                 ),
-                testSetup = deviceSetup?.toTestSetup(),
+                testSetup = testSetup
             ),
             clientInfo = clientInfo,
             environmentMatrix = environmentMatrix,

@@ -111,6 +111,9 @@ class TestRunnerServiceImplTest {
         ) {
             apk1Bytes
         }
+        val testPackageName = fakeBackend.fakeFirebaseTestLabApi.getApkDetails(
+            dev.androidx.ci.generated.ftl.FileReference(upload1.gcsPath.path)
+        ).apkDetail?.apkManifest?.packageName
         val result = subject.scheduleTests(
             testApk = upload1,
             appApk = null,
@@ -213,13 +216,14 @@ class TestRunnerServiceImplTest {
             sharding = null,
             deviceSetup = DeviceSetup(
                 additionalApks = listOf(extraApk),
-                directoriesToPull = setOf("/sdcard/foo/bar"),
+                directoriesToPull = mutableListOf("/sdcard/foo/bar"),
                 instrumentationArguments = listOf(
                     DeviceSetup.InstrumentationArgument("key1", "value1"),
                     DeviceSetup.InstrumentationArgument("key2", "value2")
                 )
             ),
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            pullScreenshots = true
         )
         withDeviceInfo.testMatrices.single().testSpecification.testSetup!!.let { testSetup ->
             assertThat(
@@ -230,8 +234,13 @@ class TestRunnerServiceImplTest {
             )
             assertThat(
                 testSetup.directoriesToPull
-            ).containsExactly(
+            ).contains(
                 "/sdcard/foo/bar"
+            )
+            assertThat(
+                testSetup.directoriesToPull
+            ).contains(
+                "/sdcard/Android/data/$testPackageName/cache/androidx_screenshots"
             )
             assertThat(
                 testSetup.additionalApks?.map {

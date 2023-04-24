@@ -77,7 +77,8 @@ interface TestRunnerService {
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
-        devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>
+        devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>,
+        pullScreenshots: Boolean = false
     ): ScheduleTestsResponse
 
     /**

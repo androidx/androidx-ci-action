@@ -21,7 +21,7 @@ data class DeviceSetup(
      * to external storage, the system will replace it with the external storage path prefix for that
      * device.
      */
-    val directoriesToPull: Set<String>? = null,
+    var directoriesToPull: MutableList<String> = mutableListOf(),
     /**
      * List of instrumentation arguments to be passed into the runner.
      */
@@ -36,7 +36,7 @@ data class DeviceSetup(
                     )
                 )
             },
-            directoriesToPull = directoriesToPull?.toList(),
+            directoriesToPull = directoriesToPull,
             environmentVariables = instrumentationArguments?.map {
                 it.toEnvironmentVariable()
             }
