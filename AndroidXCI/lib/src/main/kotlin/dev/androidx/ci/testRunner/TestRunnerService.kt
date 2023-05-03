@@ -294,6 +294,17 @@ interface TestRunnerService {
         /**
          * Test case log files produced by the test.
          */
-        val testCaseLogcats: Map<TestIdentifier, ResultFileResource>
+        val testCaseArtifacts: Map<TestIdentifier, List<TestResultLogs>>
     }
+
+    data class TestResultLogs(
+        /**
+         * Test case log files produced by individual tests in the testrun.
+         */
+        val resultFileResource: ResultFileResource,
+        /**
+         * Type of files: ex. logcat, png or textproto for screenshot tests
+         */
+        val resourceType: String
+    )
 }

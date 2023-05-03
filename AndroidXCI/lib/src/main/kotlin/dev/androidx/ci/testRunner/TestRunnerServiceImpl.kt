@@ -174,12 +174,12 @@ internal class TestRunnerServiceImpl internal constructor(
             } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
                 val step = steps.flatMap {
                     it.testExecutionStep?.toolExecution?.toolOutputs ?: emptyList()
-                }?.find {
+                }.find {
                     (it.output?.fileUri == visitor.gcsPath.toString())
                 }
                 val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
                 step?.testCase?.className?.let { className ->
-                    step?.testCase?.name?.let { name ->
+                    step.testCase.name?.let { name ->
                         TestRunnerService.TestIdentifier(
                             className,
                             name,
@@ -187,9 +187,10 @@ internal class TestRunnerServiceImpl internal constructor(
                         )
                     }
                 }?.let { testIdentifier ->
-                    getTestResultFiles(visitor).addTestCaseLogcat(
+                    getTestResultFiles(visitor).addTestCaseArtifact(
                         testIdentifier,
-                        ResultFileResourceImpl(visitor)
+                        ResultFileResourceImpl(visitor),
+                        "logcat"
                     )
                 }
             }
@@ -248,23 +249,34 @@ internal class TestRunnerServiceImpl internal constructor(
         fullDeviceId: String,
     ) : TestRunnerService.TestResultFiles {
         private val xmlResultBlobs = mutableListOf<TestRunnerService.ResultFileResource>()
-        private val testCaseLogcatBlobs = mutableMapOf<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource>()
+        private val testCaseArtifactBlobs = mutableMapOf<TestRunnerService.TestIdentifier, MutableList<TestRunnerService.TestResultLogs>>()
 
         override var logcat: TestRunnerService.ResultFileResource? = null
             internal set
         override var instrumentationResult: TestRunnerService.ResultFileResource? = null
             internal set
         override val xmlResults: List<TestRunnerService.ResultFileResource> = xmlResultBlobs
-        override val testCaseLogcats: Map<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource> = testCaseLogcatBlobs
+        override val testCaseArtifacts: Map<TestRunnerService.TestIdentifier, MutableList<TestRunnerService.TestResultLogs>> = testCaseArtifactBlobs
         override val deviceRun: DeviceRun = DeviceRun.create(fullDeviceId)
 
         internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
             xmlResultBlobs.add(resultFileResource)
         }
-        internal fun addTestCaseLogcat(testCase: TestRunnerService.TestIdentifier, resultFileResource: TestRunnerService.ResultFileResource) {
-            testCaseLogcatBlobs[testCase] = resultFileResource
-        }
 
+        internal fun addTestCaseArtifact(
+            testCase: TestRunnerService.TestIdentifier,
+            resultFileResource: TestRunnerService.ResultFileResource,
+            resourceType: String
+        ) {
+            testCaseArtifactBlobs.getOrPut(testCase) {
+                mutableListOf()
+            }.add(
+                TestRunnerService.TestResultLogs(
+                    resultFileResource,
+                    resourceType
+                )
+            )
+        }
         override fun toString(): String {
             return """
                 TestResultFiles(

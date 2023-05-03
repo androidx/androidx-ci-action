@@ -37,7 +37,7 @@ class TestRunnerServiceImplTest {
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
         gcsResultPath = "testRunnerServiceTest"
     )
-    private val devicePicker = { env: TestEnvironmentCatalog ->
+    private val devicePicker = { _: TestEnvironmentCatalog ->
         listOf(FTLTestDevices.BLUELINE_API_28_PHYSICAL)
     }
 
@@ -382,37 +382,37 @@ class TestRunnerServiceImplTest {
             )
 
             assertThat(
-                testRun.testCaseLogcats.size
+                testRun.testCaseArtifacts.size
             ).isEqualTo(
                 1
             )
             // step and logcat both have valid values for test1
             assertThat(
-                testRun.testCaseLogcats[
+                testRun.testCaseArtifacts[
                     TestRunnerService.TestIdentifier(
                         className = "class1",
                         name = "name1",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.gcsPath.toString()
+                ]?.first()?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/redfin-30-en-portrait/test_cases/0000_logcat"
             )
             assertThat(
-                testRun.testCaseLogcats[
+                testRun.testCaseArtifacts[
                     TestRunnerService.TestIdentifier(
                         className = "class1",
                         name = "name1",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.readFully()?.toString(Charsets.UTF_8)
+                ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
             ).isEqualTo(
                 "test1 logcat"
             )
 
             // step for test2 is missing
             assertThat(
-                testRun.testCaseLogcats[
+                testRun.testCaseArtifacts[
                     TestRunnerService.TestIdentifier(
                         className = "class2",
                         name = "name2",
@@ -422,7 +422,7 @@ class TestRunnerServiceImplTest {
             ).isNull()
             // logcat for test3 is missing from gcloud folder
             assertThat(
-                testRun.testCaseLogcats[
+                testRun.testCaseArtifacts[
                     TestRunnerService.TestIdentifier(
                         className = "class3",
                         name = "name3",
@@ -682,74 +682,74 @@ class TestRunnerServiceImplTest {
         )
         result.testRuns.forEach { testRun ->
             assertThat(
-                testRun.testCaseLogcats.size
+                testRun.testCaseArtifacts.size
             ).isEqualTo(
                 1
             )
             assertThat(
-                testRun.testCaseLogcats[
+                testRun.testCaseArtifacts[
                     TestRunnerService.TestIdentifier(
                         className = "class1",
                         name = "name1",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.gcsPath.toString()
+                ]?.first()?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/${testRun.deviceRun.id}/test_cases/0000_logcat"
             )
         }
         assertThat(
-            result.testRuns[0].testCaseLogcats[
+            result.testRuns[0].testCaseArtifacts[
                 TestRunnerService.TestIdentifier(
                     className = "class1",
                     name = "name1",
                     runNumber = 0
                 )
-            ]?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test1 in shard0 logcat"
         )
         assertThat(
-            result.testRuns[1].testCaseLogcats[
+            result.testRuns[1].testCaseArtifacts[
                 TestRunnerService.TestIdentifier(
                     className = "class1",
                     name = "name1",
                     runNumber = 0
                 )
-            ]?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test2 in shard1 logcat"
         )
         assertThat(
-            result.testRuns[2].testCaseLogcats[
+            result.testRuns[2].testCaseArtifacts[
                 TestRunnerService.TestIdentifier(
                     className = "class1",
                     name = "name1",
                     runNumber = 0
                 )
-            ]?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 logcat"
         )
         assertThat(
-            result.testRuns[3].testCaseLogcats[
+            result.testRuns[3].testCaseArtifacts[
                 TestRunnerService.TestIdentifier(
                     className = "class1",
                     name = "name1",
                     runNumber = 1
                 )
-            ]?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 rerun1 logcat"
         )
         assertThat(
-            result.testRuns[4].testCaseLogcats[
+            result.testRuns[4].testCaseArtifacts[
                 TestRunnerService.TestIdentifier(
                     className = "class1",
                     name = "name1",
                     runNumber = 2
                 )
-            ]?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 rerun2 logcat"
         )
