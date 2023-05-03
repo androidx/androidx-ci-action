@@ -193,6 +193,19 @@ internal class TestRunnerServiceImpl internal constructor(
                         "logcat"
                     )
                 }
+            } else if (fileName.endsWith(SCREENSHOT_PNG_SUFFIX) || fileName.endsWith(SCREENSHOT_TEXT_PROTO_SUFFIX)) {
+                val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
+                val className = fileName.split("_")[0]
+                val name = fileName.split("_")[1]
+                getTestResultFiles(visitor).addTestCaseArtifact(
+                    TestRunnerService.TestIdentifier(
+                        className,
+                        name,
+                        runNumber
+                    ),
+                    ResultFileResourceImpl(visitor),
+                    fileName.substringAfter(".")
+                )
             }
         }
         return mergedXmlBlobs.map { mergedXmlEntry ->
@@ -229,6 +242,8 @@ internal class TestRunnerServiceImpl internal constructor(
         private const val TEST_RESULT_XML_PREFIX = "test_result_"
         private const val TEST_RESULT_XML_SUFFIX = ".xml"
         private const val INSTRUMENTATION_RESULTS_FILE_NAME = "instrumentation.results"
+        private const val SCREENSHOT_PNG_SUFFIX = ".png"
+        private const val SCREENSHOT_TEXT_PROTO_SUFFIX = ".textproto"
     }
     class ResultFileResourceImpl(
         private val blobVisitor: BlobVisitor
