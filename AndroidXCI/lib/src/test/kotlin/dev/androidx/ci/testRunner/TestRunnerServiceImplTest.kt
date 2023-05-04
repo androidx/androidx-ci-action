@@ -780,7 +780,9 @@ class TestRunnerServiceImplTest {
                         name = "name1",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.first()?.resultFileResource?.gcsPath.toString()
+                ]?.first {
+                    it.resourceType == "logcat"
+                }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/${testRun.deviceRun.id}/test_cases/0000_logcat"
             )
