@@ -315,6 +315,23 @@ class TestRunnerServiceImplTest {
             "$resultRelativePath/redfin-30-en-portrait/test_cases/0001_logcat",
             "test2 logcat".toByteArray(Charsets.UTF_8)
         )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_actual.png",
+            "class1 name1 emulator actual".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_diff.png",
+            "class1 name1 emulator diff".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_expected.png",
+            "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldresult.textproto",
+            "class1 name1 emulator textproto".toByteArray(Charsets.UTF_8)
+        )
+
         fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,
             executionId = "test_executionId",
@@ -386,6 +403,17 @@ class TestRunnerServiceImplTest {
             ).isEqualTo(
                 1
             )
+            assertThat(
+                testRun.testCaseArtifacts[
+                    TestRunnerService.TestIdentifier(
+                        className = "class1",
+                        name = "name1",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]?.size
+            ).isEqualTo(
+                5
+            )
             // step and logcat both have valid values for test1
             assertThat(
                 testRun.testCaseArtifacts[
@@ -394,7 +422,9 @@ class TestRunnerServiceImplTest {
                         name = "name1",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.first()?.resultFileResource?.gcsPath.toString()
+                ]?.first {
+                    it.resourceType == "logcat"
+                }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/redfin-30-en-portrait/test_cases/0000_logcat"
             )
@@ -405,9 +435,50 @@ class TestRunnerServiceImplTest {
                         name = "name1",
                         runNumber = testRun.deviceRun.runNumber
                     )
-                ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
+                ]?.first {
+                    it.resourceType == "logcat"
+                }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
             ).isEqualTo(
                 "test1 logcat"
+            )
+            assertThat(
+                testRun.testCaseArtifacts[
+                    TestRunnerService.TestIdentifier(
+                        className = "class1",
+                        name = "name1",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]?.count {
+                    it.resourceType == "png"
+                }
+            ).isEqualTo(
+                3
+            )
+            assertThat(
+                testRun.testCaseArtifacts[
+                    TestRunnerService.TestIdentifier(
+                        className = "class1",
+                        name = "name1",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]?.count {
+                    it.resourceType == "textproto"
+                }
+            ).isEqualTo(
+                1
+            )
+            assertThat(
+                testRun.testCaseArtifacts[
+                    TestRunnerService.TestIdentifier(
+                        className = "class1",
+                        name = "name1",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]?.first {
+                    it.resourceType == "textproto"
+                }?.resultFileResource?.gcsPath.toString()
+            ).isEqualTo(
+                "$resultPath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldresult.textproto"
             )
 
             // step for test2 is missing
@@ -515,6 +586,22 @@ class TestRunnerServiceImplTest {
         fakeBackend.fakeGoogleCloudApi.upload(
             "$resultRelativePath/redfin-30-en-portrait-shard_2-rerun_2/test_cases/0000_logcat",
             "test3 in shard2 rerun2 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_actual.png",
+            "class1 name1 emulator actual".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_diff.png",
+            "class1 name1 emulator diff".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_expected.png",
+            "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldresult.textproto",
+            "class1 name1 emulator textproto".toByteArray(Charsets.UTF_8)
         )
         // every shard and rerun has its own step
         fakeToolsResultApi.addStep(
@@ -705,9 +792,50 @@ class TestRunnerServiceImplTest {
                     name = "name1",
                     runNumber = 0
                 )
-            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first {
+                it.resourceType == "logcat"
+            }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test1 in shard0 logcat"
+        )
+        assertThat(
+            result.testRuns[0].testCaseArtifacts[
+                TestRunnerService.TestIdentifier(
+                    className = "class1",
+                    name = "name1",
+                    runNumber = result.testRuns[0].deviceRun.runNumber
+                )
+            ]?.count {
+                it.resourceType == "png"
+            }
+        ).isEqualTo(
+            3
+        )
+        assertThat(
+            result.testRuns[0].testCaseArtifacts[
+                TestRunnerService.TestIdentifier(
+                    className = "class1",
+                    name = "name1",
+                    runNumber = result.testRuns[0].deviceRun.runNumber
+                )
+            ]?.count {
+                it.resourceType == "textproto"
+            }
+        ).isEqualTo(
+            1
+        )
+        assertThat(
+            result.testRuns[0].testCaseArtifacts[
+                TestRunnerService.TestIdentifier(
+                    className = "class1",
+                    name = "name1",
+                    runNumber = result.testRuns[0].deviceRun.runNumber
+                )
+            ]?.first {
+                it.resourceType == "textproto"
+            }?.resultFileResource?.gcsPath.toString()
+        ).isEqualTo(
+            "$resultPath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldresult.textproto"
         )
         assertThat(
             result.testRuns[1].testCaseArtifacts[
@@ -716,7 +844,9 @@ class TestRunnerServiceImplTest {
                     name = "name1",
                     runNumber = 0
                 )
-            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first {
+                it.resourceType == "logcat"
+            }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test2 in shard1 logcat"
         )
@@ -727,7 +857,9 @@ class TestRunnerServiceImplTest {
                     name = "name1",
                     runNumber = 0
                 )
-            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first {
+                it.resourceType == "logcat"
+            }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 logcat"
         )
@@ -738,7 +870,9 @@ class TestRunnerServiceImplTest {
                     name = "name1",
                     runNumber = 1
                 )
-            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first {
+                it.resourceType == "logcat"
+            }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 rerun1 logcat"
         )
@@ -749,7 +883,9 @@ class TestRunnerServiceImplTest {
                     name = "name1",
                     runNumber = 2
                 )
-            ]?.first()?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
+            ]?.first {
+                it.resourceType == "logcat"
+            }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 rerun2 logcat"
         )
