@@ -35,6 +35,9 @@ inputs:
   use-test-config-files:
     description: 'An internal flag for androidx/androidx to use test config files in artifacts for selecting which tests to run'
     required: false
+  test-suite-tags:
+    description: 'A comma separated list of test suite tags to be run. Only used if use-test-config-files is true'
+    required: false
 
 runs:
   using: "composite"
@@ -55,3 +58,4 @@ runs:
         ANDROIDX_BUCKET_NAME: ${{ inputs.gcp-bucket-name }}
         ANDROIDX_BUCKET_PATH: ${{ inputs.gcp-bucket-path }}
         ANDROIDX_USE_TEST_CONFIG_FILES: ${{ inputs.use-test-config-files }}
+        ANDROIDX_TEST_SUITE_TAGS: ${{ inputs.test-suite-tags }}

@@ -132,10 +132,17 @@ private class Cli : CliktCommand() {
         help = """
             Internal for AndroidX.
             If set, the action will look for json files matching *AndroidTest.json
-            See https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:buildSrc/private/src/main/kotlin/androidx/build/testConfiguration/AndroidTestConfigBuilder.kt
-            for contents of the file.
+            See TestScheduler.TestRunConfig for the json file structure.
         """.trimIndent(),
         envvar = "ANDROIDX_USE_TEST_CONFIG_FILES"
+    )
+
+    val testSuiteTags by option(
+        help = """
+            Comma separated list of testSuiteTags that should be run.
+            Only used if `useTestConfigFiles` is set to true.
+        """.trimIndent(),
+        envvar = "ANDROIDX_TEST_SUITE_TAGS"
     )
 
     override fun run() {
@@ -167,6 +174,7 @@ private class Cli : CliktCommand() {
                 bucketName = gcpBucketName,
                 bucketPath = gcpBucketPath,
                 useTestConfigFiles = useTestConfigFiles?.toBoolean() ?: false,
+                testSuiteTags = testSuiteTags?.split(',')?.map { it.trim() } ?: emptyList()
             )
             testRunner.runTests()
         }

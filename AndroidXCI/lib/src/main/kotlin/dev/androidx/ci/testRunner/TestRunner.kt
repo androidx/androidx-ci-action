@@ -157,7 +157,8 @@ class TestRunner internal constructor(
             bucketPath: String,
             devicePicker: DevicePicker? = null,
             artifactNameFilter: (String) -> Boolean = { true },
-            useTestConfigFiles: Boolean
+            useTestConfigFiles: Boolean,
+            testSuiteTags: List<String>
         ): TestRunner {
             val credentials = ServiceAccountCredentials.fromStream(
                 googleCloudCredentials.byteInputStream(Charsets.UTF_8)
@@ -207,7 +208,7 @@ class TestRunner internal constructor(
                 targetRunId = targetRunId,
                 hostRunId = hostRunId,
                 devicePicker = devicePicker,
-                testSchedulerFactory = TestScheduler.getFactory(useTestConfigFiles)
+                testSchedulerFactory = TestScheduler.getFactory(useTestConfigFiles, testSuiteTags)
             )
         }
 

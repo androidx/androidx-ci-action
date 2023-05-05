@@ -35,11 +35,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameters
 
-@RunWith(JUnit4::class)
+@RunWith(Parameterized::class)
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class TestRunnerTest {
+internal class TestRunnerTest(
+    private val useTestConfigFiles: Boolean
+) {
     @get:Rule
     val tmpFolder = TemporaryFolder()
     private val testScope = TestScope()
@@ -58,7 +61,10 @@ internal class TestRunnerTest {
             hostRunId = HOST_RUN_ID,
             datastoreApi = fakeBackend.datastoreApi,
             outputFolder = outputFolder,
-            testSchedulerFactory = TestScheduler.getFactory(useTestConfigFiles = false)
+            testSchedulerFactory = TestScheduler.getFactory(
+                useTestConfigFiles = useTestConfigFiles,
+                testSuiteTags = emptyList()
+            )
         )
     }
 
@@ -84,7 +90,7 @@ internal class TestRunnerTest {
     @Test
     fun noApks() = testScope.runTest {
         val artifact1 = fakeBackend.createArchive(
-            "foo.txt", "bar.txt"
+            contentNames = listOf("foo.txt", "bar.txt")
         )
         createRuns(
             listOf(
@@ -105,13 +111,56 @@ internal class TestRunnerTest {
     @Test
     fun singleFailingTest() = singleTest(succeed = false)
 
+    /**
+     * Test to ensure we don't run tests by name if we are using test run configs.
+     */
+    @Test
+    fun noTestPairs() = testScope.runTest {
+        val artifact1 = fakeBackend.createArchive(
+            contentNames = listOf(
+                "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                "biometric-integration-tests-testapp_testapp-debug.apk",
+                "biometric-integration-tests-testapp_testapp-release.apk"
+            )
+        )
+        createRuns(
+            listOf(
+                artifact1
+            )
+        )
+        val runTests = async {
+            testRunner.runTests()
+        }
+        runCurrent()
+        assertThat(runTests.isActive).isEqualTo(!useTestConfigFiles)
+        val testMatrices = fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()
+        assertThat(testMatrices).hasSize(
+            if (useTestConfigFiles) {
+                0
+            } else {
+                1
+            }
+        )
+        fakeBackend.finishAllTests(outcome = SUCCESS)
+        advanceUntilIdle()
+    }
+
     private fun singleTest(
-        succeed: Boolean
+        succeed: Boolean,
     ) = testScope.runTest {
         val artifact1 = fakeBackend.createArchive(
-            "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
-            "biometric-integration-tests-testapp_testapp-debug.apk",
-            "biometric-integration-tests-testapp_testapp-release.apk"
+            testPairs = listOf(
+                FakeBackend.TestPair(
+                    testFilePrefix = "bio",
+                    testApk = "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                    appApk = "biometric-integration-tests-testapp_testapp-debug.apk",
+                )
+            ),
+            contentNames = listOf(
+                "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                "biometric-integration-tests-testapp_testapp-debug.apk",
+                "biometric-integration-tests-testapp_testapp-release.apk"
+            )
         )
         createRuns(
             listOf(
@@ -154,14 +203,32 @@ internal class TestRunnerTest {
     @Test
     fun multipleTestsOnMultipleArtifacts_oneFailure() = testScope.runTest {
         val artifact1 = fakeBackend.createArchive(
-            "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
-            "biometric-integration-tests-testapp_testapp-debug.apk",
-            "biometric-integration-tests-testapp_testapp-release.apk"
+            testPairs = listOf(
+                FakeBackend.TestPair(
+                    testFilePrefix = "bio",
+                    testApk = "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                    appApk = "biometric-integration-tests-testapp_testapp-debug.apk",
+                )
+            ),
+            contentNames = listOf(
+                "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                "biometric-integration-tests-testapp_testapp-debug.apk",
+                "biometric-integration-tests-testapp_testapp-release.apk"
+            )
         )
         val artifact2 = fakeBackend.createArchive(
-            "nanometrics-integration-tests-testapp_testapp-debug-androidTest.apk",
-            "nanometrics-integration-tests-testapp_testapp-debug.apk",
-            "nanometrics-integration-tests-testapp_testapp-release.apk"
+            testPairs = listOf(
+                FakeBackend.TestPair(
+                    testFilePrefix = "nano",
+                    testApk = "nanometrics-integration-tests-testapp_testapp-debug-androidTest.apk",
+                    appApk = "nanometrics-integration-tests-testapp_testapp-debug.apk",
+                )
+            ),
+            contentNames = listOf(
+                "nanometrics-integration-tests-testapp_testapp-debug-androidTest.apk",
+                "nanometrics-integration-tests-testapp_testapp-debug.apk",
+                "nanometrics-integration-tests-testapp_testapp-release.apk"
+            )
         )
         createRuns(
             listOf(
@@ -200,12 +267,26 @@ internal class TestRunnerTest {
     @Test
     fun multipleTestsOnSingleArtifact() = testScope.runTest {
         val artifact1 = fakeBackend.createArchive(
-            "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
-            "biometric-integration-tests-testapp_testapp-debug.apk",
-            "biometric-integration-tests-testapp_testapp-release.apk",
-            "nanometrics-integration-tests-testapp_testapp-debug-androidTest.apk",
-            "nanometrics-integration-tests-testapp_testapp-debug.apk",
-            "nanometrics-integration-tests-testapp_testapp-release.apk"
+            testPairs = listOf(
+                FakeBackend.TestPair(
+                    testFilePrefix = "biometric",
+                    testApk = "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                    appApk = "biometric-integration-tests-testapp_testapp-debug.apk"
+                ),
+                FakeBackend.TestPair(
+                    testFilePrefix = "nano",
+                    testApk = "nanometrics-integration-tests-testapp_testapp-debug-androidTest.apk",
+                    appApk = "nanometrics-integration-tests-testapp_testapp-debug.apk",
+                )
+            ),
+            contentNames = listOf(
+                "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                "biometric-integration-tests-testapp_testapp-debug.apk",
+                "biometric-integration-tests-testapp_testapp-release.apk",
+                "nanometrics-integration-tests-testapp_testapp-debug-androidTest.apk",
+                "nanometrics-integration-tests-testapp_testapp-debug.apk",
+                "nanometrics-integration-tests-testapp_testapp-release.apk"
+            )
         )
         createRuns(
             listOf(
@@ -243,7 +324,14 @@ internal class TestRunnerTest {
     @Test
     fun libraryIntegrationTest() = testScope.runTest {
         val artifact = fakeBackend.createArchive(
-            "room-room-runtime_room-runtime-debug-androidTest.apk"
+            testPairs = listOf(
+                FakeBackend.TestPair(
+                    testFilePrefix = "vroom-vroom",
+                    testApk = "room-room-runtime_room-runtime-debug-androidTest.apk",
+                    appApk = null
+                )
+            ),
+            contentNames = listOf("room-room-runtime_room-runtime-debug-androidTest.apk")
         )
         createRuns(
             listOf(
@@ -301,5 +389,9 @@ internal class TestRunnerTest {
         private const val PROJECT_ID = "testProject"
         private const val TARGET_RUN_ID = "1"
         private const val HOST_RUN_ID = "2"
+
+        @get:Parameters(name = "useTestConfigFiles={0}")
+        @JvmStatic
+        val params = arrayOf(true, false)
     }
 }

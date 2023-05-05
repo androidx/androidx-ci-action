@@ -105,6 +105,7 @@ internal sealed interface TestScheduler {
     }
 
     class RunUsingTestRunConfig(
+        private val testSuiteTags: List<String>,
         private val githubApi: GithubApi,
         private val firebaseTestLabController: FirebaseTestLabController,
         private val apkStore: ApkStore,
@@ -127,6 +128,8 @@ internal sealed interface TestScheduler {
                         }
                     }
                 }
+            }.filter {
+                testSuiteTags.isEmpty() || it.testSuiteTags.any { testSuiteTags.contains(it) }
             }.map {
                 TestToBeScheduled(it)
             }.toList()
@@ -250,7 +253,11 @@ internal sealed interface TestScheduler {
             val instrumentationArgs: List<InstrumentationArg>,
             val testSuiteTags: List<String>,
             val additionalApkKeys: List<String>
-        )
+        ) {
+            fun serialize(): String {
+                return adapter.toJson(this)
+            }
+        }
 
         data class InstrumentationArg(
             val key: String,
@@ -262,7 +269,7 @@ internal sealed interface TestScheduler {
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()
             private val adapter = moshi.adapter(TestRunConfig::class.java)
-            val Factory = object : Factory {
+            class Factory(private val testSuiteTags: List<String>) : TestScheduler.Factory {
                 override fun create(
                     githubApi: GithubApi,
                     firebaseTestLabController: FirebaseTestLabController,
@@ -270,6 +277,7 @@ internal sealed interface TestScheduler {
                     devicePicker: DevicePicker?
                 ): TestScheduler {
                     return RunUsingTestRunConfig(
+                        testSuiteTags = testSuiteTags,
                         githubApi = githubApi,
                         firebaseTestLabController = firebaseTestLabController,
                         apkStore = apkStore,
@@ -290,11 +298,18 @@ internal sealed interface TestScheduler {
     }
     companion object {
         private val logger = logger()
+
+        /**
+         * @param useTestConfigFiles If true, a scheduler that will use the AndroidTest.json files will be returned
+         * @param testSuiteTags If not empty, AndroidTest.json scheduler will only run test configs matching the given
+         * test suite tag.
+         */
         fun getFactory(
-            useTestConfigFiles: Boolean
+            useTestConfigFiles: Boolean,
+            testSuiteTags: List<String>
         ): Factory {
             return if (useTestConfigFiles) {
-                RunUsingTestRunConfig.Factory
+                RunUsingTestRunConfig.Companion.Factory(testSuiteTags)
             } else {
                 PairAndRunAllApks.Factory
             }
