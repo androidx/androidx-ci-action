@@ -42,16 +42,21 @@ internal class FirebaseTestLabControllerTest {
 
     @Test
     fun testPairing() = runBlocking<Unit> {
-        val app1Apk = createUploadedApk("app1.apk")
-        val app1TestApk = createUploadedApk("app1-androidTest.apk")
-        val app2Apk = createUploadedApk("app2.apk")
-        val app2TestApk = createUploadedApk("app2-androidTest.apk")
+        val app1LegacyApk = createUploadedApk("app1Legacy.apk")
+        val app1LegacyTestApk = createUploadedApk("app1Legacy-androidTest.apk")
+        val app1Apk = createUploadedApk("app1debug.apk")
+        val app1TestApk = createUploadedApk("app1debugAndroidTest.apk")
+        val app2Apk = createUploadedApk("app2debug.apk")
+        val app2TestApk = createUploadedApk("app2debugAndroidTest.apk")
         val placeholderApk = createUploadedApk("placeholder.apk")
         val noAppTestApk = createUploadedApk("no-app-apk-androidTest.apk")
+
         val apks = listOf(
             app1TestApk,
             createUploadedApk("foo.apk"),
             createUploadedApk("bar.apk"),
+            app1LegacyApk,
+            app1LegacyTestApk,
             app1Apk,
             app2Apk,
             noAppTestApk,
@@ -61,7 +66,7 @@ internal class FirebaseTestLabControllerTest {
             apks = apks,
             placeholderApk = placeholderApk
         )
-        assertThat(testMatrices).hasSize(3)
+        assertThat(testMatrices).hasSize(4)
         val appApkPaths = testMatrices.mapNotNull {
             it.testSpecification.androidInstrumentationTest?.let {
                 it.appApk!!.gcsPath to it.testApk.gcsPath
@@ -71,6 +76,7 @@ internal class FirebaseTestLabControllerTest {
             appApkPaths
         ).containsExactlyElementsIn(
             listOf(
+                app1LegacyApk.gcsPath.path to app1LegacyTestApk.gcsPath.path,
                 app1Apk.gcsPath.path to app1TestApk.gcsPath.path,
                 app2Apk.gcsPath.path to app2TestApk.gcsPath.path,
                 placeholderApk.gcsPath.path to noAppTestApk.gcsPath.path

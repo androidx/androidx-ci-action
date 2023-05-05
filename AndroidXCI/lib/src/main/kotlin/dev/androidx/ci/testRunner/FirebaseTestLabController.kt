@@ -211,10 +211,15 @@ internal class FirebaseTestLabController(
         devicePicker: DevicePicker? = null
     ): List<TestMatrix> {
         val pairs = apks.mapNotNull { uploadedApk ->
-            val isTestApk = uploadedApk.apkInfo.filePath.endsWith(TEST_APK_SUFFIX)
-            if (isTestApk) {
+            val isTestApkWithLegacySuffix = uploadedApk.apkInfo.filePath.endsWith(TEST_APK_SUFFIX_LEGACY)
+            val isTestApkWithNewSuffix = uploadedApk.apkInfo.filePath.endsWith(TEST_APK_SUFFIX_NEW)
+            if (isTestApkWithLegacySuffix || isTestApkWithNewSuffix) {
                 // find the app apk
-                val targetName = uploadedApk.apkInfo.filePath.replace(TEST_APK_SUFFIX, ".apk")
+                val targetName = if (isTestApkWithNewSuffix) {
+                    uploadedApk.apkInfo.filePath.replace(TEST_APK_SUFFIX_NEW, ".apk")
+                } else {
+                    uploadedApk.apkInfo.filePath.replace(TEST_APK_SUFFIX_LEGACY, ".apk")
+                }
                 val appApk = apks.firstOrNull {
                     it.apkInfo.filePath == targetName
                 }
@@ -240,7 +245,8 @@ internal class FirebaseTestLabController(
     }
 
     companion object {
-        private const val TEST_APK_SUFFIX = "-androidTest.apk"
+        private const val TEST_APK_SUFFIX_LEGACY = "-androidTest.apk"
+        private const val TEST_APK_SUFFIX_NEW = "AndroidTest.apk"
     }
 }
 
