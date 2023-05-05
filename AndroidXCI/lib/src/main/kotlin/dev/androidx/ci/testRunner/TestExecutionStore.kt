@@ -47,9 +47,9 @@ internal class TestExecutionStore(
         testMatrix: TestMatrix
     ): List<Step> {
         return getTestExecutionSteps(
-            projectId = testMatrix?.projectId!!,
+            projectId = testMatrix.projectId!!,
             historyId = testMatrix.resultStorage.toolResultsExecution?.historyId!!,
-            executionId = testMatrix.resultStorage.toolResultsExecution?.executionId!!
+            executionId = testMatrix.resultStorage.toolResultsExecution.executionId!!
         )
     }
 }
