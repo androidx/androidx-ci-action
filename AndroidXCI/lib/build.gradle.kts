@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.gcloud.storage)
     implementation(libs.gcloud.datastore)
     implementation(libs.bundles.log4j)
+    implementation(libs.apache.commons.compress)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.truth)

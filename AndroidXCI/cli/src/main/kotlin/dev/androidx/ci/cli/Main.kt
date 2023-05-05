@@ -128,6 +128,14 @@ private class Cli : CliktCommand() {
         envvar = "ANDROIDX_BUCKET_PATH"
     ).required()
 
+    val useTestConfigDirectives by option(
+        help = """
+            If set to true, we'll use TestRunConfig json files in the zip to decide which
+            tests to run.
+        """.trimIndent(),
+        envvar = "USE_TEST_CONFIG_DIRECTIVES"
+    )
+
     override fun run() {
         logFile?.let(::configureLogger)
         val repoParts = githubRepository.split("/")

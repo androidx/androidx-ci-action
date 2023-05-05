@@ -75,7 +75,12 @@ class TestRunner internal constructor(
     /**
      * Device picker
      */
-    private val devicePicker: DevicePicker? = null
+    private val devicePicker: DevicePicker? = null,
+    /**
+     * If set, we'll use json test config files instead of discovering apks manually.
+     * see: AndroidTestConfigBuilder.kt in andoridx source code for details.
+     */
+    private val useTestConfigJson: Boolean,
 ) {
     private val logger = logger()
     private val testMatrixStore = TestMatrixStore(
@@ -187,6 +192,7 @@ class TestRunner internal constructor(
             bucketPath: String,
             devicePicker: DevicePicker? = null,
             artifactNameFilter: (String) -> Boolean = { true },
+            useTestConfigJson: Boolean,
         ): TestRunner {
             val credentials = ServiceAccountCredentials.fromStream(
                 googleCloudCredentials.byteInputStream(Charsets.UTF_8)
@@ -235,7 +241,8 @@ class TestRunner internal constructor(
                 outputFolder = outputFolder,
                 targetRunId = targetRunId,
                 hostRunId = hostRunId,
-                devicePicker = devicePicker
+                devicePicker = devicePicker,
+                useTestConfigJson = useTestConfigJson
             )
         }
 

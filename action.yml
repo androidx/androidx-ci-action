@@ -32,6 +32,10 @@ inputs:
   gcp-bucket-path:
     description: 'The folder to use inside the bucket'
     required: true
+  use-test-config-directives:
+    description: 'If set to true, ci-action will look for json files inside zip files to decide tests. Special flag for androidx'
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -51,3 +55,4 @@ runs:
         ANDROIDX_ARTIFACT_NAME_FILTER_REGEX: ${{ inputs.artifact-name-filter-regex }}
         ANDROIDX_BUCKET_NAME: ${{ inputs.gcp-bucket-name }}
         ANDROIDX_BUCKET_PATH: ${{ inputs.gcp-bucket-path }}
+        USE_TEST_CONFIG_DIRECTIVES: ${{ inputs.use-test-config-directives }}
