@@ -89,7 +89,8 @@ internal class TestRunnerPlayground {
                 it.name.contains("artifacts_navigation")
             },
             targetRunId = runId,
-            hostRunId = runId
+            hostRunId = runId,
+            testSchedulerFactory = TestScheduler.getFactory(useTestConfigFiles = false)
         )
     }
 

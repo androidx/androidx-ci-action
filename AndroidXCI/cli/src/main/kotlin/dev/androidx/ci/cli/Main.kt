@@ -128,6 +128,16 @@ private class Cli : CliktCommand() {
         envvar = "ANDROIDX_BUCKET_PATH"
     ).required()
 
+    val useTestConfigFiles by option(
+        help = """
+            Internal for AndroidX.
+            If set, the action will look for json files matching *AndroidTest.json
+            See https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:buildSrc/private/src/main/kotlin/androidx/build/testConfiguration/AndroidTestConfigBuilder.kt
+            for contents of the file.
+        """.trimIndent(),
+        envvar = "ANDROIDX_USE_TEST_CONFIG_FILES"
+    )
+
     override fun run() {
         logFile?.let(::configureLogger)
         val repoParts = githubRepository.split("/")
@@ -155,7 +165,8 @@ private class Cli : CliktCommand() {
                     ?.let(::createDevicePicker),
                 artifactNameFilter = artifactNameFilter,
                 bucketName = gcpBucketName,
-                bucketPath = gcpBucketPath
+                bucketPath = gcpBucketPath,
+                useTestConfigFiles = useTestConfigFiles?.toBoolean() ?: false,
             )
             testRunner.runTests()
         }
