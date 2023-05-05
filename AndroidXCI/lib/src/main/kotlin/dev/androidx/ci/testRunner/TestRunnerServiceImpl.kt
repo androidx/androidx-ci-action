@@ -195,8 +195,9 @@ internal class TestRunnerServiceImpl internal constructor(
                 }
             } else if (fileName.endsWith(SCREENSHOT_PNG_SUFFIX) || fileName.endsWith(SCREENSHOT_TEXT_PROTO_SUFFIX)) {
                 val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
+                // file names are in the format Classname_testname_emulator_goldResult.textproto or Classname_testname_emulator_actual/diff/expected.png
                 val className = fileName.split("_")[0]
-                val name = fileName.split("_")[1]
+                val name = fileName.split("_emulator")[0].substringAfter("_")
                 getTestResultFiles(visitor).addTestCaseArtifact(
                     TestRunnerService.TestIdentifier(
                         className,
