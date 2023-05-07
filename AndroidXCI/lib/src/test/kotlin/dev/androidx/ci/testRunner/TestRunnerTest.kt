@@ -61,7 +61,7 @@ internal class TestRunnerTest(
             hostRunId = HOST_RUN_ID,
             datastoreApi = fakeBackend.datastoreApi,
             outputFolder = outputFolder,
-            testSchedulerFactory = TestScheduler.getFactory(
+            testSchedulerFactory = TestScheduler.createFactory(
                 useTestConfigFiles = useTestConfigFiles,
                 testSuiteTags = emptyList()
             )

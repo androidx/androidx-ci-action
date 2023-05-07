@@ -90,7 +90,7 @@ internal class TestRunnerPlayground {
             },
             targetRunId = runId,
             hostRunId = runId,
-            testSchedulerFactory = TestScheduler.getFactory(useTestConfigFiles = false, testSuiteTags = emptyList())
+            testSchedulerFactory = TestScheduler.createFactory(useTestConfigFiles = false, testSuiteTags = emptyList())
         )
     }
 

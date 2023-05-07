@@ -131,16 +131,19 @@ private class Cli : CliktCommand() {
     val useTestConfigFiles by option(
         help = """
             Internal for AndroidX.
-            If set, the action will look for json files matching *AndroidTest.json
+            If set, the action will look for json files matching *AndroidTest.json inside the Github archives.
             See TestScheduler.TestRunConfig for the json file structure.
+            Defaults to false.
         """.trimIndent(),
         envvar = "ANDROIDX_USE_TEST_CONFIG_FILES"
     )
 
     val testSuiteTags by option(
         help = """
+            Internal for AndroidX.
             Comma separated list of testSuiteTags that should be run.
             Only used if `useTestConfigFiles` is set to true.
+            Defaults to empty list, which runs all testSuiteTags.
         """.trimIndent(),
         envvar = "ANDROIDX_TEST_SUITE_TAGS"
     )

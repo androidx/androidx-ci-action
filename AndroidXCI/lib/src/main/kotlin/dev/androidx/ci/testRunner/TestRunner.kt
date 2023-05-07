@@ -113,6 +113,8 @@ class TestRunner internal constructor(
                 .filter(githubArtifactFilter)
                 .flatMap { artifact ->
                     testScheduler.enqueueTests(artifact)
+                }.also { testMatrices ->
+                    logger.info { "started all tests for $testMatrices" }
                 }
             logger.info("will wait for test results")
             testLabController.collectTestResults(
@@ -208,7 +210,7 @@ class TestRunner internal constructor(
                 targetRunId = targetRunId,
                 hostRunId = hostRunId,
                 devicePicker = devicePicker,
-                testSchedulerFactory = TestScheduler.getFactory(useTestConfigFiles, testSuiteTags)
+                testSchedulerFactory = TestScheduler.createFactory(useTestConfigFiles, testSuiteTags)
             )
         }
 

@@ -37,7 +37,11 @@ import java.util.zip.ZipEntry
  *
  * There are 2 implementations:
  * 1) RunAllTests will select all APKs, pair them based on the names and try to run.
- * 2) ByTestConfig will parse the TestConfig.json files and only run tests specified in that list.
+ * 2) ByTestConfig will parse the TestConfig.json files and only run tests specified in that list, along with the
+ * given test tags.
+ *
+ * Since schedulers require dependencies, to obtain an instance of this, you need to first obtain a factory via
+ * [createFactory] and then use it to get the instance of [TestScheduler].
  */
 internal sealed interface TestScheduler {
     suspend fun enqueueTests(
@@ -53,6 +57,7 @@ internal sealed interface TestScheduler {
             artifact: ArtifactsResponse.Artifact
         ): List<TestMatrix> {
             val apks = uploadApksToGoogleCloud(githubApi, artifact)
+            logger.info { "will start tests for these apks: $apks" }
             return firebaseTestLabController.pairAndStartTests(
                 apks = apks,
                 placeholderApk = apkStore.getPlaceholderApk(),
@@ -64,6 +69,7 @@ internal sealed interface TestScheduler {
             githubApi: GithubApi,
             artifact: ArtifactsResponse.Artifact
         ): List<UploadedApk> {
+            logger.info { "will upload apks for $artifact" }
             return coroutineScope {
                 val uploads = githubApi.zipArchiveStream(
                     path = artifact.archiveDownloadUrl,
@@ -117,22 +123,26 @@ internal sealed interface TestScheduler {
                 unwrapNestedZipEntries = true
             ).filter {
                 it.entry.name.endsWith("AndroidTest.json")
-            }.mapNotNull {
-                adapter.fromJson(it.bytes.toString(Charsets.UTF_8))
+            }.mapNotNull { zipEntryScope ->
+                adapter.fromJson(zipEntryScope.bytes.toString(Charsets.UTF_8)).also { testRunConfig ->
+                    "Found AndroidTest config: ${zipEntryScope.entry.name}"
+                }
             }.filter { testRunConfig ->
-                // additional apks are not supported
-                testRunConfig.additionalApkKeys.isEmpty().also {
-                    if (!it) {
-                        logger.info {
-                            "TestRunConfigs with additional APKs are not supported. Skipping $testRunConfig"
-                        }
+                // additional apks are not supported, filter them out
+                val hasNoAdditionalApks = testRunConfig.additionalApkKeys.isEmpty()
+                if (!hasNoAdditionalApks) {
+                    logger.warn {
+                        "TestRunConfigs with additional APKs are not supported. Skipping $testRunConfig"
                     }
                 }
-            }.filter {
-                testSuiteTags.isEmpty() || it.testSuiteTags.any { testSuiteTags.contains(it) }
+                hasNoAdditionalApks
+            }.filter { testRunConfig ->
+                // check for test suite tags
+                testSuiteTags.isEmpty() || testRunConfig.testSuiteTags.any { testSuiteTags.contains(it) }
             }.map {
                 TestToBeScheduled(it)
             }.toList()
+
             githubApi.zipArchiveStream(
                 path = artifact.archiveDownloadUrl,
                 unwrapNestedZipEntries = true
@@ -158,16 +168,16 @@ internal sealed interface TestScheduler {
          * find its APKs. After the zip is parsed, it will be called to schedule its tests if possible.
          */
         class TestToBeScheduled(
-            val config: TestRunConfig
+            val testRunConfig: TestRunConfig
         ) {
-            val appApk: PendingApk? = config.appApk?.let { appApk ->
-                config.appApkSha256?.let { sha256 ->
+            val appApk: PendingApk? = testRunConfig.appApk?.let { appApk ->
+                testRunConfig.appApkSha256?.let { sha256 ->
                     PendingApk(name = appApk, sha256 = sha256)
                 }
             }
             val testApk: PendingApk = PendingApk(
-                name = config.testApk,
-                sha256 = config.testApkSha256
+                name = testRunConfig.testApk,
+                sha256 = testRunConfig.testApkSha256
             )
 
             suspend fun trySubmit(
@@ -175,29 +185,35 @@ internal sealed interface TestScheduler {
                 apkStore: ApkStore,
                 devicePicker: DevicePicker?
             ): List<TestMatrix> {
+                logger.info {
+                    "Will try to submit $testRunConfig"
+                }
                 val uploadedAppApk = if (appApk == null) {
                     apkStore.getPlaceholderApk()
                 } else {
                     appApk.apk.also {
                         if (it == null) {
-                            logger.warn("Couldn't find apk for ${config.appApk}, skipping test")
+                            logger.warn("Couldn't find apk for ${testRunConfig.appApk}, skipping test")
                         }
                     }
                 }
                 val uploadedTestApk = testApk.apk
                 if (uploadedAppApk == null || uploadedTestApk == null) {
                     logger.warn {
-                        """Skipping $config because we couldn't find either the app or test apk"""
+                        """Skipping $testRunConfig because we couldn't find either the app or test apk"""
                     }
                     return emptyList()
                 }
                 val instrumentationArguments =
-                    config.instrumentationArgs.map {
+                    testRunConfig.instrumentationArgs.map {
                         DeviceSetup.InstrumentationArgument(
                             key = it.key,
                             value = it.value
                         )
                     }
+                logger.info {
+                    "Submitting test for $testRunConfig"
+                }
                 return firebaseTestLabController.submitTests(
                     appApk = uploadedAppApk,
                     testApk = uploadedTestApk,
@@ -211,6 +227,10 @@ internal sealed interface TestScheduler {
                 )
             }
 
+            /**
+             * Tries to see if the given ZipEntry is one of the APKs we are looking for.
+             * If so, it will be uploaded (if necessary).
+             */
             suspend fun processZipEntry(
                 apkStore: ApkStore,
                 scope: ZipEntryScope
@@ -219,6 +239,10 @@ internal sealed interface TestScheduler {
                 testApk.processZipEntry(apkStore, scope)
             }
 
+            /**
+             * A mutable wrapper class for an APK inside a [TestRunConfig]. It will find its own
+             * APK based on the [processZipEntry] calls.
+             */
             class PendingApk(
                 val name: String,
                 val sha256: String
@@ -243,6 +267,10 @@ internal sealed interface TestScheduler {
             }
         }
 
+        /**
+         * TestRunConfig json file structure.
+         * It is based on https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:buildSrc/private/src/main/kotlin/androidx/build/testConfiguration/AndroidTestConfigBuilder.kt
+         */
         data class TestRunConfig(
             val name: String,
             val testApk: String,
@@ -259,6 +287,9 @@ internal sealed interface TestScheduler {
             }
         }
 
+        /**
+         * Arguments to pass for each test run.
+         */
         data class InstrumentationArg(
             val key: String,
             val value: String
@@ -304,7 +335,7 @@ internal sealed interface TestScheduler {
          * @param testSuiteTags If not empty, AndroidTest.json scheduler will only run test configs matching the given
          * test suite tag.
          */
-        fun getFactory(
+        fun createFactory(
             useTestConfigFiles: Boolean,
             testSuiteTags: List<String>
         ): Factory {
