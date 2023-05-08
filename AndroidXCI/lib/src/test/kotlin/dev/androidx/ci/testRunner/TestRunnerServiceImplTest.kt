@@ -328,7 +328,15 @@ class TestRunnerServiceImplTest {
             "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
         )
         fakeBackend.fakeGoogleCloudApi.upload(
-            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldresult.textproto",
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_actual.png",
+            "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_diff.png",
+            "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto",
             "class1 name1 emulator textproto".toByteArray(Charsets.UTF_8)
         )
 
@@ -478,7 +486,7 @@ class TestRunnerServiceImplTest {
                     it.resourceType == "textproto"
                 }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
-                "$resultPath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldresult.textproto"
+                "$resultPath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto"
             )
 
             // step for test2 is missing
@@ -600,7 +608,7 @@ class TestRunnerServiceImplTest {
             "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
         )
         fakeBackend.fakeGoogleCloudApi.upload(
-            "$resultRelativePath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldresult.textproto",
+            "$resultRelativePath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto",
             "class1 name1 emulator textproto".toByteArray(Charsets.UTF_8)
         )
         // every shard and rerun has its own step
@@ -837,7 +845,7 @@ class TestRunnerServiceImplTest {
                 it.resourceType == "textproto"
             }?.resultFileResource?.gcsPath.toString()
         ).isEqualTo(
-            "$resultPath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldresult.textproto"
+            "$resultPath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto"
         )
         assertThat(
             result.testRuns[1].testCaseArtifacts[
