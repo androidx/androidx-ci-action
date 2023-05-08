@@ -294,10 +294,10 @@ interface TestRunnerService {
         /**
          * Test case log files produced by the test.
          */
-        val testCaseArtifacts: Map<TestIdentifier, List<TestResultLog>>
+        val testCaseArtifacts: Map<TestIdentifier, List<TestCaseArtifact>>
     }
 
-    data class TestResultLog(
+    data class TestCaseArtifact(
         /**
          * Test case log files produced by individual tests in the testrun.
          */
