@@ -328,14 +328,6 @@ class TestRunnerServiceImplTest {
             "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
         )
         fakeBackend.fakeGoogleCloudApi.upload(
-            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_actual.png",
-            "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
-        )
-        fakeBackend.fakeGoogleCloudApi.upload(
-            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_diff.png",
-            "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
-        )
-        fakeBackend.fakeGoogleCloudApi.upload(
             "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto",
             "class1 name1 emulator textproto".toByteArray(Charsets.UTF_8)
         )
@@ -387,6 +379,15 @@ class TestRunnerServiceImplTest {
 
         assertThat(result.testRuns).hasSize(1)
         result.testRuns.first().let { testRun ->
+            val testIdentifier = TestRunnerService.TestIdentifier(
+                className = "class1",
+                name = "name1",
+                runNumber = testRun.deviceRun.runNumber
+            )
+            val screenshots = subject.getTestMatrixResultsScreenshots(
+                testMatrixId,
+                testIdentifier
+            )
             assertThat(
                 testRun.deviceRun.deviceId
             ).isEqualTo(
@@ -413,23 +414,15 @@ class TestRunnerServiceImplTest {
             )
             assertThat(
                 testRun.testCaseArtifacts[
-                    TestRunnerService.TestIdentifier(
-                        className = "class1",
-                        name = "name1",
-                        runNumber = testRun.deviceRun.runNumber
-                    )
+                    testIdentifier
                 ]?.size
             ).isEqualTo(
-                5
+                1
             )
             // step and logcat both have valid values for test1
             assertThat(
                 testRun.testCaseArtifacts[
-                    TestRunnerService.TestIdentifier(
-                        className = "class1",
-                        name = "name1",
-                        runNumber = testRun.deviceRun.runNumber
-                    )
+                    testIdentifier
                 ]?.first {
                     it.resourceType == "logcat"
                 }?.resultFileResource?.gcsPath.toString()
@@ -438,11 +431,7 @@ class TestRunnerServiceImplTest {
             )
             assertThat(
                 testRun.testCaseArtifacts[
-                    TestRunnerService.TestIdentifier(
-                        className = "class1",
-                        name = "name1",
-                        runNumber = testRun.deviceRun.runNumber
-                    )
+                    testIdentifier
                 ]?.first {
                     it.resourceType == "logcat"
                 }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
@@ -450,39 +439,21 @@ class TestRunnerServiceImplTest {
                 "test1 logcat"
             )
             assertThat(
-                testRun.testCaseArtifacts[
-                    TestRunnerService.TestIdentifier(
-                        className = "class1",
-                        name = "name1",
-                        runNumber = testRun.deviceRun.runNumber
-                    )
-                ]?.count {
+                screenshots?.count {
                     it.resourceType == "png"
                 }
             ).isEqualTo(
                 3
             )
             assertThat(
-                testRun.testCaseArtifacts[
-                    TestRunnerService.TestIdentifier(
-                        className = "class1",
-                        name = "name1",
-                        runNumber = testRun.deviceRun.runNumber
-                    )
-                ]?.count {
+                screenshots?.count {
                     it.resourceType == "textproto"
                 }
             ).isEqualTo(
                 1
             )
             assertThat(
-                testRun.testCaseArtifacts[
-                    TestRunnerService.TestIdentifier(
-                        className = "class1",
-                        name = "name1",
-                        runNumber = testRun.deviceRun.runNumber
-                    )
-                ]?.first {
+                screenshots?.first {
                     it.resourceType == "textproto"
                 }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
@@ -795,6 +766,13 @@ class TestRunnerServiceImplTest {
                 "$resultPath/${testRun.deviceRun.id}/test_cases/0000_logcat"
             )
         }
+
+        val testIdentifier = TestRunnerService.TestIdentifier(
+            "class1",
+            "name1",
+            0
+        )
+        val screenshots = subject.getTestMatrixResultsScreenshots(testMatrixId, testIdentifier)
         assertThat(
             result.testRuns[0].testCaseArtifacts[
                 TestRunnerService.TestIdentifier(
@@ -809,39 +787,21 @@ class TestRunnerServiceImplTest {
             "test1 in shard0 logcat"
         )
         assertThat(
-            result.testRuns[0].testCaseArtifacts[
-                TestRunnerService.TestIdentifier(
-                    className = "class1",
-                    name = "name1",
-                    runNumber = result.testRuns[0].deviceRun.runNumber
-                )
-            ]?.count {
+            screenshots?.count {
                 it.resourceType == "png"
             }
         ).isEqualTo(
             3
         )
         assertThat(
-            result.testRuns[0].testCaseArtifacts[
-                TestRunnerService.TestIdentifier(
-                    className = "class1",
-                    name = "name1",
-                    runNumber = result.testRuns[0].deviceRun.runNumber
-                )
-            ]?.count {
+            screenshots?.count {
                 it.resourceType == "textproto"
             }
         ).isEqualTo(
             1
         )
         assertThat(
-            result.testRuns[0].testCaseArtifacts[
-                TestRunnerService.TestIdentifier(
-                    className = "class1",
-                    name = "name1",
-                    runNumber = result.testRuns[0].deviceRun.runNumber
-                )
-            ]?.first {
+            screenshots?.first {
                 it.resourceType == "textproto"
             }?.resultFileResource?.gcsPath.toString()
         ).isEqualTo(

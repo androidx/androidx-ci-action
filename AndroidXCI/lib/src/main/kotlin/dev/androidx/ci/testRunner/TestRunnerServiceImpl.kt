@@ -193,20 +193,6 @@ internal class TestRunnerServiceImpl internal constructor(
                         "logcat"
                     )
                 }
-            } else if (fileName.endsWith(SCREENSHOT_PNG_SUFFIX) || fileName.endsWith(SCREENSHOT_TEXT_PROTO_SUFFIX)) {
-                val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
-                // file names are in the format Classname_testname_emulator_goldResult.textproto or Classname_testname_emulator_actual/diff/expected.png
-                val className = fileName.substringBefore('_')
-                val name = fileName.substringBefore("_emulator_").substringAfter('_')
-                getTestResultFiles(visitor).addTestCaseArtifact(
-                    TestRunnerService.TestIdentifier(
-                        className,
-                        name,
-                        runNumber
-                    ),
-                    ResultFileResourceImpl(visitor),
-                    fileName.substringAfterLast(".")
-                )
             }
         }
         return mergedXmlBlobs.map { mergedXmlEntry ->
@@ -221,11 +207,42 @@ internal class TestRunnerServiceImpl internal constructor(
         }
     }
 
+    private suspend fun findScreenshotFiles(
+        resultPath: GcsPath,
+        testIdentifier: TestRunnerService.TestIdentifier
+    ): List<TestRunnerService.TestCaseArtifact> {
+        val screenshotArtifacts = mutableListOf<TestRunnerService.TestCaseArtifact>()
+        val testName = "${testIdentifier.className}_${testIdentifier.name}"
+        fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
+        googleCloudApi.walkEntires(
+            gcsPath = resultPath
+        ).forEach { visitor ->
+            val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
+            if (visitor.fileName.startsWith(testName) && runNumber == testIdentifier.runNumber) {
+                screenshotArtifacts.add(
+                    TestRunnerService.TestCaseArtifact(
+                        ResultFileResourceImpl(visitor),
+                        visitor.fileName.substringAfterLast(".")
+                    )
+                )
+            }
+        }
+        return screenshotArtifacts
+    }
+
     suspend fun getTestMatrixResults(
         testMatrixId: String
     ): List<TestRunnerService.TestRunResult>? {
         val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
         return getTestMatrixResults(testMatrix)
+    }
+
+    suspend fun getTestMatrixResultsScreenshots(
+        testMatrixId: String,
+        testIdentifier: TestRunnerService.TestIdentifier
+    ): List<TestRunnerService.TestCaseArtifact>? {
+        val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
+        return getTestMatrixResultsScreenshots(testMatrix, testIdentifier)
     }
 
     override suspend fun getTestMatrixResults(
@@ -236,6 +253,15 @@ internal class TestRunnerServiceImpl internal constructor(
         return findResultFiles(resultPath, testMatrix)
     }
 
+    override suspend fun getTestMatrixResultsScreenshots(
+        testMatrix: TestMatrix,
+        testIdentifier: TestRunnerService.TestIdentifier
+    ): List<TestRunnerService.TestCaseArtifact>? {
+        if (!testMatrix.isComplete()) return null
+        val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
+        return findScreenshotFiles(resultPath, testIdentifier)
+    }
+
     companion object {
         private const val MERGED_TEST_RESULT_SUFFIX = "-test_results_merged.xml"
         private const val LOGCAT_FILE_NAME = "logcat"
@@ -243,8 +269,6 @@ internal class TestRunnerServiceImpl internal constructor(
         private const val TEST_RESULT_XML_PREFIX = "test_result_"
         private const val TEST_RESULT_XML_SUFFIX = ".xml"
         private const val INSTRUMENTATION_RESULTS_FILE_NAME = "instrumentation.results"
-        private const val SCREENSHOT_PNG_SUFFIX = ".png"
-        private const val SCREENSHOT_TEXT_PROTO_SUFFIX = ".textproto"
     }
     class ResultFileResourceImpl(
         private val blobVisitor: BlobVisitor

@@ -92,6 +92,15 @@ interface TestRunnerService {
      */
     suspend fun getTestMatrixResults(testMatrix: TestMatrix): List<TestRunResult>?
 
+    /**
+     * Gets the screenshots for the given [testMatrix] and [testIdentifier].
+     * The result includes references to images and textproto files
+     */
+    suspend fun getTestMatrixResultsScreenshots(
+        testMatrix: TestMatrix,
+        testIdentifier: TestIdentifier
+    ): List<TestCaseArtifact>?
+
     companion object {
         /**
          * Creates an implementation of [TestRunnerService].
