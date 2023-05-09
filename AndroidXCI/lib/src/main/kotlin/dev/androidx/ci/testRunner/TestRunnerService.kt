@@ -93,13 +93,13 @@ interface TestRunnerService {
     suspend fun getTestMatrixResults(testMatrix: TestMatrix): List<TestRunResult>?
 
     /**
-     * Gets the screenshots for the given [testMatrix] and [testIdentifier].
+     * Gets the screenshots for the given [testMatrix] and [testIdentifiers].
      * The result includes references to images and textproto files
      */
     suspend fun getTestMatrixResultsScreenshots(
         testMatrix: TestMatrix,
-        testIdentifier: TestIdentifier
-    ): List<TestCaseArtifact>?
+        testIdentifiers: List<TestIdentifier>
+    ): Map<TestIdentifier, List<TestCaseArtifact>>?
 
     companion object {
         /**

@@ -386,7 +386,7 @@ class TestRunnerServiceImplTest {
             )
             val screenshots = subject.getTestMatrixResultsScreenshots(
                 testMatrixId,
-                testIdentifier
+                listOf(testIdentifier)
             )
             assertThat(
                 testRun.deviceRun.deviceId
@@ -439,21 +439,21 @@ class TestRunnerServiceImplTest {
                 "test1 logcat"
             )
             assertThat(
-                screenshots?.count {
+                screenshots?.get(testIdentifier)?.count {
                     it.resourceType == "png"
                 }
             ).isEqualTo(
                 3
             )
             assertThat(
-                screenshots?.count {
+                screenshots?.get(testIdentifier)?.count {
                     it.resourceType == "textproto"
                 }
             ).isEqualTo(
                 1
             )
             assertThat(
-                screenshots?.first {
+                screenshots?.get(testIdentifier)?.first {
                     it.resourceType == "textproto"
                 }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
@@ -772,7 +772,10 @@ class TestRunnerServiceImplTest {
             "name1",
             0
         )
-        val screenshots = subject.getTestMatrixResultsScreenshots(testMatrixId, testIdentifier)
+        val screenshots = subject.getTestMatrixResultsScreenshots(
+            testMatrixId,
+            listOf(testIdentifier)
+        )
         assertThat(
             result.testRuns[0].testCaseArtifacts[
                 TestRunnerService.TestIdentifier(
@@ -787,21 +790,21 @@ class TestRunnerServiceImplTest {
             "test1 in shard0 logcat"
         )
         assertThat(
-            screenshots?.count {
+            screenshots?.get(testIdentifier)?.count {
                 it.resourceType == "png"
             }
         ).isEqualTo(
             3
         )
         assertThat(
-            screenshots?.count {
+            screenshots?.get(testIdentifier)?.count {
                 it.resourceType == "textproto"
             }
         ).isEqualTo(
             1
         )
         assertThat(
-            screenshots?.first {
+            screenshots?.get(testIdentifier)?.first {
                 it.resourceType == "textproto"
             }?.resultFileResource?.gcsPath.toString()
         ).isEqualTo(
