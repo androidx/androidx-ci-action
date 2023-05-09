@@ -92,6 +92,17 @@ interface TestRunnerService {
      */
     suspend fun getTestMatrixResults(testMatrix: TestMatrix): List<TestRunResult>?
 
+    /**
+     * Gets the screenshots for the given [testMatrix] and [testIdentifiers].
+     * The result includes references to images and textproto files
+     * Returns null when the testMatrix is not complete,
+     * and emptyMap if there are no screenshots associated with the test (non-screenshot tests)
+     */
+    suspend fun getTestMatrixResultsScreenshots(
+        testMatrix: TestMatrix,
+        testIdentifiers: List<TestIdentifier>
+    ): Map<TestIdentifier, List<TestCaseArtifact>>?
+
     companion object {
         /**
          * Creates an implementation of [TestRunnerService].
@@ -294,6 +305,23 @@ interface TestRunnerService {
         /**
          * Test case log files produced by the test.
          */
-        val testCaseLogcats: Map<TestIdentifier, ResultFileResource>
+        val testCaseArtifacts: Map<TestIdentifier, List<TestCaseArtifact>>
+    }
+
+    data class TestCaseArtifact(
+        /**
+         * Test case log files produced by individual tests in the testrun.
+         */
+        val resultFileResource: ResultFileResource,
+        /**
+         * Type of files: ex. logcat, png or textproto for screenshot tests
+         */
+        val resourceType: String
+    ) {
+        companion object ResourceType {
+            const val LOGCAT = "logcat"
+            const val PNG = "png"
+            const val TEXTPROTO = "textproto"
+        }
     }
 }

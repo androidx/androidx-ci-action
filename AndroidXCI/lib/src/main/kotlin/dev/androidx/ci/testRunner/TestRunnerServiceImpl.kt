@@ -174,12 +174,12 @@ internal class TestRunnerServiceImpl internal constructor(
             } else if (fileName.endsWith(LOGCAT_FILE_NAME_SUFFIX)) {
                 val step = steps.flatMap {
                     it.testExecutionStep?.toolExecution?.toolOutputs ?: emptyList()
-                }?.find {
+                }.find {
                     (it.output?.fileUri == visitor.gcsPath.toString())
                 }
                 val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
                 step?.testCase?.className?.let { className ->
-                    step?.testCase?.name?.let { name ->
+                    step.testCase.name?.let { name ->
                         TestRunnerService.TestIdentifier(
                             className,
                             name,
@@ -187,9 +187,10 @@ internal class TestRunnerServiceImpl internal constructor(
                         )
                     }
                 }?.let { testIdentifier ->
-                    getTestResultFiles(visitor).addTestCaseLogcat(
+                    getTestResultFiles(visitor).addTestCaseArtifact(
                         testIdentifier,
-                        ResultFileResourceImpl(visitor)
+                        ResultFileResourceImpl(visitor),
+                        "logcat"
                     )
                 }
             }
@@ -206,11 +207,55 @@ internal class TestRunnerServiceImpl internal constructor(
         }
     }
 
+    private suspend fun findScreenshotFiles(
+        resultPath: GcsPath,
+        testIdentifiers: List<TestRunnerService.TestIdentifier>
+    ): Map< TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>> {
+        val screenshotArtifactsBlobs = mutableMapOf<TestRunnerService.TestIdentifier, MutableList<TestRunnerService.TestCaseArtifact>>()
+        val screenshotArtifacts: Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>
+        val testNames = testIdentifiers.associateBy { testIdentifier ->
+            "${testIdentifier.className}_${testIdentifier.name}"
+        }
+        val testRunNumber = testIdentifiers.first().runNumber
+        fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
+        googleCloudApi.walkEntires(
+            gcsPath = resultPath
+        ).forEach { visitor ->
+            val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
+            if (runNumber == testRunNumber) {
+                val testName = testNames.keys.find { testName ->
+                    visitor.fileName.startsWith(testName)
+                }
+                val testIdentifier = testNames[testName]
+                if (testIdentifier != null) {
+                    screenshotArtifactsBlobs.getOrPut(testIdentifier) {
+                        mutableListOf()
+                    }.add(
+                        TestRunnerService.TestCaseArtifact(
+                            ResultFileResourceImpl(visitor),
+                            visitor.fileName.substringAfterLast(".")
+                        )
+                    )
+                }
+            }
+        }
+        screenshotArtifacts = screenshotArtifactsBlobs
+        return screenshotArtifacts
+    }
+
     suspend fun getTestMatrixResults(
         testMatrixId: String
     ): List<TestRunnerService.TestRunResult>? {
         val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
         return getTestMatrixResults(testMatrix)
+    }
+
+    suspend fun getTestMatrixResultsScreenshots(
+        testMatrixId: String,
+        testIdentifiers: List<TestRunnerService.TestIdentifier>
+    ): Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>? {
+        val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
+        return getTestMatrixResultsScreenshots(testMatrix, testIdentifiers)
     }
 
     override suspend fun getTestMatrixResults(
@@ -219,6 +264,15 @@ internal class TestRunnerServiceImpl internal constructor(
         if (!testMatrix.isComplete()) return null
         val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
         return findResultFiles(resultPath, testMatrix)
+    }
+
+    override suspend fun getTestMatrixResultsScreenshots(
+        testMatrix: TestMatrix,
+        testIdentifiers: List<TestRunnerService.TestIdentifier>
+    ): Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>? {
+        if (!testMatrix.isComplete()) return null
+        val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
+        return findScreenshotFiles(resultPath, testIdentifiers)
     }
 
     companion object {
@@ -248,23 +302,34 @@ internal class TestRunnerServiceImpl internal constructor(
         fullDeviceId: String,
     ) : TestRunnerService.TestResultFiles {
         private val xmlResultBlobs = mutableListOf<TestRunnerService.ResultFileResource>()
-        private val testCaseLogcatBlobs = mutableMapOf<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource>()
+        private val testCaseArtifactBlobs = mutableMapOf<TestRunnerService.TestIdentifier, MutableList<TestRunnerService.TestCaseArtifact>>()
 
         override var logcat: TestRunnerService.ResultFileResource? = null
             internal set
         override var instrumentationResult: TestRunnerService.ResultFileResource? = null
             internal set
         override val xmlResults: List<TestRunnerService.ResultFileResource> = xmlResultBlobs
-        override val testCaseLogcats: Map<TestRunnerService.TestIdentifier, TestRunnerService.ResultFileResource> = testCaseLogcatBlobs
+        override val testCaseArtifacts: Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>> = testCaseArtifactBlobs
         override val deviceRun: DeviceRun = DeviceRun.create(fullDeviceId)
 
         internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
             xmlResultBlobs.add(resultFileResource)
         }
-        internal fun addTestCaseLogcat(testCase: TestRunnerService.TestIdentifier, resultFileResource: TestRunnerService.ResultFileResource) {
-            testCaseLogcatBlobs[testCase] = resultFileResource
-        }
 
+        internal fun addTestCaseArtifact(
+            testCase: TestRunnerService.TestIdentifier,
+            resultFileResource: TestRunnerService.ResultFileResource,
+            resourceType: String
+        ) {
+            testCaseArtifactBlobs.getOrPut(testCase) {
+                mutableListOf()
+            }.add(
+                TestRunnerService.TestCaseArtifact(
+                    resultFileResource,
+                    resourceType
+                )
+            )
+        }
         override fun toString(): String {
             return """
                 TestResultFiles(
