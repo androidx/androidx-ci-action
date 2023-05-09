@@ -273,6 +273,7 @@ class TestRunnerServiceImplTest {
             )
         )
         val testMatrixId = testMatrix.testMatrixId!!
+
         assertThat(
             subject.getTestMatrix(testMatrixId)
         ).isEqualTo(
@@ -424,7 +425,7 @@ class TestRunnerServiceImplTest {
                 testRun.testCaseArtifacts[
                     testIdentifier
                 ]?.first {
-                    it.resourceType == "logcat"
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
                 }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/redfin-30-en-portrait/test_cases/0000_logcat"
@@ -433,28 +434,28 @@ class TestRunnerServiceImplTest {
                 testRun.testCaseArtifacts[
                     testIdentifier
                 ]?.first {
-                    it.resourceType == "logcat"
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
                 }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
             ).isEqualTo(
                 "test1 logcat"
             )
             assertThat(
                 screenshots?.get(testIdentifier)?.count {
-                    it.resourceType == "png"
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.PNG
                 }
             ).isEqualTo(
                 3
             )
             assertThat(
                 screenshots?.get(testIdentifier)?.count {
-                    it.resourceType == "textproto"
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.TEXTPROTO
                 }
             ).isEqualTo(
                 1
             )
             assertThat(
                 screenshots?.get(testIdentifier)?.first {
-                    it.resourceType == "textproto"
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.TEXTPROTO
                 }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto"
@@ -760,7 +761,7 @@ class TestRunnerServiceImplTest {
                         runNumber = testRun.deviceRun.runNumber
                     )
                 ]?.first {
-                    it.resourceType == "logcat"
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
                 }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
                 "$resultPath/${testRun.deviceRun.id}/test_cases/0000_logcat"
@@ -784,28 +785,28 @@ class TestRunnerServiceImplTest {
                     runNumber = 0
                 )
             ]?.first {
-                it.resourceType == "logcat"
+                it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
             }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test1 in shard0 logcat"
         )
         assertThat(
             screenshots?.get(testIdentifier)?.count {
-                it.resourceType == "png"
+                it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.PNG
             }
         ).isEqualTo(
             3
         )
         assertThat(
             screenshots?.get(testIdentifier)?.count {
-                it.resourceType == "textproto"
+                it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.TEXTPROTO
             }
         ).isEqualTo(
             1
         )
         assertThat(
             screenshots?.get(testIdentifier)?.first {
-                it.resourceType == "textproto"
+                it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.TEXTPROTO
             }?.resultFileResource?.gcsPath.toString()
         ).isEqualTo(
             "$resultPath/redfin-30-en-portrait-shard_0/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto"
@@ -818,7 +819,7 @@ class TestRunnerServiceImplTest {
                     runNumber = 0
                 )
             ]?.first {
-                it.resourceType == "logcat"
+                it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
             }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test2 in shard1 logcat"
@@ -831,7 +832,7 @@ class TestRunnerServiceImplTest {
                     runNumber = 0
                 )
             ]?.first {
-                it.resourceType == "logcat"
+                it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
             }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 logcat"
@@ -844,7 +845,7 @@ class TestRunnerServiceImplTest {
                     runNumber = 1
                 )
             ]?.first {
-                it.resourceType == "logcat"
+                it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
             }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 rerun1 logcat"
@@ -857,7 +858,7 @@ class TestRunnerServiceImplTest {
                     runNumber = 2
                 )
             ]?.first {
-                it.resourceType == "logcat"
+                it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
             }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
         ).isEqualTo(
             "test3 in shard2 rerun2 logcat"

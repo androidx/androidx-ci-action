@@ -95,6 +95,8 @@ interface TestRunnerService {
     /**
      * Gets the screenshots for the given [testMatrix] and [testIdentifiers].
      * The result includes references to images and textproto files
+     * Returns null when the testMatrix is not complete,
+     * and emptyMap if there are no screenshots associated with the test (non-screenshot tests)
      */
     suspend fun getTestMatrixResultsScreenshots(
         testMatrix: TestMatrix,
@@ -315,5 +317,11 @@ interface TestRunnerService {
          * Type of files: ex. logcat, png or textproto for screenshot tests
          */
         val resourceType: String
-    )
+    ) {
+        companion object ResourceType {
+            const val LOGCAT = "logcat"
+            const val PNG = "png"
+            const val TEXTPROTO = "textproto"
+        }
+    }
 }
