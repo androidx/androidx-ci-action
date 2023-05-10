@@ -19,6 +19,8 @@ package dev.androidx.ci.fake
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.github.dto.ArtifactsResponse
 import dev.androidx.ci.github.dto.RunInfo
+import dev.androidx.ci.testRunner.TestScheduler
+import dev.androidx.ci.util.sha256
 import java.util.UUID
 import kotlin.random.Random
 
@@ -70,13 +72,35 @@ internal class FakeBackend(
      * Creates a test archive for the Github API and returns the absolute path for it
      */
     fun createArchive(
-        vararg contentNames: String
+        testPairs: List<TestPair> = emptyList(),
+        contentNames: List<String>,
     ): ArtifactsResponse.Artifact {
         val path = "github.com/${UUID.randomUUID()}"
+        val fileContents = contentNames.associateWith { random.nextBytes(10) }
+        val testRunConfigContents = testPairs.associate { testPair ->
+            val testApkSha256 =
+                fileContents[testPair.testApk]?.let(::sha256) ?: error("Cannot find file with name ${testPair.testApk}")
+            val appApkSha256 = testPair.appApk?.let {
+                fileContents[testPair.appApk]?.let(::sha256) ?: error("Cannot find file with name ${testPair.appApk}")
+            }
+            val fileName = testPair.testFilePrefix + "AndroidTest.json"
+            val config = TestScheduler.RunUsingTestRunConfig.TestRunConfig(
+                name = fileName,
+                testApk = testPair.testApk,
+                testApkSha256 = testApkSha256,
+                appApk = testPair.appApk,
+                appApkSha256 = appApkSha256,
+                minSdkVersion = 21,
+                instrumentationArgs = emptyList(),
+                testSuiteTags = emptyList(),
+                additionalApkKeys = emptyList()
+            )
+            fileName to config.serialize().toByteArray(Charsets.UTF_8)
+        }
         fakeGithubApi.putArchive(
             path = path,
-            zipEntries = contentNames.map {
-                it to random.nextBytes(10)
+            zipEntries = (fileContents + testRunConfigContents).map {
+                it.key to it.value
             }
         )
         return ArtifactsResponse.Artifact(
@@ -86,4 +110,10 @@ internal class FakeBackend(
             archiveDownloadUrl = path
         )
     }
+
+    data class TestPair(
+        val testFilePrefix: String,
+        val testApk: String,
+        val appApk: String?,
+    )
 }

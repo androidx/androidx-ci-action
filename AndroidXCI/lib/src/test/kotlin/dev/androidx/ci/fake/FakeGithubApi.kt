@@ -31,7 +31,7 @@ internal class FakeGithubApi : GithubApi {
     private val runInfos = mutableMapOf<String, RunInfo>()
     private val commitInfos = mutableMapOf<String, CommitInfo>()
     private val artifacts = mutableMapOf<String, ArtifactsResponse>()
-    private val zipArchives = mutableMapOf<String, ResponseBody>()
+    private val zipArchives = mutableMapOf<String, Buffer>()
 
     private fun getOrCreateRunInfo(runId: String): RunInfo {
         return runInfos.getOrPut(runId) {
@@ -66,12 +66,7 @@ internal class FakeGithubApi : GithubApi {
         val zipBytes = createZipFile(
             entries = zipEntries
         )
-        val responseBody = RealResponseBody(
-            contentTypeString = "application/zip",
-            contentLength = zipBytes.size,
-            source = zipBytes
-        )
-        zipArchives[path] = responseBody
+        zipArchives[path] = zipBytes
     }
 
     override suspend fun artifacts(runId: String): ArtifactsResponse {
@@ -79,7 +74,13 @@ internal class FakeGithubApi : GithubApi {
     }
 
     override suspend fun zipArchive(path: String): ResponseBody {
-        return zipArchives[path] ?: throwNotFound<ResponseBody>()
+        return zipArchives[path]?.let {
+            RealResponseBody(
+                contentTypeString = "application/zip",
+                contentLength = it.size,
+                source = it.copy()
+            )
+        } ?: throwNotFound<ResponseBody>()
     }
 
     override suspend fun runInfo(runId: String): RunInfo {
