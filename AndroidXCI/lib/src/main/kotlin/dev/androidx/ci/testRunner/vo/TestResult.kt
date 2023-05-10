@@ -19,6 +19,7 @@ package dev.androidx.ci.testRunner.vo
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 
@@ -34,13 +35,13 @@ sealed class TestResult(
     ) : TestResult(Type.COMPLETE_RUN) {
         override val allTestsPassed: Boolean by lazy {
             matrices.none {
-                it.outcomeSummary != SUCCESS
+                it.outcomeSummary == FAILURE
             }
         }
         override val failureLog: String
             get() = buildString {
                 val failed = matrices.filter {
-                    it.outcomeSummary != SUCCESS
+                    it.outcomeSummary == FAILURE
                 }
                 append("${failed.size} of ${matrices.size} failed")
                 failed.forEach { failure ->
