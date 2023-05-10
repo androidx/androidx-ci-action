@@ -20,7 +20,6 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
-import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 
 sealed class TestResult(
