@@ -471,7 +471,7 @@ class TestRunnerServiceImplTest {
                     )
                 ]
             ).isNull()
-            //No screenshots for test2
+            // No screenshots for test2
             val testIdentifier2 = TestRunnerService.TestIdentifier(
                 className = "class2",
                 name = "name2",
@@ -494,7 +494,7 @@ class TestRunnerServiceImplTest {
                     )
                 ]
             ).isNull()
-            //No screenshots for test3 either
+            // No screenshots for test3 either
             val testIdentifier3 = TestRunnerService.TestIdentifier(
                 className = "class2",
                 name = "name2",
@@ -508,7 +508,7 @@ class TestRunnerServiceImplTest {
                 screenshots3
             ).isEmpty()
         }
-        //check screenshots is null when list of testIdentifiers is empty
+        // check screenshots is null when list of testIdentifiers is empty
         val screenshots = subject.getTestMatrixResultsScreenshots(
             testMatrixId,
             emptyList()
