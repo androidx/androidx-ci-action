@@ -210,7 +210,8 @@ internal class TestRunnerServiceImpl internal constructor(
     private suspend fun findScreenshotFiles(
         resultPath: GcsPath,
         testIdentifiers: List<TestRunnerService.TestIdentifier>
-    ): Map< TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>> {
+    ): Map< TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>? {
+        if(testIdentifiers.isEmpty()) return null
         val screenshotArtifactsBlobs = mutableMapOf<TestRunnerService.TestIdentifier, MutableList<TestRunnerService.TestCaseArtifact>>()
         val screenshotArtifacts: Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>
         val testNames = testIdentifiers.associateBy { testIdentifier ->

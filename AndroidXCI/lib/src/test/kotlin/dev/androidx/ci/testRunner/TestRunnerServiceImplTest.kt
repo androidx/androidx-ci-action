@@ -380,14 +380,14 @@ class TestRunnerServiceImplTest {
 
         assertThat(result.testRuns).hasSize(1)
         result.testRuns.first().let { testRun ->
-            val testIdentifier = TestRunnerService.TestIdentifier(
+            val testIdentifier1 = TestRunnerService.TestIdentifier(
                 className = "class1",
                 name = "name1",
                 runNumber = testRun.deviceRun.runNumber
             )
-            val screenshots = subject.getTestMatrixResultsScreenshots(
+            val screenshots1 = subject.getTestMatrixResultsScreenshots(
                 testMatrixId,
-                listOf(testIdentifier)
+                listOf(testIdentifier1)
             )
             assertThat(
                 testRun.deviceRun.deviceId
@@ -415,7 +415,7 @@ class TestRunnerServiceImplTest {
             )
             assertThat(
                 testRun.testCaseArtifacts[
-                    testIdentifier
+                    testIdentifier1
                 ]?.size
             ).isEqualTo(
                 1
@@ -423,7 +423,7 @@ class TestRunnerServiceImplTest {
             // step and logcat both have valid values for test1
             assertThat(
                 testRun.testCaseArtifacts[
-                    testIdentifier
+                    testIdentifier1
                 ]?.first {
                     it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
                 }?.resultFileResource?.gcsPath.toString()
@@ -432,7 +432,7 @@ class TestRunnerServiceImplTest {
             )
             assertThat(
                 testRun.testCaseArtifacts[
-                    testIdentifier
+                    testIdentifier1
                 ]?.first {
                     it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
                 }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
@@ -440,21 +440,21 @@ class TestRunnerServiceImplTest {
                 "test1 logcat"
             )
             assertThat(
-                screenshots?.get(testIdentifier)?.count {
+                screenshots1?.get(testIdentifier1)?.count {
                     it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.PNG
                 }
             ).isEqualTo(
                 3
             )
             assertThat(
-                screenshots?.get(testIdentifier)?.count {
+                screenshots1?.get(testIdentifier1)?.count {
                     it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.TEXTPROTO
                 }
             ).isEqualTo(
                 1
             )
             assertThat(
-                screenshots?.get(testIdentifier)?.first {
+                screenshots1?.get(testIdentifier1)?.first {
                     it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.TEXTPROTO
                 }?.resultFileResource?.gcsPath.toString()
             ).isEqualTo(
@@ -471,6 +471,19 @@ class TestRunnerServiceImplTest {
                     )
                 ]
             ).isNull()
+            //No screenshots for test2
+            val testIdentifier2 = TestRunnerService.TestIdentifier(
+                className = "class2",
+                name = "name2",
+                runNumber = testRun.deviceRun.runNumber
+            )
+            val screenshots2 = subject.getTestMatrixResultsScreenshots(
+                testMatrixId,
+                listOf(testIdentifier2)
+            )
+            assertThat(
+                screenshots2
+            ).isEmpty()
             // logcat for test3 is missing from gcloud folder
             assertThat(
                 testRun.testCaseArtifacts[
@@ -481,7 +494,28 @@ class TestRunnerServiceImplTest {
                     )
                 ]
             ).isNull()
+            //No screenshots for test3 either
+            val testIdentifier3 = TestRunnerService.TestIdentifier(
+                className = "class2",
+                name = "name2",
+                runNumber = testRun.deviceRun.runNumber
+            )
+            val screenshots3 = subject.getTestMatrixResultsScreenshots(
+                testMatrixId,
+                listOf(testIdentifier3)
+            )
+            assertThat(
+                screenshots3
+            ).isEmpty()
         }
+        //check screenshots is null when list of testIdentifiers is empty
+        val screenshots = subject.getTestMatrixResultsScreenshots(
+            testMatrixId,
+            emptyList()
+        )
+        assertThat(
+            screenshots
+        ).isNull()
     }
 
     @Test
