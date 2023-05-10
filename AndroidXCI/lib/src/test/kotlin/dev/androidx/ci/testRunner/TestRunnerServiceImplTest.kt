@@ -385,7 +385,7 @@ class TestRunnerServiceImplTest {
                 name = "name1",
                 runNumber = testRun.deviceRun.runNumber
             )
-            val screenshots1 = subject.getTestMatrixResultsScreenshots(
+            val screenshots1 = subject.getTestMatrixArtifacts(
                 testMatrixId,
                 listOf(testIdentifier1)
             )
@@ -477,7 +477,7 @@ class TestRunnerServiceImplTest {
                 name = "name2",
                 runNumber = testRun.deviceRun.runNumber
             )
-            val screenshots2 = subject.getTestMatrixResultsScreenshots(
+            val screenshots2 = subject.getTestMatrixArtifacts(
                 testMatrixId,
                 listOf(testIdentifier2)
             )
@@ -500,7 +500,7 @@ class TestRunnerServiceImplTest {
                 name = "name2",
                 runNumber = testRun.deviceRun.runNumber
             )
-            val screenshots3 = subject.getTestMatrixResultsScreenshots(
+            val screenshots3 = subject.getTestMatrixArtifacts(
                 testMatrixId,
                 listOf(testIdentifier3)
             )
@@ -509,7 +509,7 @@ class TestRunnerServiceImplTest {
             ).isEmpty()
         }
         // check screenshots is null when list of testIdentifiers is empty
-        val screenshots = subject.getTestMatrixResultsScreenshots(
+        val screenshots = subject.getTestMatrixArtifacts(
             testMatrixId,
             emptyList()
         )
@@ -807,7 +807,7 @@ class TestRunnerServiceImplTest {
             "name1",
             0
         )
-        val screenshots = subject.getTestMatrixResultsScreenshots(
+        val screenshots = subject.getTestMatrixArtifacts(
             testMatrixId,
             listOf(testIdentifier)
         )
