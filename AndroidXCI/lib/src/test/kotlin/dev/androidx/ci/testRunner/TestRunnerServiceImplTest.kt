@@ -332,6 +332,11 @@ class TestRunnerServiceImplTest {
             "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto",
             "class1 name1 emulator textproto".toByteArray(Charsets.UTF_8)
         )
+        // No test is associated with this artifact. findArtifacts should not throw errors, even when unexpected files are encountered
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class5_name5_emulator_goldResult.textproto",
+            "class5 name5 emulator textproto".toByteArray(Charsets.UTF_8)
+        )
 
         fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,

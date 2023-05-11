@@ -213,7 +213,6 @@ internal class TestRunnerServiceImpl internal constructor(
     ): Map< TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>? {
         if (testIdentifiers.isEmpty()) return null
         val testArtifactsBlobs = mutableMapOf<TestRunnerService.TestIdentifier, MutableList<TestRunnerService.TestCaseArtifact>>()
-        val testArtifacts: Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>
         val testNames = testIdentifiers.associateBy { testIdentifier ->
             "${testIdentifier.className}_${testIdentifier.name}"
         }
@@ -228,6 +227,9 @@ internal class TestRunnerServiceImpl internal constructor(
                     visitor.fileName.startsWith(testName)
                 }
                 val testIdentifier = testNames[testName]
+                println("filename =  ${visitor.fileName}")
+                println("testName = $testName")
+                println("testIdentifier = $testIdentifier")
                 if (testIdentifier != null) {
                     testArtifactsBlobs.getOrPut(testIdentifier) {
                         mutableListOf()
@@ -240,8 +242,7 @@ internal class TestRunnerServiceImpl internal constructor(
                 }
             }
         }
-        testArtifacts = testArtifactsBlobs
-        return testArtifacts
+        return testArtifactsBlobs
     }
 
     suspend fun getTestMatrixResults(
