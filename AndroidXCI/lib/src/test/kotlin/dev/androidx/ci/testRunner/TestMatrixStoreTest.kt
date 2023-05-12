@@ -28,6 +28,7 @@ import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.UniformSharding
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
@@ -218,6 +219,45 @@ internal class TestMatrixStoreTest {
             sharding = sharding
         )
         assertThat(reUploadedAfterDeletion.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
+    }
+
+    @Test
+    fun dontCacheInvalid() = runBlocking<Unit> {
+        val appApk = createFakeApk("app.pak")
+        val testApk = createFakeApk("test.apk")
+        val extraApk = createFakeApk("extra.apk")
+        val testMatrix = store.getOrCreateTestMatrix(
+            appApk = appApk,
+            testApk = testApk,
+            environmentMatrix = envMatrix1,
+            clientInfo = null,
+            deviceSetup = null,
+            sharding = null
+        )
+        val reload = store.getOrCreateTestMatrix(
+            appApk = appApk,
+            testApk = testApk,
+            environmentMatrix = envMatrix1,
+            clientInfo = null,
+            deviceSetup = null,
+            sharding = null
+        )
+        assertThat(testMatrix.testMatrixId).isEqualTo(reload.testMatrixId)
+        // set it to failed.
+        firebaseTestLabApi.setTestMatrix(
+            testMatrix.copy(
+                state = TestMatrix.State.ERROR
+            )
+        )
+        val reloadAfterError = store.getOrCreateTestMatrix(
+            appApk = appApk,
+            testApk = testApk,
+            environmentMatrix = envMatrix1,
+            clientInfo = null,
+            deviceSetup = null,
+            sharding = null
+        )
+        assertThat(reloadAfterError.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
     }
 
     @Test
