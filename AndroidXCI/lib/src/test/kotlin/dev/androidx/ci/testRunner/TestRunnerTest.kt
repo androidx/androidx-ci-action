@@ -20,6 +20,7 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
+import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SKIPPED
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
 import dev.androidx.ci.github.dto.ArtifactsResponse
 import dev.androidx.ci.github.dto.CommitInfo
@@ -196,6 +197,52 @@ internal class TestRunnerTest(
             } else {
                 CommitInfo.State.FAILURE
             }
+        )
+        assertOutputFolderContents(result)
+    }
+
+    @Test
+    fun skippedTest() = testScope.runTest {
+        val artifact1 = fakeBackend.createArchive(
+            testPairs = listOf(
+                FakeBackend.TestPair(
+                    testFilePrefix = "bio",
+                    testApk = "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                    appApk = "biometric-integration-tests-testapp_testapp-debug.apk",
+                )
+            ),
+            contentNames = listOf(
+                "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                "biometric-integration-tests-testapp_testapp-debug.apk",
+                "biometric-integration-tests-testapp_testapp-release.apk"
+            )
+        )
+        createRuns(
+            listOf(
+                artifact1
+            )
+        )
+        val runTests = async {
+            testRunner.runTests()
+        }
+        runCurrent()
+        assertThat(runTests.isActive).isTrue()
+        val testMatrices = fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()
+        assertThat(testMatrices).hasSize(1)
+        fakeBackend.finishAllTests(SKIPPED)
+        advanceUntilIdle()
+        val result = runTests.await()
+        assertThat(result.allTestsPassed).isFalse()
+        assertThat(result.hasFailedTest).isFalse()
+        check(result is TestResult.CompleteRun)
+        assertThat(result.matrices).hasSize(1)
+        result.matrices.first().let {
+            // make sure it returns updated test matrices
+            assertThat(it.state).isEqualTo(TestMatrix.State.FINISHED)
+            assertThat(it.outcomeSummary).isEqualTo(TestMatrix.OutcomeSummary.SKIPPED)
+        }
+        assertThat(getRunState(TARGET_RUN_ID)).isEqualTo(
+            CommitInfo.State.SUCCESS
         )
         assertOutputFolderContents(result)
     }

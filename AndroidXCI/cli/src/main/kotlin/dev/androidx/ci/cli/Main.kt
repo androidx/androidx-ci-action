@@ -263,7 +263,7 @@ private class Cli : CliktCommand() {
                 AndroidDevice(
                     orientation = "portrait",
                     androidModelId = model.id,
-                    locale = "en",
+                    locale = "en_US",
                     androidVersionId = spec.sdk
                 )
             }
