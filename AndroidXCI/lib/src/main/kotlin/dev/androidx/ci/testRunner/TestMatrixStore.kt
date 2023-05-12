@@ -84,8 +84,16 @@ internal class TestMatrixStore(
         }
 
         getExistingTestMatrix(testRunId)?.let {
-            logger.info("found existing test matrix: ${it.testMatrixId}")
-            return it
+            logger.info("found existing test matrix: ${it.testMatrixId} with state: ${it.state}")
+            val state = it.state
+            // these states are ordered so anything above ERROR is not worth re-using
+            if (state != null && state >= TestMatrix.State.ERROR) {
+                logger.warn {
+                    "Skipping cache for ${it.testMatrixId} because its state is $state"
+                }
+            } else {
+                return it
+            }
         }
         logger.trace {
             "No test run history for $testRunId, creating a new one."
