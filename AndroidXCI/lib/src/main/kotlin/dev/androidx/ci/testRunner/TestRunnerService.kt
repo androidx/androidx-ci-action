@@ -98,7 +98,7 @@ interface TestRunnerService {
      * Returns null when the testMatrix is not complete,
      * and emptyMap if there are no screenshots associated with the test (non-screenshot tests)
      */
-    suspend fun getTestMatrixResultsScreenshots(
+    suspend fun getTestMatrixArtifacts(
         testMatrix: TestMatrix,
         testIdentifiers: List<TestIdentifier>
     ): Map<TestIdentifier, List<TestCaseArtifact>>?

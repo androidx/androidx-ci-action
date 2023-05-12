@@ -207,12 +207,12 @@ internal class TestRunnerServiceImpl internal constructor(
         }
     }
 
-    private suspend fun findScreenshotFiles(
+    private suspend fun findArtifacts(
         resultPath: GcsPath,
         testIdentifiers: List<TestRunnerService.TestIdentifier>
-    ): Map< TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>> {
-        val screenshotArtifactsBlobs = mutableMapOf<TestRunnerService.TestIdentifier, MutableList<TestRunnerService.TestCaseArtifact>>()
-        val screenshotArtifacts: Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>
+    ): Map< TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>? {
+        if (testIdentifiers.isEmpty()) return null
+        val testArtifactsBlobs = mutableMapOf<TestRunnerService.TestIdentifier, MutableList<TestRunnerService.TestCaseArtifact>>()
         val testNames = testIdentifiers.associateBy { testIdentifier ->
             "${testIdentifier.className}_${testIdentifier.name}"
         }
@@ -227,8 +227,11 @@ internal class TestRunnerServiceImpl internal constructor(
                     visitor.fileName.startsWith(testName)
                 }
                 val testIdentifier = testNames[testName]
+                println("filename =  ${visitor.fileName}")
+                println("testName = $testName")
+                println("testIdentifier = $testIdentifier")
                 if (testIdentifier != null) {
-                    screenshotArtifactsBlobs.getOrPut(testIdentifier) {
+                    testArtifactsBlobs.getOrPut(testIdentifier) {
                         mutableListOf()
                     }.add(
                         TestRunnerService.TestCaseArtifact(
@@ -239,8 +242,7 @@ internal class TestRunnerServiceImpl internal constructor(
                 }
             }
         }
-        screenshotArtifacts = screenshotArtifactsBlobs
-        return screenshotArtifacts
+        return testArtifactsBlobs
     }
 
     suspend fun getTestMatrixResults(
@@ -250,12 +252,12 @@ internal class TestRunnerServiceImpl internal constructor(
         return getTestMatrixResults(testMatrix)
     }
 
-    suspend fun getTestMatrixResultsScreenshots(
+    suspend fun getTestMatrixArtifacts(
         testMatrixId: String,
         testIdentifiers: List<TestRunnerService.TestIdentifier>
     ): Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>? {
         val testMatrix = testLabController.getTestMatrix(testMatrixId) ?: return null
-        return getTestMatrixResultsScreenshots(testMatrix, testIdentifiers)
+        return getTestMatrixArtifacts(testMatrix, testIdentifiers)
     }
 
     override suspend fun getTestMatrixResults(
@@ -266,13 +268,13 @@ internal class TestRunnerServiceImpl internal constructor(
         return findResultFiles(resultPath, testMatrix)
     }
 
-    override suspend fun getTestMatrixResultsScreenshots(
+    override suspend fun getTestMatrixArtifacts(
         testMatrix: TestMatrix,
         testIdentifiers: List<TestRunnerService.TestIdentifier>
     ): Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>>? {
         if (!testMatrix.isComplete()) return null
         val resultPath = GcsPath(testMatrix.resultStorage.googleCloudStorage.gcsPath)
-        return findScreenshotFiles(resultPath, testIdentifiers)
+        return findArtifacts(resultPath, testIdentifiers)
     }
 
     companion object {
