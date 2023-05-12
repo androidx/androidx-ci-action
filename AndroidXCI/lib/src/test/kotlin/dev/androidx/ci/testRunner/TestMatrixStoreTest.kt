@@ -222,7 +222,7 @@ internal class TestMatrixStoreTest {
     }
 
     @Test
-    fun dontCacheInvalid() = runBlocking<Unit> {
+    fun dontReuseTestMatricesWithInfraFailures() = runBlocking<Unit> {
         val appApk = createFakeApk("app.pak")
         val testApk = createFakeApk("test.apk")
         val extraApk = createFakeApk("extra.apk")
