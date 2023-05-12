@@ -87,7 +87,11 @@ internal class StateReporterTest {
             projectId = "myProject",
             requestId = "requestId",
             testMatrix = matrix
-        )
+        ).let {
+            it.copy(
+                outcomeSummary = TestMatrix.OutcomeSummary.FAILURE
+            )
+        }
         reporter.reportEnd(
             TestResult.CompleteRun(matrices = listOf(failedTestMatrix))
         )

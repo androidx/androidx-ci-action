@@ -51,8 +51,8 @@ internal class StatusReporter(
     suspend fun reportEnd(testResult: TestResult) {
         val newState = when {
             testResult is TestResult.IncompleteRun -> CommitInfo.State.ERROR
-            testResult.allTestsPassed -> CommitInfo.State.SUCCESS
-            else -> CommitInfo.State.FAILURE
+            testResult.hasFailedTest -> CommitInfo.State.FAILURE
+            else -> CommitInfo.State.SUCCESS
         }
         updateState(state = newState)
     }

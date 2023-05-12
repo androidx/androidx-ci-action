@@ -63,7 +63,7 @@ internal class FirebaseTestLabController(
             ?: error("Cannot find supported version for $defaultModel in test device catalog: $catalog")
         listOf(
             AndroidDevice(
-                locale = "en",
+                locale = "en_US",
                 androidModelId = defaultModel.id,
                 androidVersionId = defaultModelVersion.toString(),
                 orientation = "portrait"

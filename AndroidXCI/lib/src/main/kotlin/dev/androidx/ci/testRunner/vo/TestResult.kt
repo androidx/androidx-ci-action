@@ -19,6 +19,7 @@ package dev.androidx.ci.testRunner.vo
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 
@@ -26,6 +27,8 @@ sealed class TestResult(
     val type: Type
 ) {
     abstract val allTestsPassed: Boolean
+
+    abstract val hasFailedTest: Boolean
 
     abstract val failureLog: String
 
@@ -35,6 +38,11 @@ sealed class TestResult(
         override val allTestsPassed: Boolean by lazy {
             matrices.none {
                 it.outcomeSummary != SUCCESS
+            }
+        }
+        override val hasFailedTest: Boolean by lazy {
+            matrices.any {
+                it.outcomeSummary == FAILURE
             }
         }
         override val failureLog: String
@@ -54,6 +62,8 @@ sealed class TestResult(
     ) : TestResult(Type.INCOMPLETE_RUN) {
         override val allTestsPassed: Boolean
             get() = false
+        override val hasFailedTest: Boolean
+            get() = true
         override val failureLog: String
             get() = buildString {
                 appendLine("FTL failed with an exception:")
