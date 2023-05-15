@@ -77,7 +77,7 @@ internal interface GoogleCloudApi {
     /**
      * Walks all entries under the given [gcsPath].
      */
-    suspend fun walkEntires(gcsPath: GcsPath): Sequence<BlobVisitor>
+    suspend fun walkEntries(gcsPath: GcsPath): Sequence<BlobVisitor>
 }
 
 /**
@@ -91,7 +91,7 @@ internal suspend fun GoogleCloudApi.download(
     target: File,
     filter: (String) -> Boolean
 ) {
-    walkEntires(gcsPath).filter { visitor ->
+    walkEntries(gcsPath).filter { visitor ->
         filter(visitor.relativePath)
     }.forEach { visitor ->
         val targetFile = if (visitor.isRoot()) {
@@ -159,7 +159,7 @@ private class GoogleCloudApiImpl(
         GcsPath.create(config.bucketName, artifactBucketPath)
     }
 
-    override suspend fun walkEntires(
+    override suspend fun walkEntries(
         gcsPath: GcsPath
     ): Sequence<BlobVisitor> {
         val blobId = gcsPath.blobId
@@ -222,16 +222,16 @@ private class GoogleCloudApiImpl(
 }
 
 /**
- * Provides access to a Blob returned from a [GoogleCloudApi.walkEntires] method.
+ * Provides access to a Blob returned from a [GoogleCloudApi.walkEntries] method.
  */
 internal interface BlobVisitor {
     /**
-     * Returns true if this Blob is the root blob that matches the `gcsPath` parameter of [GoogleCloudApi.walkEntires].
+     * Returns true if this Blob is the root blob that matches the `gcsPath` parameter of [GoogleCloudApi.walkEntries].
      */
     fun isRoot() = relativePath.isEmpty()
 
     /**
-     * Returns the relative path of the blob wrt to the `gcsPath` parameter of [GoogleCloudApi.walkEntires].
+     * Returns the relative path of the blob wrt to the `gcsPath` parameter of [GoogleCloudApi.walkEntries].
      */
     val relativePath: String
 

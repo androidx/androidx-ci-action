@@ -124,7 +124,7 @@ internal class TestRunnerServiceImpl internal constructor(
         gcsPath: String = "gs://androidx-ftl-test-results/github-ci-action/ftl"
     ): Sequence<BlobVisitor> {
         val path = GcsPath(path = gcsPath)
-        return googleCloudApi.walkEntires(path)
+        return googleCloudApi.walkEntries(path)
     }
 
     internal suspend fun findResultFiles(
@@ -155,7 +155,7 @@ internal class TestRunnerServiceImpl internal constructor(
         // redfin-30-en-portrait_rerun_2/test_result_1.xml
 
         val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
-        googleCloudApi.walkEntires(
+        googleCloudApi.walkEntries(
             gcsPath = resultPath
         ).forEach { visitor ->
             val fileName = visitor.fileName
@@ -218,7 +218,7 @@ internal class TestRunnerServiceImpl internal constructor(
         }
         val testRunNumber = testIdentifiers.first().runNumber
         fun BlobVisitor.fullDeviceId() = relativePath.substringBefore('/', "")
-        googleCloudApi.walkEntires(
+        googleCloudApi.walkEntries(
             gcsPath = resultPath
         ).forEach { visitor ->
             val runNumber = DeviceRun.create(visitor.fullDeviceId()).runNumber
