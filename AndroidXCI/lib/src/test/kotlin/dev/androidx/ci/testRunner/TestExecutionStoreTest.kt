@@ -81,4 +81,24 @@ internal class TestExecutionStoreTest {
         assertThat(outputSteps).hasSize(2)
         assertThat(outputSteps).containsExactlyElementsIn(inputSteps)
     }
+
+    @Test
+    fun getExecutionStepsNullValuesForExecutionIdHistoryId() = runBlocking<Unit> {
+        val resultPath = "${fakeBackend.fakeGoogleCloudApi.rootGcsPath}/my-test-matrix-results"
+        val testMatrix = fakeBackend.fakeFirebaseTestLabApi.createTestMatrix(
+            projectId = fakeBackend.firebaseProjectId,
+            requestId = "requestId",
+            testMatrix = TestMatrix(
+                resultStorage = ResultStorage(
+                    googleCloudStorage = GoogleCloudStorage(resultPath)
+                ),
+                projectId = fakeBackend.firebaseProjectId,
+                environmentMatrix = EnvironmentMatrix(),
+                testSpecification = TestSpecification()
+            )
+        )
+
+        val outputSteps = testExecutionStore.getTestExecutionSteps(testMatrix)
+        assertThat(outputSteps).isEmpty()
+    }
 }
