@@ -227,9 +227,6 @@ internal class TestRunnerServiceImpl internal constructor(
                     visitor.fileName.startsWith(testName)
                 }
                 val testIdentifier = testNames[testName]
-                println("filename =  ${visitor.fileName}")
-                println("testName = $testName")
-                println("testIdentifier = $testIdentifier")
                 if (testIdentifier != null) {
                     testArtifactsBlobs.getOrPut(testIdentifier) {
                         mutableListOf()
@@ -243,6 +240,16 @@ internal class TestRunnerServiceImpl internal constructor(
             }
         }
         return testArtifactsBlobs
+    }
+
+    override suspend fun getResultFileResource(
+        gcsPath: String
+    ): TestRunnerService.ResultFileResource {
+        return ResultFileResourceImpl(
+            googleCloudApi.walkEntries(
+                gcsPath = GcsPath(gcsPath)
+            ).first()
+        )
     }
 
     suspend fun getTestMatrixResults(
