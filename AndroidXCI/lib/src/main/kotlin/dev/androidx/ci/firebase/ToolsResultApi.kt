@@ -23,7 +23,7 @@ import dev.androidx.ci.generated.testResults.ListHistoriesResponse
 import dev.androidx.ci.generated.testResults.ListStepsResponse
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
-import dev.androidx.ci.util.withLog4J
+import dev.androidx.ci.util.withConfig
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -65,7 +65,10 @@ internal interface ToolsResultApi {
         fun build(
             config: Config.ToolsResult
         ): ToolsResultApi {
-            val client = OkHttpClient.Builder().authenticateWith(
+            val httpAdapter = config.httpConfigAdapterFactory.create(ToolsResultApi::class)
+            val client = OkHttpClient.Builder().withConfig(
+                httpAdapter
+            ).authenticateWith(
                 config.gcp
             ).addInterceptor {
                 val newBuilder = it.request().newBuilder()
@@ -78,10 +81,7 @@ internal interface ToolsResultApi {
                 it.proceed(
                     newBuilder.build()
                 )
-            }.withLog4J(
-                level = config.httpLogLevel,
-                klass = ToolsResultApi::class
-            ).build()
+            }.build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()
@@ -90,6 +90,7 @@ internal interface ToolsResultApi {
                 .baseUrl(config.endPoint)
                 .addConverterFactory(MoshiConverterFactory.create(moshi).asLenient())
                 .addCallAdapterFactory(RetryCallAdapterFactory.GLOBAL)
+                .callFactory(httpAdapter.createCallFactory(client))
                 .build()
                 .create(ToolsResultApi::class.java)
         }

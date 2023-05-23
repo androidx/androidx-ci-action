@@ -17,7 +17,6 @@ internal class TestRunnerServicePlayground {
             bucketName = "androidx-ftl-test-results",
             bucketPath = "github-ci-action",
             gcsResultPath = "yigit-local",
-            logHttpCalls = false
         ) as TestRunnerServiceImpl
     }
 

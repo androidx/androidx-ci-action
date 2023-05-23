@@ -1,7 +1,11 @@
 package dev.androidx.ci.testRunner
 
+import com.google.cloud.NoCredentials
 import com.google.common.truth.Truth.assertThat
+import dev.androidx.ci.config.HttpConfigAdapter
 import dev.androidx.ci.fake.FakeBackend
+import dev.androidx.ci.firebase.FirebaseTestLabApi
+import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
@@ -23,8 +27,12 @@ import dev.androidx.ci.generated.testResults.ToolOutputReference
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.util.sha256
 import kotlinx.coroutines.runBlocking
+import okhttp3.Call
+import okhttp3.Interceptor
 import org.junit.Test
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.reflect.KClass
 
 class TestRunnerServiceImplTest {
     private val fakeBackend = FakeBackend()
@@ -963,6 +971,52 @@ class TestRunnerServiceImplTest {
                     shard = 3
                 )
             )
+        )
+    }
+
+    @Test
+    fun createWithHttpAdapter() {
+        class TestHttpAdapter(
+            val klass: KClass<*>
+        ) : HttpConfigAdapter {
+            var createCallFactoryCalls = AtomicInteger(0)
+            var createInterceptorCalls = AtomicInteger(0)
+            override fun createCallFactory(delegate: Call.Factory): Call.Factory {
+                createCallFactoryCalls.incrementAndGet()
+                return super.createCallFactory(delegate)
+            }
+
+            override fun interceptors(): List<Interceptor> {
+                createInterceptorCalls.incrementAndGet()
+                return super.interceptors()
+            }
+        }
+        val createdTestAdapters = mutableListOf<TestHttpAdapter>()
+        val adapterFactory = HttpConfigAdapter.Factory {
+            TestHttpAdapter(it).also {
+                createdTestAdapters.add(it)
+            }
+        }
+        TestRunnerService.create(
+            credentials = NoCredentials.getInstance(),
+            firebaseProjectId = fakeBackend.firebaseProjectId,
+            bucketName = "some-bucket",
+            bucketPath = "some-path",
+            gcsResultPath = "a-result-path",
+            httpConfigAdapterFactory = adapterFactory
+        )
+        assertThat(
+            createdTestAdapters
+        ).hasSize(2)
+        createdTestAdapters.forEach {
+            assertThat(it.createCallFactoryCalls.get()).isEqualTo(1)
+            assertThat(it.createInterceptorCalls.get()).isEqualTo(1)
+        }
+        assertThat(
+            createdTestAdapters.map { it.klass }
+        ).containsExactly(
+            ToolsResultApi::class,
+            FirebaseTestLabApi::class
         )
     }
 

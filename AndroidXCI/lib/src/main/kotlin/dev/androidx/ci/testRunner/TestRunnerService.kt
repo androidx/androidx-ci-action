@@ -3,6 +3,7 @@ package dev.androidx.ci.testRunner
 import com.google.auth.Credentials
 import dev.androidx.ci.config.Config
 import dev.androidx.ci.config.Config.Datastore.Companion.AOSP_OBJECT_KIND
+import dev.androidx.ci.config.HttpConfigAdapter
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
@@ -18,7 +19,6 @@ import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import okhttp3.logging.HttpLoggingInterceptor
 import java.io.InputStream
 
 interface TestRunnerService {
@@ -131,10 +131,9 @@ interface TestRunnerService {
              */
             gcsResultPath: String,
             /**
-             * If enabled, HTTP requests will also be logged. Keep in mind, they might include
-             * sensitive data.
+             * If provided, the given factory will be used to configure Retrofit & OkHttp.
              */
-            logHttpCalls: Boolean = false,
+            httpConfigAdapterFactory: HttpConfigAdapter.Factory = HttpConfigAdapter.Factory.NoOp,
             /**
              * The coroutine dispatcher to use for IO operations. Defaults to [Dispatchers.IO].
              */
@@ -146,11 +145,6 @@ interface TestRunnerService {
              */
             testRunDataStoreObjectKind: String = AOSP_OBJECT_KIND
         ): TestRunnerService {
-            val httpLogLevel = if (logHttpCalls) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
             val gcpConfig = Config.Gcp(
                 credentials = credentials,
                 projectId = firebaseProjectId
@@ -174,14 +168,14 @@ interface TestRunnerService {
                 toolsResultApi = ToolsResultApi.build(
                     config = Config.ToolsResult(
                         gcp = gcpConfig,
-                        httpLogLevel = httpLogLevel,
+                        httpConfigAdapterFactory = httpConfigAdapterFactory
                     )
                 ),
                 firebaseProjectId = firebaseProjectId,
                 firebaseTestLabApi = FirebaseTestLabApi.build(
                     config = Config.FirebaseTestLab(
                         gcp = gcpConfig,
-                        httpLogLevel = httpLogLevel,
+                        httpConfigAdapterFactory = httpConfigAdapterFactory
                     )
                 ),
                 gcsResultPath = gcsResultPath
