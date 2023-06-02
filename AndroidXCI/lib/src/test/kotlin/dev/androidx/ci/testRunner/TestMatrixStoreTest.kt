@@ -105,7 +105,8 @@ internal class TestMatrixStoreTest {
             environmentMatrix = envMatrix1,
             clientInfo = clientInfo,
             deviceSetup = deviceSetup,
-            sharding = sharding
+            sharding = sharding,
+            cachedTestMatrixFilter = { true }
         )
 
         assertThat(firebaseTestLabApi.getTestMatrices()).hasSize(1)
@@ -219,6 +220,17 @@ internal class TestMatrixStoreTest {
             sharding = sharding
         )
         assertThat(reUploadedAfterDeletion.testMatrixId).isNotEqualTo(testMatrix.testMatrixId)
+        val dontReuse = store.getOrCreateTestMatrix(
+            appApk = appApk,
+            testApk = testApk,
+            environmentMatrix = envMatrix1,
+            clientInfo = clientInfo,
+            deviceSetup = deviceSetup,
+            sharding = sharding,
+            cachedTestMatrixFilter = { false }
+        )
+        assertThat(dontReuse.testMatrixId)
+            .isNotIn(listOf(testMatrix.testMatrixId, reUploadedAfterDeletion.testMatrixId))
     }
 
     @Test

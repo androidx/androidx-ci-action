@@ -140,6 +140,20 @@ class TestRunnerServiceImplTest {
         assertThat(
             sameRequest.testMatrices
         ).containsExactlyElementsIn(result.testMatrices)
+        // reject apk, should be a new one
+        val noReuse = subject.scheduleTests(
+            testApk = upload1,
+            appApk = null,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker,
+            cachedTestMatrixFilter = { false }
+        )
+        assertThat(
+            noReuse.testMatrices
+        ).containsNoneIn(result.testMatrices)
+
         // change client info, it should result in new test matrices
         val clientInfo = ClientInfo(
             name = "test",

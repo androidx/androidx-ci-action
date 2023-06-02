@@ -51,7 +51,7 @@ internal sealed interface TestScheduler {
         private val githubApi: GithubApi,
         private val firebaseTestLabController: FirebaseTestLabController,
         private val apkStore: ApkStore,
-        private val devicePicker: DevicePicker?
+        private val devicePicker: DevicePicker?,
     ) : TestScheduler {
         override suspend fun enqueueTests(
             artifact: ArtifactsResponse.Artifact
@@ -61,7 +61,7 @@ internal sealed interface TestScheduler {
             return firebaseTestLabController.pairAndStartTests(
                 apks = apks,
                 placeholderApk = apkStore.getPlaceholderApk(),
-                devicePicker = devicePicker
+                devicePicker = devicePicker,
             )
         }
 
@@ -98,13 +98,13 @@ internal sealed interface TestScheduler {
                 githubApi: GithubApi,
                 firebaseTestLabController: FirebaseTestLabController,
                 apkStore: ApkStore,
-                devicePicker: DevicePicker?
+                devicePicker: DevicePicker?,
             ): TestScheduler {
                 return PairAndRunAllApks(
                     githubApi = githubApi,
                     firebaseTestLabController = firebaseTestLabController,
                     apkStore = apkStore,
-                    devicePicker = devicePicker
+                    devicePicker = devicePicker,
                 )
             }
         }
@@ -223,7 +223,8 @@ internal sealed interface TestScheduler {
                         instrumentationArguments = instrumentationArguments
                     ),
                     devicePicker = devicePicker,
-                    pullScreenshots = false
+                    pullScreenshots = false,
+                    cachedTestMatrixFilter = { true }
                 )
             }
 
@@ -324,7 +325,7 @@ internal sealed interface TestScheduler {
             githubApi: GithubApi,
             firebaseTestLabController: FirebaseTestLabController,
             apkStore: ApkStore,
-            devicePicker: DevicePicker?
+            devicePicker: DevicePicker?,
         ): TestScheduler
     }
     companion object {

@@ -98,7 +98,8 @@ internal class TestRunnerServiceImpl internal constructor(
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>,
-        pullScreenshots: Boolean
+        pullScreenshots: Boolean,
+        cachedTestMatrixFilter: CachedTestMatrixFilter,
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
             appApk = appApk ?: apkStore.getPlaceholderApk(),
@@ -107,7 +108,8 @@ internal class TestRunnerServiceImpl internal constructor(
             sharding = sharding,
             deviceSetup = deviceSetup,
             devicePicker = devicePicker,
-            pullScreenshots = pullScreenshots
+            pullScreenshots = pullScreenshots,
+            cachedTestMatrixFilter = cachedTestMatrixFilter
         )
         return TestRunnerService.ScheduleTestsResponse.create(
             testMatrices

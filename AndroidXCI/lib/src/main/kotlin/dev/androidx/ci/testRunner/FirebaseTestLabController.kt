@@ -108,7 +108,8 @@ internal class FirebaseTestLabController(
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
         devicePicker: DevicePicker? = null,
-        pullScreenshots: Boolean = false
+        pullScreenshots: Boolean = false,
+        cachedTestMatrixFilter: CachedTestMatrixFilter,
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
@@ -123,7 +124,8 @@ internal class FirebaseTestLabController(
                 clientInfo = clientInfo,
                 sharding = sharding,
                 deviceSetup = deviceSetup,
-                pullScreenshots = pullScreenshots
+                pullScreenshots = pullScreenshots,
+                cachedTestMatrixFilter = cachedTestMatrixFilter
             )
         }
     }
@@ -208,7 +210,7 @@ internal class FirebaseTestLabController(
     suspend fun pairAndStartTests(
         apks: List<UploadedApk>,
         placeholderApk: UploadedApk,
-        devicePicker: DevicePicker? = null
+        devicePicker: DevicePicker? = null,
     ): List<TestMatrix> {
         val pairs = apks.mapNotNull { uploadedApk ->
             val isTestApkWithLegacySuffix = uploadedApk.apkInfo.filePath.endsWith(TEST_APK_SUFFIX_LEGACY)
@@ -239,7 +241,8 @@ internal class FirebaseTestLabController(
                 testApk = it.second,
                 sharding = null,
                 deviceSetup = null,
-                devicePicker = devicePicker
+                devicePicker = devicePicker,
+                cachedTestMatrixFilter = { true }
             )
         }
     }
