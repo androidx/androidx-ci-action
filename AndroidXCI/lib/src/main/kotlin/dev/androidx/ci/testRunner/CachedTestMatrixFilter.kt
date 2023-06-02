@@ -7,4 +7,4 @@ import dev.androidx.ci.generated.ftl.TestMatrix
  *
  * Return `true` if the cached TestMatrix can be re-used, false otherwise
  */
-typealias CachedTestMatrixFilter = (TestMatrix) -> Boolean
+typealias CachedTestMatrixFilter = suspend (TestMatrix) -> Boolean
