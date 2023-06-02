@@ -106,7 +106,7 @@ internal class TestMatrixStoreTest {
             clientInfo = clientInfo,
             deviceSetup = deviceSetup,
             sharding = sharding,
-            cachedTestMatrixFilter = { true }
+            cachedTestMatrixFilter = { true },
         )
 
         assertThat(firebaseTestLabApi.getTestMatrices()).hasSize(1)

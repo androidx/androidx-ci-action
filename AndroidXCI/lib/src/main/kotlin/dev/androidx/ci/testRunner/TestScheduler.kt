@@ -62,6 +62,7 @@ internal sealed interface TestScheduler {
                 apks = apks,
                 placeholderApk = apkStore.getPlaceholderApk(),
                 devicePicker = devicePicker,
+                cachedTestMatrixFilter = { true }
             )
         }
 

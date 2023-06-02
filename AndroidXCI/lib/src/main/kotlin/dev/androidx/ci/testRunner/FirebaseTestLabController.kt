@@ -211,6 +211,7 @@ internal class FirebaseTestLabController(
         apks: List<UploadedApk>,
         placeholderApk: UploadedApk,
         devicePicker: DevicePicker? = null,
+        cachedTestMatrixFilter: CachedTestMatrixFilter,
     ): List<TestMatrix> {
         val pairs = apks.mapNotNull { uploadedApk ->
             val isTestApkWithLegacySuffix = uploadedApk.apkInfo.filePath.endsWith(TEST_APK_SUFFIX_LEGACY)
@@ -242,7 +243,7 @@ internal class FirebaseTestLabController(
                 sharding = null,
                 deviceSetup = null,
                 devicePicker = devicePicker,
-                cachedTestMatrixFilter = { true }
+                cachedTestMatrixFilter = cachedTestMatrixFilter,
             )
         }
     }

@@ -97,7 +97,7 @@ class TestRunner internal constructor(
         githubApi = githubApi,
         firebaseTestLabController = testLabController,
         apkStore = apkStore,
-        devicePicker = devicePicker,
+        devicePicker = devicePicker
     )
 
     /**

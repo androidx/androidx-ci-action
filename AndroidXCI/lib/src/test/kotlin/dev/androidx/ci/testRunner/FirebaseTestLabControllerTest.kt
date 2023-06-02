@@ -65,6 +65,7 @@ internal class FirebaseTestLabControllerTest {
         val testMatrices = firebaseTestLabApi.pairAndStartTests(
             apks = apks,
             placeholderApk = placeholderApk,
+            cachedTestMatrixFilter = { true }
         )
         assertThat(testMatrices).hasSize(4)
         val appApkPaths = testMatrices.mapNotNull {
