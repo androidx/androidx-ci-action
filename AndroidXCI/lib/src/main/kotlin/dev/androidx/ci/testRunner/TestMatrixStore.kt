@@ -67,7 +67,8 @@ internal class TestMatrixStore(
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
-        pullScreenshots: Boolean = false
+        pullScreenshots: Boolean = false,
+        cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
     ): TestMatrix {
 
         val testRunId = TestRun.createId(
@@ -91,12 +92,16 @@ internal class TestMatrixStore(
                 logger.warn {
                     "Skipping cache for ${it.testMatrixId} because its state is $state"
                 }
+            } else if (!cachedTestMatrixFilter(it)) {
+                logger.info {
+                    "Not re-using cached matrix due to filter"
+                }
             } else {
                 return it
             }
         }
         logger.trace {
-            "No test run history for $testRunId, creating a new one."
+            "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
         }
         val newTestMatrix = firebaseTestLabApi.createTestMatrix(
             projectId = firebaseProjectId,
