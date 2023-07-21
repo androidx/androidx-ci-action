@@ -243,11 +243,11 @@ internal class TestRunnerServiceImpl internal constructor(
     }
 
     override suspend fun getResultFileResource(
-        gcsPath: String
+        gcsPath: GcsPath
     ): TestRunnerService.ResultFileResource {
         return ResultFileResourceImpl(
             googleCloudApi.walkEntries(
-                gcsPath = GcsPath(gcsPath)
+                gcsPath
             ).first()
         )
     }

@@ -104,7 +104,7 @@ interface TestRunnerService {
     ): Map<TestIdentifier, List<TestCaseArtifact>>?
 
     suspend fun getResultFileResource(
-        gcsPath: String
+        gcsPath: GcsPath
     ): ResultFileResource
 
     companion object {
