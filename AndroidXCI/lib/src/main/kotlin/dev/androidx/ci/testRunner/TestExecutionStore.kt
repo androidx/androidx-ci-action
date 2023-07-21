@@ -46,10 +46,16 @@ internal class TestExecutionStore(
     suspend fun getTestExecutionSteps(
         testMatrix: TestMatrix
     ): List<Step> {
-        return getTestExecutionSteps(
-            projectId = testMatrix.projectId!!,
-            historyId = testMatrix.resultStorage.toolResultsExecution?.historyId!!,
-            executionId = testMatrix.resultStorage.toolResultsExecution.executionId!!
-        )
+        return testMatrix.projectId?.let { projectId ->
+            testMatrix.resultStorage.toolResultsExecution?.historyId?.let { historyId ->
+                testMatrix.resultStorage.toolResultsExecution.executionId?.let { executionId ->
+                    getTestExecutionSteps(
+                        projectId = projectId,
+                        historyId = historyId,
+                        executionId = executionId
+                    )
+                }
+            }
+        } ?: emptyList()
     }
 }
