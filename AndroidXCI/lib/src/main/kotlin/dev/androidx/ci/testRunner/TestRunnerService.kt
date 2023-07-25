@@ -106,7 +106,7 @@ interface TestRunnerService {
 
     suspend fun getResultFileResource(
         gcsPath: GcsPath
-    ): ResultFileResource
+    ): ResultFileResource?
 
     companion object {
         /**
