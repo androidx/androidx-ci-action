@@ -78,6 +78,12 @@ internal interface GoogleCloudApi {
      * Walks all entries under the given [gcsPath].
      */
     suspend fun walkEntries(gcsPath: GcsPath): Sequence<BlobVisitor>
+
+    /**
+     * Gets the blobvisitor for the given [gcsPath] if the gcsPath represents a file.
+     * Returns null if the gcsPath points to a folder
+     */
+    suspend fun getBlob(gcsPath: GcsPath): BlobVisitor?
 }
 
 /**
@@ -191,6 +197,19 @@ private class GoogleCloudApiImpl(
                 }
             }
         }
+    }
+
+    override suspend fun getBlob(
+        gcsPath: GcsPath
+    ): BlobVisitor? {
+        val blobId = gcsPath.blobId
+        val blob = service.get(blobId)
+        return if (blob != null) {
+            BlobVisitorImpl(
+                rootBlobId = blobId,
+                blob = blob
+            )
+        } else null
     }
 
     override suspend fun existingFilePath(relativePath: String): GcsPath? {

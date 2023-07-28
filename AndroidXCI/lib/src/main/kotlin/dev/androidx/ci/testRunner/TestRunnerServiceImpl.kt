@@ -247,11 +247,9 @@ internal class TestRunnerServiceImpl internal constructor(
     override suspend fun getResultFileResource(
         gcsPath: GcsPath
     ): TestRunnerService.ResultFileResource? {
-        return googleCloudApi.walkEntries(
-            gcsPath
-        ).firstOrNull()?.let { blobvisitor ->
+        return googleCloudApi.getBlob(gcsPath)?.let { blobVisitor ->
             ResultFileResourceImpl(
-                blobvisitor
+                blobVisitor
             )
         }
     }

@@ -104,6 +104,10 @@ interface TestRunnerService {
         testIdentifiers: List<TestIdentifier>
     ): Map<TestIdentifier, List<TestCaseArtifact>>?
 
+    /**
+     * Gets the resultFileResource represented by the [GcsPath]
+     * Returns null if gcsPath points to a folder
+     */
     suspend fun getResultFileResource(
         gcsPath: GcsPath
     ): ResultFileResource?
