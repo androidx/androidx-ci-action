@@ -38,6 +38,9 @@ inputs:
   test-suite-tags:
     description: 'A comma separated list of test suite tags to be run. Only used if use-test-config-files is true'
     required: false
+  ignore-empty-test-matrices:
+    description: 'When set to true (default), test matrices which have 0 non-skipped tests are considered SKIPPED instead of FAILED (FTL default).'
+    required: false
 
 runs:
   using: "composite"
