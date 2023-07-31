@@ -148,6 +148,14 @@ private class Cli : CliktCommand() {
         envvar = "ANDROIDX_TEST_SUITE_TAGS"
     )
 
+    val ignoreEmptyTestMatrices by option(
+        help = """
+            When set to true (default), the action will not fail when no tests
+            are run for a TestMatrix.
+        """.trimIndent(),
+        envvar = "ANDROIDX_IGNORE_EMPTY_TEST_MATRICES"
+    )
+
     override fun run() {
         logFile?.let(::configureLogger)
         val repoParts = githubRepository.split("/")
@@ -177,7 +185,8 @@ private class Cli : CliktCommand() {
                 bucketName = gcpBucketName,
                 bucketPath = gcpBucketPath,
                 useTestConfigFiles = useTestConfigFiles?.toBoolean() ?: false,
-                testSuiteTags = testSuiteTags?.split(',')?.map { it.trim() } ?: emptyList()
+                testSuiteTags = testSuiteTags?.split(',')?.map { it.trim() } ?: emptyList(),
+                ignoreEmptyTestMatrices = ignoreEmptyTestMatrices?.toBoolean() ?: true,
             )
             testRunner.runTests()
         }

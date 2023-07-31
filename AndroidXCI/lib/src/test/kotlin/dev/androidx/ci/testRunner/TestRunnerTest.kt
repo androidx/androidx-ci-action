@@ -18,10 +18,16 @@ package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
+import dev.androidx.ci.generated.ftl.GoogleCloudStorage
+import dev.androidx.ci.generated.ftl.ResultStorage
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.FAILURE
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SKIPPED
 import dev.androidx.ci.generated.ftl.TestMatrix.OutcomeSummary.SUCCESS
+import dev.androidx.ci.generated.ftl.ToolResultsExecution
+import dev.androidx.ci.generated.testResults.Step
+import dev.androidx.ci.generated.testResults.TestExecutionStep
+import dev.androidx.ci.generated.testResults.TestSuiteOverview
 import dev.androidx.ci.github.dto.ArtifactsResponse
 import dev.androidx.ci.github.dto.CommitInfo
 import dev.androidx.ci.testRunner.TestRunner.Companion.RESULT_JSON_FILE_NAME
@@ -55,12 +61,12 @@ internal class TestRunnerTest(
         TestRunner(
             googleCloudApi = fakeBackend.fakeGoogleCloudApi,
             githubApi = fakeBackend.fakeGithubApi,
+            datastoreApi = fakeBackend.datastoreApi,
             firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
             toolsResultApi = fakeBackend.fakeToolsResultApi,
             projectId = PROJECT_ID,
             targetRunId = TARGET_RUN_ID,
             hostRunId = HOST_RUN_ID,
-            datastoreApi = fakeBackend.datastoreApi,
             outputFolder = outputFolder,
             testSchedulerFactory = TestScheduler.createFactory(
                 useTestConfigFiles = useTestConfigFiles,
@@ -245,6 +251,98 @@ internal class TestRunnerTest(
             CommitInfo.State.SUCCESS
         )
         assertOutputFolderContents(result)
+    }
+
+    @Test
+    fun failedDueToSkippedTests_allSkipped() = failedTestDueToSkippedTestCases(
+        totalCount = 3,
+        skippedCount = 3
+    ) { testResult ->
+        assertThat(testResult.allTestsPassed).isFalse()
+        assertThat(testResult.hasFailedTest).isFalse()
+    }
+
+    @Test
+    fun failedDueToSkippedTests_someSkipped() = failedTestDueToSkippedTestCases(
+        totalCount = 3,
+        skippedCount = 1
+    ) { testResult ->
+        assertThat(testResult.allTestsPassed).isFalse()
+        assertThat(testResult.hasFailedTest).isTrue()
+    }
+
+    @Test
+    fun failedDueToSkippedTests_missingOverview() = failedTestDueToSkippedTestCases(
+        totalCount = null,
+        skippedCount = null
+    ) { testResult ->
+        assertThat(testResult.allTestsPassed).isFalse()
+        assertThat(testResult.hasFailedTest).isTrue()
+    }
+
+    private fun failedTestDueToSkippedTestCases(
+        totalCount: Int?,
+        skippedCount: Int?,
+        assertion: (TestResult) -> Unit
+    ) = testScope.runTest {
+        val artifact1 = fakeBackend.createArchive(
+            testPairs = listOf(
+                FakeBackend.TestPair(
+                    testFilePrefix = "bio",
+                    testApk = "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                    appApk = "biometric-integration-tests-testapp_testapp-debug.apk",
+                )
+            ),
+            contentNames = listOf(
+                "biometric-integration-tests-testapp_testapp-debug-androidTest.apk",
+                "biometric-integration-tests-testapp_testapp-debug.apk",
+                "biometric-integration-tests-testapp_testapp-release.apk"
+            )
+        )
+        createRuns(
+            listOf(
+                artifact1
+            )
+        )
+        val runTests = async {
+            testRunner.runTests()
+        }
+        runCurrent()
+        assertThat(runTests.isActive).isTrue()
+        val testMatrices = fakeBackend.fakeFirebaseTestLabApi.getTestMatrices()
+        assertThat(testMatrices).hasSize(1)
+        fakeBackend.finishAllTests(FAILURE)
+        fakeBackend.fakeFirebaseTestLabApi.setTestMatrix(
+            fakeBackend.fakeFirebaseTestLabApi.getTestMatrices().single().copy(
+                resultStorage = ResultStorage(
+                    googleCloudStorage = GoogleCloudStorage("gs://empty"),
+                    toolResultsExecution = ToolResultsExecution(
+                        executionId = "e1",
+                        historyId = "h1",
+                        projectId = PROJECT_ID
+                    )
+                )
+            )
+        )
+        fakeBackend.fakeToolsResultApi.addStep(
+            projectId = PROJECT_ID,
+            historyId = "h1",
+            executionId = "e1",
+            step = Step(
+                stepId = "step1",
+                testExecutionStep = TestExecutionStep(
+                    testSuiteOverviews = listOf(
+                        TestSuiteOverview(
+                            totalCount = totalCount,
+                            skippedCount = skippedCount
+                        )
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+        val result = runTests.await()
+        assertion(result)
     }
 
     @Test
