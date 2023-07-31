@@ -60,7 +60,7 @@ class TestRunner internal constructor(
     /**
      * An optional filter to pick which build artifacts should be downloaded.
      */
-    private val githubArtifactFilter: ((ArtifactsResponse.Artifact) -> Boolean) = { true },
+    private val githubArtifactFilter: (ArtifactsResponse.Artifact) -> Boolean = { true },
     /**
      * The directory where results will be saved locally
      */
@@ -73,6 +73,11 @@ class TestRunner internal constructor(
      * The actual class that will decide which tests to run out of the artifacts
      */
     testSchedulerFactory: TestScheduler.Factory,
+    /**
+     * When set to true, TestMatrix failures due to empty test suites (e.g. all ignored) will not
+     * fail the test run.
+     */
+    private val ignoreEmptyTestMatrices: Boolean = true,
 ) {
     private val logger = logger()
     private val testMatrixStore = TestMatrixStore(
@@ -100,6 +105,10 @@ class TestRunner internal constructor(
         devicePicker = devicePicker
     )
 
+    private val testExecutionStore = TestExecutionStore(
+        toolsResultApi = toolsResultApi
+    )
+
     /**
      * Runs all the test. This never throws, instead, returns an error result if something goes
      * wrong.
@@ -117,10 +126,26 @@ class TestRunner internal constructor(
                     logger.info { "started all tests for $testMatrices" }
                 }
             logger.info("will wait for test results")
-            testLabController.collectTestResults(
+            val collectResult = testLabController.collectTestResults(
                 matrices = allTestMatrices,
                 pollIntervalMs = TimeUnit.SECONDS.toMillis(10)
             )
+            if (ignoreEmptyTestMatrices && collectResult is TestResult.CompleteRun) {
+                // when we skip tests, firebase marks it as failed instead of skipped. we patch fix it here if requested
+                val updatedTestMatrices = collectResult.matrices.map { testMatrix ->
+                    if (testMatrix.outcomeSummary == TestMatrix.OutcomeSummary.FAILURE &&
+                        testMatrix.areAllTestsSkipped()
+                    ) {
+                        // change summary to SKIPPED instead.
+                        testMatrix.copy(outcomeSummary = TestMatrix.OutcomeSummary.SKIPPED)
+                    } else {
+                        testMatrix
+                    }
+                }
+                TestResult.CompleteRun(updatedTestMatrices)
+            } else {
+                collectResult
+            }
         } catch (th: Throwable) {
             logger.error("exception in test run", th)
             TestResult.IncompleteRun(th.stackTraceToString())
@@ -144,6 +169,28 @@ class TestRunner internal constructor(
         return result
     }
 
+    /**
+     * Returns `true` if all tests in the TestMatrix are skipped.
+     *
+     * Firebase marks a TestMatrix as failed if all tests in it are skipped. It is WAI because not running any tests
+     * is likely an error. In certain cases (e.g. AndroidX) this is OK hence requires special handling.
+     *
+     * see: [ignoreEmptyTestMatrices]
+     */
+    private suspend fun TestMatrix.areAllTestsSkipped(): Boolean {
+        if (outcomeSummary == null) {
+            // test is not complete yet
+            return false
+        }
+        val steps = testExecutionStore.getTestExecutionSteps(this)
+        val overviews = steps.flatMap { step ->
+            step.testExecutionStep?.testSuiteOverviews ?: emptyList()
+        }
+        return overviews.isNotEmpty() && overviews.all { overview ->
+            overview.totalCount != null && overview.totalCount == overview.skippedCount
+        }
+    }
+
     companion object {
         internal const val RESULT_JSON_FILE_NAME = "result.json"
         fun create(
@@ -160,7 +207,8 @@ class TestRunner internal constructor(
             devicePicker: DevicePicker? = null,
             artifactNameFilter: (String) -> Boolean = { true },
             useTestConfigFiles: Boolean,
-            testSuiteTags: List<String>
+            testSuiteTags: List<String>,
+            ignoreEmptyTestMatrices: Boolean,
         ): TestRunner {
             val credentials = ServiceAccountCredentials.fromStream(
                 googleCloudCredentials.byteInputStream(Charsets.UTF_8)
@@ -210,7 +258,8 @@ class TestRunner internal constructor(
                 targetRunId = targetRunId,
                 hostRunId = hostRunId,
                 devicePicker = devicePicker,
-                testSchedulerFactory = TestScheduler.createFactory(useTestConfigFiles, testSuiteTags)
+                testSchedulerFactory = TestScheduler.createFactory(useTestConfigFiles, testSuiteTags),
+                ignoreEmptyTestMatrices = ignoreEmptyTestMatrices,
             )
         }
 
