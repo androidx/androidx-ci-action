@@ -64,6 +64,20 @@ internal class FakeGoogleCloudApi(
         }
     }
 
+    override suspend fun getBlob(gcsPath: GcsPath): BlobVisitor? {
+        return if (artifacts.containsKey(gcsPath)) {
+            object : BlobVisitor {
+                override val relativePath: String
+                    get() = ""
+                override val gcsPath: GcsPath
+                    get() = gcsPath
+                override fun obtainInputStream(): InputStream {
+                    return artifacts[gcsPath]?.inputStream() ?: InputStream.nullInputStream()
+                }
+            }
+        } else null
+    }
+
     override suspend fun existingFilePath(relativePath: String): GcsPath? {
         val path = makeGcsPath(relativePath)
         return if (artifacts.containsKey(path)) {

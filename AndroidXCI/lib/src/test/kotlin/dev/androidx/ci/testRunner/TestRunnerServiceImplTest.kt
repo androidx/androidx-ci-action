@@ -2,6 +2,7 @@ package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
+import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
@@ -101,6 +102,56 @@ class TestRunnerServiceImplTest {
         ).isEqualTo(3)
     }
 
+    @Test
+    fun getBlob() = runBlocking {
+        // load some data into the backend
+        val resultRelativePath = "my-test-matrix-results"
+        val resultPath = "${fakeBackend.fakeGoogleCloudApi.rootGcsPath}/$resultRelativePath"
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/test1",
+            "test1".toByteArray(Charsets.UTF_8)
+        )
+
+        // verify file existing in backend is returned
+        val test1 = fakeBackend.fakeGoogleCloudApi.getBlob(
+            GcsPath("$resultPath/test1")
+        )
+        assertThat(test1).isNotNull()
+        assertThat(test1?.gcsPath?.path).isEqualTo("$resultPath/test1")
+        assertThat(
+            subject.getResultFileResource(
+                GcsPath("$resultPath/test1")
+            )?.readFully()
+        ).isNotEmpty()
+
+        assertThat(
+            subject.getResultFileResource(
+                GcsPath("$resultPath/test1")
+            )?.readFully()
+        ).isEqualTo("test1".toByteArray(Charsets.UTF_8))
+
+        // no blob should be returned for a folder
+        val test2 = fakeBackend.fakeGoogleCloudApi.getBlob(
+            GcsPath(resultPath)
+        )
+        assertThat(test2).isNull()
+        assertThat(
+            subject.getResultFileResource(
+                GcsPath(resultPath)
+            )?.readFully()
+        ).isNull()
+
+        // no blob should be returned for files that don't exist in backend
+        val test3 = fakeBackend.fakeGoogleCloudApi.getBlob(
+            GcsPath("$resultPath/test3")
+        )
+        assertThat(test3).isNull()
+        assertThat(
+            subject.getResultFileResource(
+                GcsPath("$resultPath/test3")
+            )?.readFully()
+        ).isNull()
+    }
     @Test
     fun schedule() = runBlocking<Unit> {
         val apk1Bytes = byteArrayOf(1, 2, 3, 4, 5)
