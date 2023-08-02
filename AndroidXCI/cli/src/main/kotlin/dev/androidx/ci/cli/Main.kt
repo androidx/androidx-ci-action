@@ -157,7 +157,8 @@ private class Cli : CliktCommand() {
         """.trimIndent(),
         envvar = "ANDROIDX_IGNORE_EMPTY_TEST_MATRICES"
     ).convert {
-        it.takeIf { it.isNotEmpty() }?.toBoolean() ?: true
+        if (it. isNullOrBlank()) true
+        else it.toBoolean()
     }.default(true)
 
     override fun run() {
