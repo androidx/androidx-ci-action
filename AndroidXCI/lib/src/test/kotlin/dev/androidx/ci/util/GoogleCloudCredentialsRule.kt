@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.util
 
+import com.google.auth.oauth2.GoogleCredentials
 import com.google.auth.oauth2.ServiceAccountCredentials
 import dev.androidx.ci.config.Config
 import org.junit.AssumptionViolatedException
@@ -30,14 +31,23 @@ internal class GoogleCloudCredentialsRule : TestRule {
     lateinit var gcpConfig: Config.Gcp
         private set
     private fun loadCredentials() {
-        val envValue = System.getenv("ANDROIDX_GCLOUD_CREDENTIALS")
-            ?: throw AssumptionViolatedException("skip test without credentials")
-        val credentials = ServiceAccountCredentials.fromStream(
-            envValue.byteInputStream(Charsets.UTF_8)
-        )
+        val appCredentialsProject = System.getenv("ANDROIDX_GCLOUD_APP_CREDENTIALS_PROJECT")
+        val (projectId, credentials) = if (appCredentialsProject != null) {
+            appCredentialsProject to GoogleCredentials.getApplicationDefault()
+        } else {
+            val credentialsParam = System.getenv("ANDROIDX_GCLOUD_CREDENTIALS")
+                ?: throw AssumptionViolatedException("skip test without credentials")
+            val credentials = ServiceAccountCredentials.fromStream(
+                credentialsParam.byteInputStream(Charsets.UTF_8)
+            )
+            credentials.projectId to credentials
+        }
+        if (credentials == null) {
+            throw AssumptionViolatedException("need to provide app credentials")
+        }
         gcpConfig = Config.Gcp(
             credentials = credentials,
-            projectId = credentials.projectId
+            projectId = projectId
         )
     }
 
