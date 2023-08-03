@@ -12,13 +12,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'adopt'
-      - name: "Build and Test"
+      - name: "Setup Gradle"
         uses: gradle/gradle-build-action@v2
         with:
           # Don't reuse cache entries from any other Job.
@@ -29,10 +29,10 @@ jobs:
           gradle-home-cache-excludes: |
             caches/jars-9
             caches/transforms-3
-          # disable configuration cache due to
-          # https://github.com/gradle/gradle/issues/21088
-          arguments: check :ftlModelBuilder:check publish --stacktrace --no-configuration-cache
-          build-root-directory: AndroidXCI
+      - name: "Build and Test"
+        working-directory: AndroidXCI
+        shell: bash
+        run: ./gradlew check :ftlModelBuilder:check publish --stacktrace --no-configuration-cache
       - name: "Upload build repository"
         continue-on-error: true
         uses: actions/upload-artifact@v2
