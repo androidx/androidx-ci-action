@@ -62,3 +62,4 @@ runs:
         ANDROIDX_BUCKET_PATH: ${{ inputs.gcp-bucket-path }}
         ANDROIDX_USE_TEST_CONFIG_FILES: ${{ inputs.use-test-config-files }}
         ANDROIDX_TEST_SUITE_TAGS: ${{ inputs.test-suite-tags }}
+        ANDROIDX_IGNORE_EMPTY_TEST_MATRICES: ${{ inputs.ignore-empty-test-matrices }}

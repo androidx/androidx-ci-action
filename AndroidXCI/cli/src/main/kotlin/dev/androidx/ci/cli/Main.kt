@@ -17,6 +17,8 @@
 package dev.androidx.ci.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.options.convert
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.file
@@ -154,7 +156,14 @@ private class Cli : CliktCommand() {
             are run for a TestMatrix.
         """.trimIndent(),
         envvar = "ANDROIDX_IGNORE_EMPTY_TEST_MATRICES"
-    )
+    ).convert {
+        if (it.isNullOrBlank()) {
+            // default to true.
+            true
+        } else {
+            it.toBoolean()
+        }
+    }.default(true)
 
     override fun run() {
         logFile?.let(::configureLogger)
@@ -186,13 +195,13 @@ private class Cli : CliktCommand() {
                 bucketPath = gcpBucketPath,
                 useTestConfigFiles = useTestConfigFiles?.toBoolean() ?: false,
                 testSuiteTags = testSuiteTags?.split(',')?.map { it.trim() } ?: emptyList(),
-                ignoreEmptyTestMatrices = ignoreEmptyTestMatrices?.toBoolean() ?: true,
+                ignoreEmptyTestMatrices = ignoreEmptyTestMatrices,
             )
             testRunner.runTests()
         }
         println(result.toJson())
         flushLogs()
-        if (result.allTestsPassed) {
+        if (!result.hasFailedTest) {
             exitProcess(0)
         } else {
             println("================= FAILURE LOG =================")
