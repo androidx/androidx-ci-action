@@ -15,32 +15,32 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: "checkout"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'adopt'
+      - name: "Setup Gradle"
+        uses: gradle/gradle-build-action@v2
+        with:
+          # Don't reuse cache entries from any other Job.
+          gradle-home-cache-strict-match: true
+
+          # Limit the size of the cache entry.
+          # These directories contain instrumented/transformed dependency jars which can be reconstructed relatively quickly.
+          gradle-home-cache-excludes: |
+            caches/jars-9
+            caches/transforms-3
       # always test before dist
-      - uses: eskatos/gradle-command-action@v1
-        name: Build and Test
-        with: 
-          build-root-directory: AndroidXCI
-          wrapper-directory: AndroidXCI
-          wrapper-cache-enabled: true
-          dependencies-cache-enabled: true
-          configuration-cache-enabled: true
-          arguments: check :ftlModelBuilder:check
-      # build distribution
-      - uses: eskatos/gradle-command-action@v1
-        name: Build Distribution
-        with: 
-          build-root-directory: AndroidXCI
-          wrapper-directory: AndroidXCI
-          wrapper-cache-enabled: true
-          dependencies-cache-enabled: true
-          configuration-cache-enabled: true
-          arguments: :cli:installDist
+      - name: "Build and Test"
+        working-directory: AndroidXCI
+        shell: bash
+        run: ./gradlew check :ftlModelBuilder:check  --no-configuration-cache
+      - name: "Distribute"
+        working-directory: AndroidXCI
+        shell: bash
+        run: ./gradlew :cli:installDist --no-configuration-cache
       # push it to a new git tag
       - name: "create dist branch"
         id: event-args
