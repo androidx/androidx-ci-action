@@ -100,6 +100,8 @@ internal class TestRunnerServiceImpl internal constructor(
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>,
         pullScreenshots: Boolean,
         cachedTestMatrixFilter: CachedTestMatrixFilter,
+        testTargets: List<String>?,
+        flakyTestAttempts: Int?
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
             appApk = appApk ?: apkStore.getPlaceholderApk(),
@@ -109,7 +111,9 @@ internal class TestRunnerServiceImpl internal constructor(
             deviceSetup = deviceSetup,
             devicePicker = devicePicker,
             pullScreenshots = pullScreenshots,
-            cachedTestMatrixFilter = cachedTestMatrixFilter
+            cachedTestMatrixFilter = cachedTestMatrixFilter,
+            testTargets = testTargets,
+            flakyTestAttempts = flakyTestAttempts
         )
         return TestRunnerService.ScheduleTestsResponse.create(
             testMatrices
