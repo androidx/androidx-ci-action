@@ -80,6 +80,8 @@ interface TestRunnerService {
         devicePicker: (TestEnvironmentCatalog) -> List<AndroidDevice>,
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
+        testTargets: List<String>? = null,
+        flakyTestAttempts: Int? = 2
     ): ScheduleTestsResponse
 
     /**

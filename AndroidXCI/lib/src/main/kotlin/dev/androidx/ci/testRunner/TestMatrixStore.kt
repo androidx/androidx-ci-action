@@ -69,6 +69,8 @@ internal class TestMatrixStore(
         deviceSetup: DeviceSetup?,
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
+        testTargets: List<String>? = null,
+        flakyTestAttempts: Int? = 2
     ): TestMatrix {
 
         val testRunId = TestRun.createId(
@@ -114,7 +116,9 @@ internal class TestMatrixStore(
                 deviceSetup = deviceSetup,
                 appApk = appApk,
                 testApk = testApk,
-                pullScreenshots = pullScreenshots
+                pullScreenshots = pullScreenshots,
+                testTargets = testTargets,
+                flakyTestAttempts = flakyTestAttempts
             )
         )
         logger.info {
@@ -177,7 +181,9 @@ internal class TestMatrixStore(
         deviceSetup: DeviceSetup?,
         appApk: UploadedApk,
         testApk: UploadedApk,
-        pullScreenshots: Boolean = false
+        pullScreenshots: Boolean = false,
+        testTargets: List<String>? = null,
+        flakyTestAttempts: Int? = 2
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -206,7 +212,7 @@ internal class TestMatrixStore(
         }
         return TestMatrix(
             projectId = firebaseProjectId,
-            flakyTestAttempts = 2,
+            flakyTestAttempts = flakyTestAttempts,
             testSpecification = TestSpecification(
                 testTimeout = "2700s", // Limit for physical devices.
                 disableVideoRecording = false,
@@ -218,7 +224,8 @@ internal class TestMatrixStore(
                     testApk = FileReference(
                         gcsPath = testApk.gcsPath.path
                     ),
-                    shardingOption = sharding
+                    shardingOption = sharding,
+                    testTargets = testTargets
                 ),
                 testSetup = testSetup
             ),
