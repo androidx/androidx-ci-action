@@ -72,6 +72,7 @@ internal class TestMatrixStore(
         testTargets: List<String>? = null,
         flakyTestAttempts: Int? = 2
     ): TestMatrix {
+
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
             environment = environmentMatrix,
@@ -84,29 +85,27 @@ internal class TestMatrixStore(
         logger.trace {
             "test run id: $testRunId"
         }
-        // we don't want cached results when retrying failed tests,
-        // so ensure list of failed tests is not provided when scheduling the ftl run
-        if (testTargets == null) {
-            getExistingTestMatrix(testRunId)?.let {
-                logger.info("found existing test matrix: ${it.testMatrixId} with state: ${it.state}")
-                val state = it.state
-                // these states are ordered so anything above ERROR is not worth re-using
-                if (state != null && state >= TestMatrix.State.ERROR) {
-                    logger.warn {
-                        "Skipping cache for ${it.testMatrixId} because its state is $state"
-                    }
-                } else if (!cachedTestMatrixFilter(it)) {
-                    logger.info {
-                        "Not re-using cached matrix due to filter"
-                    }
-                } else {
-                    return it
+
+        getExistingTestMatrix(testRunId)?.let {
+            logger.info("found existing test matrix: ${it.testMatrixId} with state: ${it.state}")
+            val state = it.state
+            // these states are ordered so anything above ERROR is not worth re-using
+            if (state != null && state >= TestMatrix.State.ERROR) {
+                logger.warn {
+                    "Skipping cache for ${it.testMatrixId} because its state is $state"
                 }
-            }
-            logger.trace {
-                "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
+            } else if (!cachedTestMatrixFilter(it)) {
+                logger.info {
+                    "Not re-using cached matrix due to filter"
+                }
+            } else {
+                return it
             }
         }
+        logger.trace {
+            "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
+        }
+
         val newTestMatrix = firebaseTestLabApi.createTestMatrix(
             projectId = firebaseProjectId,
             requestId = UUID.randomUUID().toString(),
@@ -126,21 +125,18 @@ internal class TestMatrixStore(
         logger.info {
             "created test matrix: $newTestMatrix"
         }
-        // If testMatrix is not for a failure retry, save it to cache,
-        // we don't worry about races here much such that if another instance happens to be creating
+        // save it to cache, we don't worry about races here much such that if another instance happens to be creating
         // the exact same test, one of them will win but that is OK since they'll each use their own test matrices and
         // followup calls will re-use the winner of this race.
-        if (testTargets == null) {
-            val testRun = TestRun(
-                id = testRunId,
-                testMatrixId = checkNotNull(newTestMatrix.testMatrixId) {
-                    "newly created test matrix should not have null id $newTestMatrix"
-                }
-            )
-            datastoreApi.put(testRun.toEntity())
-            logger.info {
-                "saved test matrix info: $testRun"
+        val testRun = TestRun(
+            id = testRunId,
+            testMatrixId = checkNotNull(newTestMatrix.testMatrixId) {
+                "newly created test matrix should not have null id $newTestMatrix"
             }
+        )
+        datastoreApi.put(testRun.toEntity())
+        logger.info {
+            "saved test matrix info: $testRun"
         }
         return newTestMatrix
     }
