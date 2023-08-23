@@ -85,6 +85,15 @@ interface TestRunnerService {
     ): ScheduleTestsResponse
 
     /**
+     * Schedules a task to create a [TestMatrix] to retry failed Tests
+     * specified in the [testTargets] list for the given [testMatrix]
+     */
+    suspend fun scheduleRetryTests(
+        testMatrix: TestMatrix,
+        testTargets: List<String>? = null
+    ): TestMatrix
+
+    /**
      * Queries the Firebase for the given [testMatrixId] and returns it if it exists.
      */
     suspend fun getTestMatrix(testMatrixId: String): TestMatrix?

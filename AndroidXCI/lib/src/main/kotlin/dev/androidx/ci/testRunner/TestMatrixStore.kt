@@ -146,6 +146,44 @@ internal class TestMatrixStore(
     }
 
     /**
+     * Creates a [TestMatrix] to run the failed tests specified in [testTargets] list
+     * using the configuration for [testMatrix]
+     */
+    suspend fun createRetryTestMatrix(
+        testMatrix: TestMatrix,
+        testTargets: List<String>? = null
+    ): TestMatrix {
+        logger.trace {
+            "test matrix id: ${testMatrix.testMatrixId}"
+        }
+
+        val testSpecification = testMatrix.testSpecification.copy(
+            androidInstrumentationTest = testMatrix.testSpecification.androidInstrumentationTest?.copy(
+                testTargets = testTargets
+            )
+        )
+        val newTestMatrix = firebaseTestLabApi.createTestMatrix(
+            projectId = firebaseProjectId,
+            requestId = UUID.randomUUID().toString(),
+            testMatrix = TestMatrix(
+                projectId = firebaseProjectId,
+                flakyTestAttempts = 0,
+                testSpecification = testSpecification,
+                clientInfo = testMatrix.clientInfo,
+                environmentMatrix = testMatrix.environmentMatrix,
+                resultStorage = ResultStorage(
+                    googleCloudStorage = testMatrix.resultStorage.googleCloudStorage,
+                    toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
+                )
+            )
+        )
+        logger.info {
+            "created test matrix: $newTestMatrix"
+        }
+        return newTestMatrix
+    }
+
+    /**
      * Returns an existing TestMatrix for the given [testRunId].
      *
      * This happens in two steps.

@@ -120,6 +120,16 @@ internal class TestRunnerServiceImpl internal constructor(
         )
     }
 
+    override suspend fun scheduleRetryTests(
+        testMatrix: TestMatrix,
+        testTargets: List<String>?
+    ): TestMatrix {
+        return testLabController.submitRetryTests(
+            testMatrix = testMatrix,
+            testTargets = testTargets
+        )
+    }
+
     override suspend fun getTestMatrix(
         testMatrixId: String
     ): TestMatrix? {
