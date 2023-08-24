@@ -168,7 +168,9 @@ internal class TestMatrixStore(
                 clientInfo = testMatrix.clientInfo,
                 environmentMatrix = testMatrix.environmentMatrix,
                 resultStorage = ResultStorage(
-                    googleCloudStorage = testMatrix.resultStorage.googleCloudStorage,
+                    googleCloudStorage = GoogleCloudStorage(
+                        gcsPath = testMatrix.resultStorage.googleCloudStorage.gcsPath + UUID.randomUUID().toString()
+                    ),
                     toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
                 )
             )
