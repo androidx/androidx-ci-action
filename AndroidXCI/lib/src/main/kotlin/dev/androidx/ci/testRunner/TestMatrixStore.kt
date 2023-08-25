@@ -145,7 +145,7 @@ internal class TestMatrixStore(
      * Creates a [TestMatrix] to run the failed tests specified in [testTargets] list
      * using the configuration for [testMatrix]
      */
-    suspend fun createRetryTestMatrix(
+    suspend fun createTestMatrix(
         testMatrix: TestMatrix,
         testTargets: List<String>? = null
     ): TestMatrix {

@@ -138,11 +138,11 @@ internal class FirebaseTestLabController(
      * Enqueues a request to create a [TestMatrix] to retry failed Tests
      * specified in the [testTargets] list for the given [testMatrix]
      */
-    suspend fun submitRetryTests(
+    suspend fun scheduleTests(
         testMatrix: TestMatrix,
         testTargets: List<String>? = null
     ): TestMatrix {
-        return testMatrixStore.createRetryTestMatrix(
+        return testMatrixStore.createTestMatrix(
             testMatrix = testMatrix,
             testTargets = testTargets
         )

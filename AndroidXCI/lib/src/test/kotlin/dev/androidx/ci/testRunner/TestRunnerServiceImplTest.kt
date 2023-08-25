@@ -318,6 +318,71 @@ class TestRunnerServiceImplTest {
     }
 
     @Test
+    fun scheduleSpecificTests() = runBlocking<Unit> {
+        // create a test Matrix
+        val testApk = subject.getOrUploadApk(
+            name = "foo.apk",
+            sha256 = sha256(
+                byteArrayOf(1, 2, 3, 4, 5)
+            )
+        ) {
+            byteArrayOf(1, 2, 3, 4, 5)
+        }
+        val result = subject.scheduleTests(
+            testApk = testApk,
+            appApk = null,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker
+        )
+        assertThat(
+            result.testMatrices
+        ).hasSize(1)
+
+        val testMatrix = result.testMatrices.first()
+
+        fakeBackend.finishTest(
+            testMatrixId = testMatrix.testMatrixId!!,
+            outcome = TestMatrix.OutcomeSummary.FAILURE
+        )
+
+        val retryTests = listOf("test1", "test2")
+        val newTestMatrix = subject.scheduleTests(
+            testMatrix = testMatrix,
+            testTargets = retryTests
+        )
+        assertThat(
+            newTestMatrix
+        ).isNotNull()
+
+        assertThat(
+            newTestMatrix.testSpecification.androidInstrumentationTest?.testTargets
+        ).containsExactlyElementsIn(
+            retryTests
+        )
+
+        assertThat(
+            newTestMatrix.clientInfo
+        ).isEqualTo(
+            testMatrix.clientInfo
+        )
+
+        assertThat(
+            newTestMatrix.environmentMatrix
+        ).isEqualTo(
+            testMatrix.environmentMatrix
+        )
+
+        // storage location must be different for both test matrices, otherwise results will clash
+        assertThat(
+            newTestMatrix.resultStorage
+        ).isNotEqualTo(
+            testMatrix.resultStorage
+        )
+    }
+
+    @Test
     fun results() = runBlocking<Unit> {
         val resultRelativePath = "my-test-matrix-results"
         val resultPath = "${fakeBackend.fakeGoogleCloudApi.rootGcsPath}/$resultRelativePath"
