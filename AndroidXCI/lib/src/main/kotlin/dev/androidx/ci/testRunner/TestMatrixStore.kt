@@ -142,8 +142,8 @@ internal class TestMatrixStore(
     }
 
     /**
-     * Creates a [TestMatrix] to run the failed tests specified in [testTargets] list
-     * using the configuration for [testMatrix]
+     * Creates a [TestMatrix] to run the tests specified in [testTargets] list
+     * using the same configuration as [testMatrix]
      */
     suspend fun createTestMatrix(
         testMatrix: TestMatrix,

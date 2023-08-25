@@ -85,8 +85,8 @@ interface TestRunnerService {
     ): ScheduleTestsResponse
 
     /**
-     * Schedules a task to create a [TestMatrix] to retry failed Tests
-     * specified in the [testTargets] list for the given [testMatrix]
+     * Schedules a task to create a [TestMatrix] to run tests
+     * specified in the [testTargets] list using the same configuration as [testMatrix]
      */
     suspend fun scheduleTests(
         testMatrix: TestMatrix,

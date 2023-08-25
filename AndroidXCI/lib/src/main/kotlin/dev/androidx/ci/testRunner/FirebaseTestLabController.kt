@@ -135,8 +135,8 @@ internal class FirebaseTestLabController(
     }
 
     /**
-     * Enqueues a request to create a [TestMatrix] to retry failed Tests
-     * specified in the [testTargets] list for the given [testMatrix]
+     * Enqueues a request to create a [TestMatrix] to run the tests
+     * specified in the [testTargets] list using the same configuration as [testMatrix]
      */
     suspend fun scheduleTests(
         testMatrix: TestMatrix,
