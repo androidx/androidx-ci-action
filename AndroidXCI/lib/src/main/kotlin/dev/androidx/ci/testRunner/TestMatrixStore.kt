@@ -158,27 +158,44 @@ internal class TestMatrixStore(
                 testTargets = testTargets
             )
         )
-        val newTestMatrix = firebaseTestLabApi.createTestMatrix(
+
+        val resultStorage = ResultStorage(
+            googleCloudStorage = GoogleCloudStorage(
+                gcsPath = testMatrix.resultStorage.googleCloudStorage.gcsPath + UUID.randomUUID().toString()
+            ),
+            toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
+        )
+
+        return createTestMatrix(
+            clientInfo = testMatrix.clientInfo,
+            environmentMatrix = testMatrix.environmentMatrix,
+            testSpecification = testSpecification,
+            resultStorage = resultStorage
+        )
+    }
+
+    /**
+     * Creates a [TestMatrix] using the specified parameters
+     */
+    suspend fun createTestMatrix(
+        clientInfo: ClientInfo?,
+        environmentMatrix: EnvironmentMatrix,
+        testSpecification: TestSpecification,
+        resultStorage: ResultStorage,
+        flakyTestAttempts: Int? = 0
+    ): TestMatrix {
+        return firebaseTestLabApi.createTestMatrix(
             projectId = firebaseProjectId,
             requestId = UUID.randomUUID().toString(),
             testMatrix = TestMatrix(
                 projectId = firebaseProjectId,
-                flakyTestAttempts = 0,
+                flakyTestAttempts = flakyTestAttempts,
                 testSpecification = testSpecification,
-                clientInfo = testMatrix.clientInfo,
-                environmentMatrix = testMatrix.environmentMatrix,
-                resultStorage = ResultStorage(
-                    googleCloudStorage = GoogleCloudStorage(
-                        gcsPath = testMatrix.resultStorage.googleCloudStorage.gcsPath + UUID.randomUUID().toString()
-                    ),
-                    toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
-                )
+                clientInfo = clientInfo,
+                environmentMatrix = environmentMatrix,
+                resultStorage = resultStorage
             )
         )
-        logger.info {
-            "created test matrix: $newTestMatrix"
-        }
-        return newTestMatrix
     }
 
     /**
