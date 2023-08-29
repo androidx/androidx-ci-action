@@ -69,13 +69,19 @@ internal class TestRun(
             datastoreApi: DatastoreApi,
             environment: EnvironmentMatrix,
             clientInfo: ClientInfo?,
-            appApk: ApkInfo,
-            testApk: ApkInfo,
+            appApk: ApkInfo?,
+            testApk: ApkInfo?,
             deviceSetup: DeviceSetup?,
             testSetup: TestSetup?,
             sharding: ShardingOption?,
-            testTargets: List<String>?
+            testTargets: List<String>?,
+            testMatrixId: String?
         ): Id {
+            if (testApk == null) {
+                checkNotNull(testMatrixId) {
+                    "test matrix id should be provided if testApkInfo is not available to generate test run id"
+                }
+            }
             val directoriesToPull = deviceSetup?.directoriesToPull?.sorted()
                 ?: testSetup?.directoriesToPull?.sorted()
                 ?: emptyList()
@@ -97,12 +103,13 @@ internal class TestRun(
                     "e" to environment,
                     "clientInfo" to clientInfo,
                     "sharding" to sharding,
-                    "app" to appApk.idHash,
-                    "test" to testApk.idHash,
+                    "app" to appApk?.idHash,
+                    "test" to testApk?.idHash,
                     "instrumentationArgs" to instrumentationArgs,
                     "additionalApks" to additionalApks, // The order we install additional apks is important, so we do not sort here.
                     "directoriesToPull" to directoriesToPull,
-                    "testTargets" to testTargets?.sorted()
+                    "testTargets" to testTargets?.sorted(),
+                    "testMatrixId" to testMatrixId
                 )
             )
             val sha = sha256(json.toByteArray(Charsets.UTF_8))

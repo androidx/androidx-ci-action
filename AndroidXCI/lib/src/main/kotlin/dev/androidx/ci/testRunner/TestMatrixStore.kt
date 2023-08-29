@@ -34,7 +34,6 @@ import dev.androidx.ci.generated.ftl.ToolResultsHistory
 import dev.androidx.ci.testRunner.dto.TestRun
 import dev.androidx.ci.testRunner.dto.toEntity
 import dev.androidx.ci.testRunner.dto.toTestRun
-import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import org.apache.logging.log4j.kotlin.logger
@@ -83,7 +82,8 @@ internal class TestMatrixStore(
             testApk = testApk.apkInfo,
             deviceSetup = deviceSetup,
             testTargets = testTargets,
-            testSetup = null
+            testSetup = null,
+            testMatrixId = null
         )
         logger.trace {
             "test run id: $testRunId"
@@ -151,25 +151,17 @@ internal class TestMatrixStore(
         flakyTestAttempts: Int = 2
     ): TestMatrix {
 
-        val testApk = ApkInfo(
-            filePath = "",
-            idHash = ""
-        )
-        val appApk = ApkInfo(
-            filePath = "",
-            idHash = ""
-        )
-
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
             environment = testMatrix.environmentMatrix,
             clientInfo = testMatrix.clientInfo,
             sharding = testMatrix.testSpecification.androidInstrumentationTest?.shardingOption,
-            appApk = appApk,
-            testApk = testApk,
+            appApk = null,
+            testApk = null,
             testSetup = testMatrix.testSpecification.testSetup,
             deviceSetup = null,
-            testTargets = testTargets
+            testTargets = testTargets,
+            testMatrixId = testMatrix.testMatrixId
         )
         logger.trace {
             "test run id: $testRunId"
