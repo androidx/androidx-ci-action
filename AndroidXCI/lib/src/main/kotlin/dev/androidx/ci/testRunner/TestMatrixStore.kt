@@ -129,10 +129,13 @@ internal class TestMatrixStore(
         testMatrix: TestMatrix,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
         testTargets: List<String>,
-        flakyTestAttempts: Int = 2
+        flakyTestAttempts: Int = 0
     ): TestMatrix {
         checkNotNull(testMatrix.testMatrixId) {
             "Test matrix id for the base test matrix should not be null"
+        }
+        check(testTargets.isNotEmpty()) {
+            "The test targets should not be empty"
         }
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
