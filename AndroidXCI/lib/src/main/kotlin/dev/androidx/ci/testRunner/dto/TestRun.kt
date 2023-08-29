@@ -26,6 +26,7 @@ import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.generated.ftl.TestSetup
 import dev.androidx.ci.testRunner.dto.TestRun.Companion.createId
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
@@ -71,8 +72,26 @@ internal class TestRun(
             appApk: ApkInfo,
             testApk: ApkInfo,
             deviceSetup: DeviceSetup?,
-            sharding: ShardingOption?
+            testSetup: TestSetup?,
+            sharding: ShardingOption?,
+            testTargets: List<String>?
         ): Id {
+            val directoriesToPull = deviceSetup?.directoriesToPull?.sorted()
+                ?: testSetup?.directoriesToPull?.sorted()
+                ?: emptyList()
+
+            val additionalApks = deviceSetup?.additionalApks?.map {
+                it.gcsPath.path
+            } ?: testSetup?.additionalApks?.map {
+                it.location?.gcsPath
+            } ?: emptyList()
+
+            val instrumentationArgs = deviceSetup?.instrumentationArguments?.flatMap {
+                listOf(it.key, it.value)
+            } ?: testSetup?.environmentVariables?.flatMap {
+                listOf(it.key, it.value)
+            } ?: emptyList()
+
             val json = adapter.toJson(
                 mapOf(
                     "e" to environment,
@@ -80,13 +99,10 @@ internal class TestRun(
                     "sharding" to sharding,
                     "app" to appApk.idHash,
                     "test" to testApk.idHash,
-                    "instrumentationArgs" to deviceSetup?.instrumentationArguments?.flatMap {
-                        listOf(it.key, it.value)
-                    },
-                    "additionalApks" to deviceSetup?.additionalApks?.map {
-                        it.gcsPath.path
-                    }, // The order we install additional apks is important, so we do not sort here.
-                    "directoriesToPull" to deviceSetup?.directoriesToPull?.sorted()
+                    "instrumentationArgs" to instrumentationArgs,
+                    "additionalApks" to additionalApks, // The order we install additional apks is important, so we do not sort here.
+                    "directoriesToPull" to directoriesToPull,
+                    "testTargets" to testTargets?.sorted()
                 )
             )
             val sha = sha256(json.toByteArray(Charsets.UTF_8))

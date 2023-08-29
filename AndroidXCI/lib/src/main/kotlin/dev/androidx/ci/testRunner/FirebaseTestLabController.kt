@@ -111,7 +111,7 @@ internal class FirebaseTestLabController(
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter,
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int? = 2
+        flakyTestAttempts: Int = 2
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
@@ -140,11 +140,13 @@ internal class FirebaseTestLabController(
      */
     suspend fun scheduleTests(
         testMatrix: TestMatrix,
-        testTargets: List<String>? = null
+        testTargets: List<String>? = null,
+        cachedTestMatrixFilter: CachedTestMatrixFilter
     ): TestMatrix {
-        return testMatrixStore.createTestMatrix(
+        return testMatrixStore.getOrCreateTestMatrix(
             testMatrix = testMatrix,
-            testTargets = testTargets
+            testTargets = testTargets,
+            cachedTestMatrixFilter = cachedTestMatrixFilter
         )
     }
 

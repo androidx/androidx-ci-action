@@ -81,7 +81,7 @@ interface TestRunnerService {
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int? = 2
+        flakyTestAttempts: Int = 2
     ): ScheduleTestsResponse
 
     /**
@@ -90,7 +90,8 @@ interface TestRunnerService {
      */
     suspend fun scheduleTests(
         testMatrix: TestMatrix,
-        testTargets: List<String>? = null
+        testTargets: List<String>? = null,
+        cachedTestMatrixFilter: CachedTestMatrixFilter = { true }
     ): TestMatrix
 
     /**

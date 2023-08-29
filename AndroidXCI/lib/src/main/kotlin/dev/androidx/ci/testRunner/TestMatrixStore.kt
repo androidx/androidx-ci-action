@@ -34,6 +34,7 @@ import dev.androidx.ci.generated.ftl.ToolResultsHistory
 import dev.androidx.ci.testRunner.dto.TestRun
 import dev.androidx.ci.testRunner.dto.toEntity
 import dev.androidx.ci.testRunner.dto.toTestRun
+import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import org.apache.logging.log4j.kotlin.logger
@@ -49,7 +50,7 @@ internal class TestMatrixStore(
     private val datastoreApi: DatastoreApi,
     private val firebaseTestLabApi: FirebaseTestLabApi,
     toolsResultApi: ToolsResultApi,
-    private val resultsGcsPrefix: GcsPath,
+    private val resultsGcsPrefix: GcsPath
 ) {
     private val logger = logger()
     private val toolsResultStore = ToolsResultStore(
@@ -70,7 +71,7 @@ internal class TestMatrixStore(
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int? = 2
+        flakyTestAttempts: Int = 2
     ): TestMatrix {
 
         val testRunId = TestRun.createId(
@@ -80,7 +81,9 @@ internal class TestMatrixStore(
             sharding = sharding,
             appApk = appApk.apkInfo,
             testApk = testApk.apkInfo,
-            deviceSetup = deviceSetup
+            deviceSetup = deviceSetup,
+            testTargets = testTargets,
+            testSetup = null
         )
         logger.trace {
             "test run id: $testRunId"
@@ -106,21 +109,17 @@ internal class TestMatrixStore(
             "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
         }
 
-        val newTestMatrix = firebaseTestLabApi.createTestMatrix(
-            projectId = firebaseProjectId,
-            requestId = UUID.randomUUID().toString(),
-            testMatrix = createNewTestMatrix(
-                testRunKey = testRunId,
-                environmentMatrix = environmentMatrix,
-                clientInfo = clientInfo,
-                sharding = sharding,
-                deviceSetup = deviceSetup,
-                appApk = appApk,
-                testApk = testApk,
-                pullScreenshots = pullScreenshots,
-                testTargets = testTargets,
-                flakyTestAttempts = flakyTestAttempts
-            )
+        val newTestMatrix = createNewTestMatrix(
+            testRunKey = testRunId,
+            environmentMatrix = environmentMatrix,
+            clientInfo = clientInfo,
+            sharding = sharding,
+            deviceSetup = deviceSetup,
+            appApk = appApk,
+            testApk = testApk,
+            pullScreenshots = pullScreenshots,
+            testTargets = testTargets,
+            flakyTestAttempts = flakyTestAttempts
         )
         logger.info {
             "created test matrix: $newTestMatrix"
@@ -142,60 +141,83 @@ internal class TestMatrixStore(
     }
 
     /**
-     * Creates a [TestMatrix] to run the tests specified in [testTargets] list
-     * using the same configuration as [testMatrix]
+     * Creates a TestMatrix for the given configuration or returns an existing one if we've run the same tests
+     * specified in [testTargets] with the same environment configuration.
      */
-    suspend fun createTestMatrix(
+    suspend fun getOrCreateTestMatrix(
         testMatrix: TestMatrix,
-        testTargets: List<String>? = null
+        cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
+        testTargets: List<String>? = null,
+        flakyTestAttempts: Int = 2
     ): TestMatrix {
+
+        val testApk = ApkInfo(
+            filePath = "",
+            idHash = ""
+        )
+        val appApk = ApkInfo(
+            filePath = "",
+            idHash = ""
+        )
+
+        val testRunId = TestRun.createId(
+            datastoreApi = datastoreApi,
+            environment = testMatrix.environmentMatrix,
+            clientInfo = testMatrix.clientInfo,
+            sharding = testMatrix.testSpecification.androidInstrumentationTest?.shardingOption,
+            appApk = appApk,
+            testApk = testApk,
+            testSetup = testMatrix.testSpecification.testSetup,
+            deviceSetup = null,
+            testTargets = testTargets
+        )
         logger.trace {
-            "test matrix id: ${testMatrix.testMatrixId}"
+            "test run id: $testRunId"
         }
 
-        val testSpecification = testMatrix.testSpecification.copy(
-            androidInstrumentationTest = testMatrix.testSpecification.androidInstrumentationTest?.copy(
-                testTargets = testTargets
-            )
-        )
+        getExistingTestMatrix(testRunId)?.let {
+            logger.info("found existing test matrix: ${it.testMatrixId} with state: ${it.state}")
+            val state = it.state
+            // these states are ordered so anything above ERROR is not worth re-using
+            if (state != null && state >= TestMatrix.State.ERROR) {
+                logger.warn {
+                    "Skipping cache for ${it.testMatrixId} because its state is $state"
+                }
+            } else if (!cachedTestMatrixFilter(it)) {
+                logger.info {
+                    "Not re-using cached matrix due to filter"
+                }
+            } else {
+                return it
+            }
+        }
+        logger.trace {
+            "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
+        }
 
-        val resultStorage = ResultStorage(
-            googleCloudStorage = GoogleCloudStorage(
-                gcsPath = testMatrix.resultStorage.googleCloudStorage.gcsPath + UUID.randomUUID().toString()
-            ),
-            toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
+        val newTestMatrix = createNewTestMatrix(
+            testRunKey = testRunId,
+            testMatrix = testMatrix,
+            testTargets = testTargets,
+            flakyTestAttempts = flakyTestAttempts
         )
-
-        return createTestMatrix(
-            clientInfo = testMatrix.clientInfo,
-            environmentMatrix = testMatrix.environmentMatrix,
-            testSpecification = testSpecification,
-            resultStorage = resultStorage
+        logger.info {
+            "created test matrix: $newTestMatrix"
+        }
+        // save it to cache, we don't worry about races here much such that if another instance happens to be creating
+        // the exact same test, one of them will win but that is OK since they'll each use their own test matrices and
+        // followup calls will re-use the winner of this race.
+        val testRun = TestRun(
+            id = testRunId,
+            testMatrixId = checkNotNull(newTestMatrix.testMatrixId) {
+                "newly created test matrix should not have null id $newTestMatrix"
+            }
         )
-    }
-
-    /**
-     * Creates a [TestMatrix] using the specified parameters
-     */
-    suspend fun createTestMatrix(
-        clientInfo: ClientInfo?,
-        environmentMatrix: EnvironmentMatrix,
-        testSpecification: TestSpecification,
-        resultStorage: ResultStorage,
-        flakyTestAttempts: Int? = 0
-    ): TestMatrix {
-        return firebaseTestLabApi.createTestMatrix(
-            projectId = firebaseProjectId,
-            requestId = UUID.randomUUID().toString(),
-            testMatrix = TestMatrix(
-                projectId = firebaseProjectId,
-                flakyTestAttempts = flakyTestAttempts,
-                testSpecification = testSpecification,
-                clientInfo = clientInfo,
-                environmentMatrix = environmentMatrix,
-                resultStorage = resultStorage
-            )
-        )
+        datastoreApi.put(testRun.toEntity())
+        logger.info {
+            "saved test matrix info: $testRun"
+        }
+        return newTestMatrix
     }
 
     /**
@@ -241,7 +263,7 @@ internal class TestMatrixStore(
         testApk: UploadedApk,
         pullScreenshots: Boolean = false,
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int? = 2
+        flakyTestAttempts: Int = 2
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -268,35 +290,96 @@ internal class TestMatrixStore(
                 else null
             )
         }
-        return TestMatrix(
-            projectId = firebaseProjectId,
-            flakyTestAttempts = flakyTestAttempts,
-            testSpecification = TestSpecification(
-                testTimeout = "2700s", // Limit for physical devices.
-                disableVideoRecording = false,
-                disablePerformanceMetrics = true, // Not a useful feature for androidx
-                androidInstrumentationTest = AndroidInstrumentationTest(
-                    appApk = FileReference(
-                        gcsPath = appApk.gcsPath.path
-                    ),
-                    testApk = FileReference(
-                        gcsPath = testApk.gcsPath.path
-                    ),
-                    shardingOption = sharding,
-                    testTargets = testTargets
+        val testSpecification = TestSpecification(
+            testTimeout = "2700s", // Limit for physical devices.
+            disableVideoRecording = false,
+            disablePerformanceMetrics = true, // Not a useful feature for androidx
+            androidInstrumentationTest = AndroidInstrumentationTest(
+                appApk = FileReference(
+                    gcsPath = appApk.gcsPath.path
                 ),
-                testSetup = testSetup
+                testApk = FileReference(
+                    gcsPath = testApk.gcsPath.path
+                ),
+                shardingOption = sharding,
+                testTargets = testTargets
             ),
+            testSetup = testSetup
+        )
+        val resultStorage = ResultStorage(
+            googleCloudStorage = GoogleCloudStorage(
+                gcsPath = testRunKey.resultGcsPath().path
+            ),
+            toolResultsHistory = ToolResultsHistory(
+                projectId = firebaseProjectId,
+                historyId = historyId
+            )
+        )
+        return createTestMatrix(
+            flakyTestAttempts = flakyTestAttempts,
+            testSpecification = testSpecification,
             clientInfo = clientInfo,
             environmentMatrix = environmentMatrix,
-            resultStorage = ResultStorage(
-                googleCloudStorage = GoogleCloudStorage(
-                    gcsPath = testRunKey.resultGcsPath().path
-                ),
-                toolResultsHistory = ToolResultsHistory(
-                    projectId = firebaseProjectId,
-                    historyId = historyId
-                )
+            resultStorage = resultStorage
+        )
+    }
+
+    /**
+     * Creates a [TestMatrix] to run the tests specified in [testTargets] list
+     * using the same configuration as [testMatrix]
+     */
+    private suspend fun createNewTestMatrix(
+        testRunKey: TestRun.Id,
+        testMatrix: TestMatrix,
+        testTargets: List<String>? = null,
+        flakyTestAttempts: Int = 0
+    ): TestMatrix {
+        logger.trace {
+            "test matrix id: ${testMatrix.testMatrixId}"
+        }
+
+        val testSpecification = testMatrix.testSpecification.copy(
+            androidInstrumentationTest = testMatrix.testSpecification.androidInstrumentationTest?.copy(
+                testTargets = testTargets
+            )
+        )
+
+        val resultStorage = ResultStorage(
+            googleCloudStorage = GoogleCloudStorage(
+                gcsPath = testRunKey.resultGcsPath().path
+            ),
+            toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
+        )
+
+        return createTestMatrix(
+            clientInfo = testMatrix.clientInfo,
+            environmentMatrix = testMatrix.environmentMatrix,
+            testSpecification = testSpecification,
+            resultStorage = resultStorage,
+            flakyTestAttempts = flakyTestAttempts
+        )
+    }
+
+    /**
+     * Creates a [TestMatrix] using the specified parameters
+     */
+    suspend fun createTestMatrix(
+        clientInfo: ClientInfo?,
+        environmentMatrix: EnvironmentMatrix,
+        testSpecification: TestSpecification,
+        resultStorage: ResultStorage,
+        flakyTestAttempts: Int
+    ): TestMatrix {
+        return firebaseTestLabApi.createTestMatrix(
+            projectId = firebaseProjectId,
+            requestId = UUID.randomUUID().toString(),
+            testMatrix = TestMatrix(
+                projectId = firebaseProjectId,
+                flakyTestAttempts = flakyTestAttempts,
+                testSpecification = testSpecification,
+                clientInfo = clientInfo,
+                environmentMatrix = environmentMatrix,
+                resultStorage = resultStorage
             )
         )
     }

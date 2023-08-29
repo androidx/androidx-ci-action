@@ -101,7 +101,7 @@ internal class TestRunnerServiceImpl internal constructor(
         pullScreenshots: Boolean,
         cachedTestMatrixFilter: CachedTestMatrixFilter,
         testTargets: List<String>?,
-        flakyTestAttempts: Int?
+        flakyTestAttempts: Int
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
             appApk = appApk ?: apkStore.getPlaceholderApk(),
@@ -122,11 +122,13 @@ internal class TestRunnerServiceImpl internal constructor(
 
     override suspend fun scheduleTests(
         testMatrix: TestMatrix,
-        testTargets: List<String>?
+        testTargets: List<String>?,
+        cachedTestMatrixFilter: CachedTestMatrixFilter
     ): TestMatrix {
         return testLabController.scheduleTests(
             testMatrix = testMatrix,
-            testTargets = testTargets
+            testTargets = testTargets,
+            cachedTestMatrixFilter = cachedTestMatrixFilter
         )
     }
 
