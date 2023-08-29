@@ -380,6 +380,19 @@ class TestRunnerServiceImplTest {
         ).isNotEqualTo(
             testMatrix.resultStorage
         )
+
+        // retry same tests again, new testMatrix shouldn't be created
+        // instead it should be feteched from cache
+        val retryTestMatrix = subject.scheduleTests(
+            testMatrix = testMatrix,
+            testTargets = retryTests
+        )
+
+        assertThat(
+            retryTestMatrix
+        ).isEqualTo(
+            newTestMatrix
+        )
     }
 
     @Test

@@ -90,7 +90,7 @@ interface TestRunnerService {
      */
     suspend fun scheduleTests(
         testMatrix: TestMatrix,
-        testTargets: List<String>? = null,
+        testTargets: List<String>,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true }
     ): TestMatrix
 

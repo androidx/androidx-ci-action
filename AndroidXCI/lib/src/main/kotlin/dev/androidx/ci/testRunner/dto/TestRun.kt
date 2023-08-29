@@ -104,7 +104,7 @@ internal class TestRun(
             testSetup: TestSetup?,
             sharding: ShardingOption?,
             testTargets: List<String>?,
-            testMatrixId: String
+            baseTestMatrixId: String
         ): Id {
             val json = adapter.toJson(
                 mapOf(
@@ -119,7 +119,7 @@ internal class TestRun(
                     }, // The order we install additional apks is important, so we do not sort here.
                     "directoriesToPull" to testSetup?.directoriesToPull?.sorted(),
                     "testTargets" to testTargets?.sorted(),
-                    "testMatrixId" to testMatrixId
+                    "baseTestMatrixId" to baseTestMatrixId
                 )
             )
             val sha = sha256(json.toByteArray(Charsets.UTF_8))

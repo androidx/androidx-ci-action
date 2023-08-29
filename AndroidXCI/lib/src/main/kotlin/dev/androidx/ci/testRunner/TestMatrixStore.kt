@@ -86,26 +86,10 @@ internal class TestMatrixStore(
             "test run id: $testRunId"
         }
 
-        getExistingTestMatrix(testRunId)?.let {
-            logger.info("found existing test matrix: ${it.testMatrixId} with state: ${it.state}")
-            val state = it.state
-            // these states are ordered so anything above ERROR is not worth re-using
-            if (state != null && state >= TestMatrix.State.ERROR) {
-                logger.warn {
-                    "Skipping cache for ${it.testMatrixId} because its state is $state"
-                }
-            } else if (!cachedTestMatrixFilter(it)) {
-                logger.info {
-                    "Not re-using cached matrix due to filter"
-                }
-            } else {
-                return it
-            }
+        val existingTestMatrix = getCachedTestMatrix(testRunId, cachedTestMatrixFilter)
+        if (existingTestMatrix != null) {
+            return existingTestMatrix
         }
-        logger.trace {
-            "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
-        }
-
         val newTestMatrix = createNewTestMatrix(
             testRunKey = testRunId,
             environmentMatrix = environmentMatrix,
@@ -144,7 +128,7 @@ internal class TestMatrixStore(
     suspend fun getOrCreateTestMatrix(
         testMatrix: TestMatrix,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
-        testTargets: List<String>? = null,
+        testTargets: List<String>,
         flakyTestAttempts: Int = 2
     ): TestMatrix {
         checkNotNull(testMatrix.testMatrixId) {
@@ -157,30 +141,15 @@ internal class TestMatrixStore(
             sharding = testMatrix.testSpecification.androidInstrumentationTest?.shardingOption,
             testSetup = testMatrix.testSpecification.testSetup,
             testTargets = testTargets,
-            testMatrixId = testMatrix.testMatrixId
+            baseTestMatrixId = testMatrix.testMatrixId
         )
         logger.trace {
             "test run id: $testRunId"
         }
 
-        getExistingTestMatrix(testRunId)?.let {
-            logger.info("found existing test matrix: ${it.testMatrixId} with state: ${it.state}")
-            val state = it.state
-            // these states are ordered so anything above ERROR is not worth re-using
-            if (state != null && state >= TestMatrix.State.ERROR) {
-                logger.warn {
-                    "Skipping cache for ${it.testMatrixId} because its state is $state"
-                }
-            } else if (!cachedTestMatrixFilter(it)) {
-                logger.info {
-                    "Not re-using cached matrix due to filter"
-                }
-            } else {
-                return it
-            }
-        }
-        logger.trace {
-            "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
+        val existingTestMatrix = getCachedTestMatrix(testRunId, cachedTestMatrixFilter)
+        if (existingTestMatrix != null) {
+            return existingTestMatrix
         }
 
         val newTestMatrix = createNewTestMatrix(
@@ -206,6 +175,37 @@ internal class TestMatrixStore(
             "saved test matrix info: $testRun"
         }
         return newTestMatrix
+    }
+
+    /**
+     * Check if a [TestMatrix] exists for the given [testRunId]
+     * If it does, ensure it is not in an ERROR state
+     * and [cachedTestMatrixFilter] allows reusing the testMatrix
+     */
+    private suspend fun getCachedTestMatrix(
+        testRunId: TestRun.Id,
+        cachedTestMatrixFilter: CachedTestMatrixFilter,
+    ): TestMatrix? {
+        getExistingTestMatrix(testRunId)?.let {
+            logger.info("found existing test matrix: ${it.testMatrixId} with state: ${it.state}")
+            val state = it.state
+            // these states are ordered so anything above ERROR is not worth re-using
+            if (state != null && state >= TestMatrix.State.ERROR) {
+                logger.warn {
+                    "Skipping cache for ${it.testMatrixId} because its state is $state"
+                }
+            } else if (!cachedTestMatrixFilter(it)) {
+                logger.info {
+                    "Not re-using cached matrix due to filter"
+                }
+            } else {
+                return it
+            }
+        }
+        logger.trace {
+            "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
+        }
+        return null
     }
 
     /**

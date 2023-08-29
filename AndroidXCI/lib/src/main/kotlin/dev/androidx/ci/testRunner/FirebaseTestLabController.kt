@@ -140,7 +140,7 @@ internal class FirebaseTestLabController(
      */
     suspend fun scheduleTests(
         testMatrix: TestMatrix,
-        testTargets: List<String>? = null,
+        testTargets: List<String>,
         cachedTestMatrixFilter: CachedTestMatrixFilter
     ): TestMatrix {
         return testMatrixStore.getOrCreateTestMatrix(

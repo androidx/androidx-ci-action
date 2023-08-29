@@ -122,7 +122,7 @@ internal class TestRunnerServiceImpl internal constructor(
 
     override suspend fun scheduleTests(
         testMatrix: TestMatrix,
-        testTargets: List<String>?,
+        testTargets: List<String>,
         cachedTestMatrixFilter: CachedTestMatrixFilter
     ): TestMatrix {
         return testLabController.scheduleTests(
