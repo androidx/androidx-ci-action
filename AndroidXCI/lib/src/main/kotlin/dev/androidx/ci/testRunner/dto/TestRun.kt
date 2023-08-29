@@ -69,45 +69,55 @@ internal class TestRun(
             datastoreApi: DatastoreApi,
             environment: EnvironmentMatrix,
             clientInfo: ClientInfo?,
-            appApk: ApkInfo?,
-            testApk: ApkInfo?,
+            appApk: ApkInfo,
+            testApk: ApkInfo,
             deviceSetup: DeviceSetup?,
-            testSetup: TestSetup?,
-            sharding: ShardingOption?,
-            testTargets: List<String>?,
-            testMatrixId: String?
+            sharding: ShardingOption?
         ): Id {
-            if (testApk == null) {
-                checkNotNull(testMatrixId) {
-                    "test matrix id should be provided if testApkInfo is not available to generate test run id"
-                }
-            }
-            val directoriesToPull = deviceSetup?.directoriesToPull?.sorted()
-                ?: testSetup?.directoriesToPull?.sorted()
-                ?: emptyList()
-
-            val additionalApks = deviceSetup?.additionalApks?.map {
-                it.gcsPath.path
-            } ?: testSetup?.additionalApks?.map {
-                it.location?.gcsPath
-            } ?: emptyList()
-
-            val instrumentationArgs = deviceSetup?.instrumentationArguments?.flatMap {
-                listOf(it.key, it.value)
-            } ?: testSetup?.environmentVariables?.flatMap {
-                listOf(it.key, it.value)
-            } ?: emptyList()
-
             val json = adapter.toJson(
                 mapOf(
                     "e" to environment,
                     "clientInfo" to clientInfo,
                     "sharding" to sharding,
-                    "app" to appApk?.idHash,
-                    "test" to testApk?.idHash,
-                    "instrumentationArgs" to instrumentationArgs,
-                    "additionalApks" to additionalApks, // The order we install additional apks is important, so we do not sort here.
-                    "directoriesToPull" to directoriesToPull,
+                    "app" to appApk.idHash,
+                    "test" to testApk.idHash,
+                    "instrumentationArgs" to deviceSetup?.instrumentationArguments?.flatMap {
+                        listOf(it.key, it.value)
+                    },
+                    "additionalApks" to deviceSetup?.additionalApks?.map {
+                        it.gcsPath.path
+                    }, // The order we install additional apks is important, so we do not sort here.
+                    "directoriesToPull" to deviceSetup?.directoriesToPull?.sorted()
+                )
+            )
+            val sha = sha256(json.toByteArray(Charsets.UTF_8))
+            return Id(datastoreApi.createKey(datastoreApi.testRunObjectKind, sha))
+        }
+
+        /**
+         * Creates a unique ID for the given parameters
+         */
+        fun createId(
+            datastoreApi: DatastoreApi,
+            environment: EnvironmentMatrix,
+            clientInfo: ClientInfo?,
+            testSetup: TestSetup?,
+            sharding: ShardingOption?,
+            testTargets: List<String>?,
+            testMatrixId: String
+        ): Id {
+            val json = adapter.toJson(
+                mapOf(
+                    "e" to environment,
+                    "clientInfo" to clientInfo,
+                    "sharding" to sharding,
+                    "instrumentationArgs" to testSetup?.environmentVariables?.flatMap {
+                        listOf(it.key, it.value)
+                    },
+                    "additionalApks" to testSetup?.additionalApks?.map {
+                        it.location?.gcsPath
+                    }, // The order we install additional apks is important, so we do not sort here.
+                    "directoriesToPull" to testSetup?.directoriesToPull?.sorted(),
                     "testTargets" to testTargets?.sorted(),
                     "testMatrixId" to testMatrixId
                 )

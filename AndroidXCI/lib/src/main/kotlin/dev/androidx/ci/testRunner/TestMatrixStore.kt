@@ -80,10 +80,7 @@ internal class TestMatrixStore(
             sharding = sharding,
             appApk = appApk.apkInfo,
             testApk = testApk.apkInfo,
-            deviceSetup = deviceSetup,
-            testTargets = testTargets,
-            testSetup = null,
-            testMatrixId = null
+            deviceSetup = deviceSetup
         )
         logger.trace {
             "test run id: $testRunId"
@@ -150,16 +147,15 @@ internal class TestMatrixStore(
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2
     ): TestMatrix {
-
+        checkNotNull(testMatrix.testMatrixId) {
+            "Test matrix id for the base test matrix should not be null"
+        }
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
             environment = testMatrix.environmentMatrix,
             clientInfo = testMatrix.clientInfo,
             sharding = testMatrix.testSpecification.androidInstrumentationTest?.shardingOption,
-            appApk = null,
-            testApk = null,
             testSetup = testMatrix.testSpecification.testSetup,
-            deviceSetup = null,
             testTargets = testTargets,
             testMatrixId = testMatrix.testMatrixId
         )
