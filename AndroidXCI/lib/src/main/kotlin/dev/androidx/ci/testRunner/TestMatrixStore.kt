@@ -206,7 +206,7 @@ internal class TestMatrixStore(
             }
         }
         logger.trace {
-            "No test run history for $testRunId or cached TestMatrix is rejected, creating a new one."
+            "No test run history for $testRunId or cached TestMatrix is rejected."
         }
         return null
     }
