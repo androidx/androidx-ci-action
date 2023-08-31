@@ -81,8 +81,18 @@ interface TestRunnerService {
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int? = 2
+        flakyTestAttempts: Int = 2
     ): ScheduleTestsResponse
+
+    /**
+     * Schedules a task to create a [TestMatrix] to run tests
+     * specified in the [testTargets] list using the same configuration as [testMatrix]
+     */
+    suspend fun scheduleTests(
+        testMatrix: TestMatrix,
+        testTargets: List<String>,
+        cachedTestMatrixFilter: CachedTestMatrixFilter = { true }
+    ): TestMatrix
 
     /**
      * Queries the Firebase for the given [testMatrixId] and returns it if it exists.

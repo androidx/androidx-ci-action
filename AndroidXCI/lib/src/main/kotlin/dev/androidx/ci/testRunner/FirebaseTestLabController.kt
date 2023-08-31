@@ -111,7 +111,7 @@ internal class FirebaseTestLabController(
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter,
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int? = 2
+        flakyTestAttempts: Int = 2
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
@@ -132,6 +132,22 @@ internal class FirebaseTestLabController(
                 flakyTestAttempts = flakyTestAttempts
             )
         }
+    }
+
+    /**
+     * Enqueues a request to create a [TestMatrix] to run the tests
+     * specified in the [testTargets] list using the same configuration as [testMatrix]
+     */
+    suspend fun scheduleTests(
+        testMatrix: TestMatrix,
+        testTargets: List<String>,
+        cachedTestMatrixFilter: CachedTestMatrixFilter
+    ): TestMatrix {
+        return testMatrixStore.getOrCreateTestMatrix(
+            testMatrix = testMatrix,
+            testTargets = testTargets,
+            cachedTestMatrixFilter = cachedTestMatrixFilter
+        )
     }
 
     suspend fun collectTestResultsByTestMatrixIds(

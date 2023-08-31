@@ -26,6 +26,7 @@ import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.generated.ftl.TestSetup
 import dev.androidx.ci.testRunner.dto.TestRun.Companion.createId
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
@@ -87,6 +88,38 @@ internal class TestRun(
                         it.gcsPath.path
                     }, // The order we install additional apks is important, so we do not sort here.
                     "directoriesToPull" to deviceSetup?.directoriesToPull?.sorted()
+                )
+            )
+            val sha = sha256(json.toByteArray(Charsets.UTF_8))
+            return Id(datastoreApi.createKey(datastoreApi.testRunObjectKind, sha))
+        }
+
+        /**
+         * Creates a unique ID for the given parameters
+         */
+        fun createId(
+            datastoreApi: DatastoreApi,
+            environment: EnvironmentMatrix,
+            clientInfo: ClientInfo?,
+            testSetup: TestSetup?,
+            sharding: ShardingOption?,
+            testTargets: List<String>?,
+            baseTestMatrixId: String
+        ): Id {
+            val json = adapter.toJson(
+                mapOf(
+                    "e" to environment,
+                    "clientInfo" to clientInfo,
+                    "sharding" to sharding,
+                    "instrumentationArgs" to testSetup?.environmentVariables?.flatMap {
+                        listOf(it.key, it.value)
+                    },
+                    "additionalApks" to testSetup?.additionalApks?.map {
+                        it.location?.gcsPath
+                    }, // The order we install additional apks is important, so we do not sort here.
+                    "directoriesToPull" to testSetup?.directoriesToPull?.sorted(),
+                    "testTargets" to testTargets?.sorted(),
+                    "baseTestMatrixId" to baseTestMatrixId
                 )
             )
             val sha = sha256(json.toByteArray(Charsets.UTF_8))
