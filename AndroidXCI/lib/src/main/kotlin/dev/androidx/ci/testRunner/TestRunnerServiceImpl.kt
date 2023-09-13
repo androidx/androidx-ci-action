@@ -213,7 +213,7 @@ internal class TestRunnerServiceImpl internal constructor(
                 }
             }
         }
-        // remove this if block when b\299975596 is fixed
+        // remove this if block when b/299975596 is fixed
         if (mergedXmlBlobs.isEmpty()) {
             if (byFullDeviceId.isEmpty()) {
                 return emptyList()
