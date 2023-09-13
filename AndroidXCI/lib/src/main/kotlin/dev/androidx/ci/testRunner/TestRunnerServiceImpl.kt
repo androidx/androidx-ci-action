@@ -213,6 +213,21 @@ internal class TestRunnerServiceImpl internal constructor(
                 }
             }
         }
+        // remove this if block when b\299975596 is fixed
+        if (mergedXmlBlobs.isEmpty()) {
+            if (byFullDeviceId.isEmpty()) {
+                return emptyList()
+            }
+            val deviceId = byFullDeviceId.values.first().deviceRun.deviceId
+            val mergedResults = byFullDeviceId.values.first().xmlResults.first()
+            return listOf(
+                TestRunnerService.TestRunResult(
+                    deviceId = deviceId,
+                    mergedResults = mergedResults,
+                    testRuns = byFullDeviceId.values.toList()
+                )
+            )
+        }
         return mergedXmlBlobs.map { mergedXmlEntry ->
             val relatedRuns = byFullDeviceId.entries.filter {
                 it.key.startsWith(mergedXmlEntry.key)
