@@ -521,7 +521,7 @@ class TestRunnerServiceImplTest {
         ).isEqualTo("redfin-30-en-portrait")
 
         assertThat(
-            result.mergedResults.readFully()
+            result.mergedResults?.readFully()
         ).isEqualTo(
             "merged-results".toByteArray(Charsets.UTF_8)
         )
@@ -889,7 +889,7 @@ class TestRunnerServiceImplTest {
         ).isEqualTo("redfin-30-en-portrait")
 
         assertThat(
-            result.mergedResults.readFully()
+            result.mergedResults?.readFully()
         ).isEqualTo(
             "merged-results".toByteArray(Charsets.UTF_8)
         )
@@ -1215,10 +1215,8 @@ class TestRunnerServiceImplTest {
         ).isEqualTo("redfin-30-en-portrait")
 
         assertThat(
-            result.mergedResults.readFully()
-        ).isEqualTo(
-            "test_result_1 content xml".toByteArray(Charsets.UTF_8)
-        )
+            result.mergedResults
+        ).isNull()
 
         assertThat(result.testRuns).hasSize(1)
         result.testRuns.first().let { testRun ->

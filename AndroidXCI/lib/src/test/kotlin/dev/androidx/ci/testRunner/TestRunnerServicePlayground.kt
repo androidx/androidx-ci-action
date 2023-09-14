@@ -28,8 +28,8 @@ internal class TestRunnerServicePlayground {
         println(testMatrix)
         subject.getTestMatrixResults(testMatrixId)?.forEach { resultFiles ->
             println(resultFiles)
-            resultFiles.mergedResults.openInputStream().use {
-                println(it.readAllBytes().toString(Charsets.UTF_8))
+            resultFiles.mergedResults?.openInputStream().use {
+                println(it?.readAllBytes()?.toString(Charsets.UTF_8))
             }
         }
     }
