@@ -283,7 +283,7 @@ interface TestRunnerService {
         /**
          * The xml file which includes all results from all test runs (including re-runs)
          */
-        val mergedResults: ResultFileResource,
+        val mergedResults: ResultFileResource?,
         /**
          * Each individual test run. This list usually contains 1 item but might contain more than one if
          * the [DevicePicker] choose multiple devices OR some tests were re-run due to failures.

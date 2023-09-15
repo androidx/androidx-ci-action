@@ -521,7 +521,7 @@ class TestRunnerServiceImplTest {
         ).isEqualTo("redfin-30-en-portrait")
 
         assertThat(
-            result.mergedResults.readFully()
+            result.mergedResults?.readFully()
         ).isEqualTo(
             "merged-results".toByteArray(Charsets.UTF_8)
         )
@@ -889,7 +889,7 @@ class TestRunnerServiceImplTest {
         ).isEqualTo("redfin-30-en-portrait")
 
         assertThat(
-            result.mergedResults.readFully()
+            result.mergedResults?.readFully()
         ).isEqualTo(
             "merged-results".toByteArray(Charsets.UTF_8)
         )
@@ -1047,6 +1047,307 @@ class TestRunnerServiceImplTest {
         )
     }
 
+    @Test
+    fun emptyResults() = runBlocking {
+        val resultRelativePath = "my-test-matrix-results"
+        val resultPath = "${fakeBackend.fakeGoogleCloudApi.rootGcsPath}/$resultRelativePath"
+        val testMatrix = fakeBackend.fakeFirebaseTestLabApi.createTestMatrix(
+            projectId = fakeBackend.firebaseProjectId,
+            requestId = "requestId",
+            testMatrix = TestMatrix(
+                resultStorage = ResultStorage(
+                    googleCloudStorage = GoogleCloudStorage(resultPath),
+                    toolResultsExecution = ToolResultsExecution(
+                        executionId = "test_executionId",
+                        historyId = "test_historyId"
+                    )
+                ),
+                projectId = fakeBackend.firebaseProjectId,
+                environmentMatrix = EnvironmentMatrix(),
+                testSpecification = TestSpecification()
+            )
+        )
+        val testMatrixId = testMatrix.testMatrixId!!
+
+        assertThat(
+            subject.getTestMatrix(testMatrixId)
+        ).isEqualTo(
+            testMatrix
+        )
+        // incomplete, no results
+        assertThat(
+            subject.getTestMatrixResults(testMatrix)
+        ).isNull()
+        fakeBackend.finishTest(
+            testMatrixId = testMatrixId,
+            outcome = TestMatrix.OutcomeSummary.SUCCESS
+        )
+        assertThat(
+            subject.getTestMatrixResults(testMatrix)
+        ).isNull()
+
+        val results = subject.getTestMatrixResults(testMatrixId)
+        assertThat(results).isEmpty()
+        // check screenshots is null when list of testIdentifiers is empty
+        val screenshots = subject.getTestMatrixArtifacts(
+            testMatrixId,
+            emptyList()
+        )
+        assertThat(
+            screenshots
+        ).isNull()
+    }
+
+    @Test
+    fun mergedResultsMissing() = runBlocking {
+        val resultRelativePath = "my-test-matrix-results"
+        val resultPath = "${fakeBackend.fakeGoogleCloudApi.rootGcsPath}/$resultRelativePath"
+        val testMatrix = fakeBackend.fakeFirebaseTestLabApi.createTestMatrix(
+            projectId = fakeBackend.firebaseProjectId,
+            requestId = "requestId",
+            testMatrix = TestMatrix(
+                resultStorage = ResultStorage(
+                    googleCloudStorage = GoogleCloudStorage(resultPath),
+                    toolResultsExecution = ToolResultsExecution(
+                        executionId = "test_executionId",
+                        historyId = "test_historyId"
+                    )
+                ),
+                projectId = fakeBackend.firebaseProjectId,
+                environmentMatrix = EnvironmentMatrix(),
+                testSpecification = TestSpecification()
+            )
+        )
+        val testMatrixId = testMatrix.testMatrixId!!
+
+        assertThat(
+            subject.getTestMatrix(testMatrixId)
+        ).isEqualTo(
+            testMatrix
+        )
+        // incomplete, no results
+        assertThat(
+            subject.getTestMatrixResults(testMatrix)
+        ).isNull()
+        fakeBackend.finishTest(
+            testMatrixId = testMatrixId,
+            outcome = TestMatrix.OutcomeSummary.SUCCESS
+        )
+        assertThat(
+            subject.getTestMatrixResults(testMatrix)
+        ).isNull()
+
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/logcat",
+            "logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/test_result_1.xml",
+            "test_result_1 content xml".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/test_cases/0000_logcat",
+            "test1 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/test_cases/0001_logcat",
+            "test2 logcat".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_actual.png",
+            "class1 name1 emulator actual".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_diff.png",
+            "class1 name1 emulator diff".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_expected.png",
+            "class1 name1 emulator expected".toByteArray(Charsets.UTF_8)
+        )
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto",
+            "class1 name1 emulator textproto".toByteArray(Charsets.UTF_8)
+        )
+        // No test is associated with this artifact. findArtifacts should not throw errors, even when unexpected files are encountered
+        fakeBackend.fakeGoogleCloudApi.upload(
+            "$resultRelativePath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class5_name5_emulator_goldResult.textproto",
+            "class5 name5 emulator textproto".toByteArray(Charsets.UTF_8)
+        )
+
+        fakeToolsResultApi.addStep(
+            projectId = fakeBackend.firebaseProjectId,
+            executionId = "test_executionId",
+            historyId = "test_historyId",
+            step = Step(
+                stepId = UUID.randomUUID().toString(),
+                testExecutionStep = TestExecutionStep(
+                    toolExecution = ToolExecution(
+                        toolOutputs = listOf(
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class1",
+                                    name = "name1"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait/test_cases/0000_logcat"
+                                )
+                            ),
+                            ToolOutputReference(
+                                testCase = TestCaseReference(
+                                    className = "class3",
+                                    name = "name3"
+                                ),
+                                output = FileReference(
+                                    fileUri = "$resultPath/redfin-30-en-portrait/test_cases/0002_logcat"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        val results = subject.getTestMatrixResults(testMatrixId)
+        assertThat(results).hasSize(1)
+        val result = results!!.single()
+        assertThat(
+            result.deviceId
+        ).isEqualTo("redfin-30-en-portrait")
+
+        assertThat(
+            result.mergedResults
+        ).isNull()
+
+        assertThat(result.testRuns).hasSize(1)
+        result.testRuns.first().let { testRun ->
+            val testIdentifier1 = TestRunnerService.TestIdentifier(
+                className = "class1",
+                name = "name1",
+                runNumber = testRun.deviceRun.runNumber
+            )
+            val screenshots1 = subject.getTestMatrixArtifacts(
+                testMatrixId,
+                listOf(testIdentifier1)
+            )
+            assertThat(
+                testRun.deviceRun.deviceId
+            ).isEqualTo(
+                "redfin-30-en-portrait"
+            )
+
+            assertThat(
+                testRun.logcat?.readFully()
+            ).isEqualTo(
+                "logcat".toByteArray(Charsets.UTF_8)
+            )
+
+            assertThat(
+                testRun.xmlResults.map { it.readFully().toString(Charsets.UTF_8) }
+            ).containsExactly(
+                "test_result_1 content xml"
+            )
+
+            assertThat(
+                testRun.testCaseArtifacts.size
+            ).isEqualTo(
+                1
+            )
+            assertThat(
+                testRun.testCaseArtifacts[
+                    testIdentifier1
+                ]?.size
+            ).isEqualTo(
+                1
+            )
+            // step and logcat both have valid values for test1
+            assertThat(
+                testRun.testCaseArtifacts[
+                    testIdentifier1
+                ]?.first {
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
+                }?.resultFileResource?.gcsPath.toString()
+            ).isEqualTo(
+                "$resultPath/redfin-30-en-portrait/test_cases/0000_logcat"
+            )
+            assertThat(
+                testRun.testCaseArtifacts[
+                    testIdentifier1
+                ]?.first {
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.LOGCAT
+                }?.resultFileResource?.readFully()?.toString(Charsets.UTF_8)
+            ).isEqualTo(
+                "test1 logcat"
+            )
+            assertThat(
+                screenshots1?.get(testIdentifier1)?.count {
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.PNG
+                }
+            ).isEqualTo(
+                3
+            )
+            assertThat(
+                screenshots1?.get(testIdentifier1)?.count {
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.TEXTPROTO
+                }
+            ).isEqualTo(
+                1
+            )
+            assertThat(
+                screenshots1?.get(testIdentifier1)?.first {
+                    it.resourceType == TestRunnerService.TestCaseArtifact.ResourceType.TEXTPROTO
+                }?.resultFileResource?.gcsPath.toString()
+            ).isEqualTo(
+                "$resultPath/redfin-30-en-portrait/artifacts/sdcard/Android/data/test/cache/androidx_screenshots/class1_name1_emulator_goldResult.textproto"
+            )
+
+            // step for test2 is missing
+            assertThat(
+                testRun.testCaseArtifacts[
+                    TestRunnerService.TestIdentifier(
+                        className = "class2",
+                        name = "name2",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]
+            ).isNull()
+            // No screenshots for test2
+            val testIdentifier2 = TestRunnerService.TestIdentifier(
+                className = "class2",
+                name = "name2",
+                runNumber = testRun.deviceRun.runNumber
+            )
+            val screenshots2 = subject.getTestMatrixArtifacts(
+                testMatrixId,
+                listOf(testIdentifier2)
+            )
+            assertThat(
+                screenshots2
+            ).isEmpty()
+            // logcat for test3 is missing from gcloud folder
+            assertThat(
+                testRun.testCaseArtifacts[
+                    TestRunnerService.TestIdentifier(
+                        className = "class3",
+                        name = "name3",
+                        runNumber = testRun.deviceRun.runNumber
+                    )
+                ]
+            ).isNull()
+            // No screenshots for test3 either
+            val testIdentifier3 = TestRunnerService.TestIdentifier(
+                className = "class2",
+                name = "name2",
+                runNumber = testRun.deviceRun.runNumber
+            )
+            val screenshots3 = subject.getTestMatrixArtifacts(
+                testMatrixId,
+                listOf(testIdentifier3)
+            )
+            assertThat(
+                screenshots3
+            ).isEmpty()
+        }
+    }
     @Test
     fun parseDeviceId() {
         assertThat(
