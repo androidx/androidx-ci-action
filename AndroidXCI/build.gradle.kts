@@ -34,7 +34,7 @@ val publishRepo = project.layout.buildDirectory.dir("repo")
 subprojects {
     tasks.withType(KotlinCompile::class.java).configureEach {
         kotlinOptions {
-            jvmTarget = "11"
+            jvmTarget = "17"
         }
     }
     pluginManager.withPlugin("maven-publish") {

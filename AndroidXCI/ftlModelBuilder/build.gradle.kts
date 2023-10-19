@@ -38,3 +38,8 @@ gradlePlugin {
         implementationClass = "dev.androidx.ci.codegen.plugin.GenerateModelsPlugin"
     }
 }
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}

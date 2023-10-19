@@ -32,3 +32,8 @@ dependencies {
 application {
     mainClass.set("dev.androidx.ci.cli.MainKt")
 }
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
