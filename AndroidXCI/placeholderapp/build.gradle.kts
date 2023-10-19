@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("com.android.application") version("7.3.0")
+    alias(libs.plugins.androidApplication)
 }
 
 android {
