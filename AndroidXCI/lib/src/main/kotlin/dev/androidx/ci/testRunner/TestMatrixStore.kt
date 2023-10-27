@@ -20,7 +20,6 @@ import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
-import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
