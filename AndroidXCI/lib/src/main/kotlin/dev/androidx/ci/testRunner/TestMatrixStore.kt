@@ -20,6 +20,7 @@ import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
+import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
@@ -49,7 +50,8 @@ internal class TestMatrixStore(
     private val datastoreApi: DatastoreApi,
     private val firebaseTestLabApi: FirebaseTestLabApi,
     toolsResultApi: ToolsResultApi,
-    private val resultsGcsPrefix: GcsPath
+    private val resultsGcsPrefix: GcsPath,
+    private val googleCloudApi: GoogleCloudApi
 ) {
     private val logger = logger()
     private val toolsResultStore = ToolsResultStore(
@@ -297,9 +299,15 @@ internal class TestMatrixStore(
             ),
             testSetup = testSetup
         )
+        var resultsStorageGcsPath = testRunKey.resultGcsPath().path
+        val existingResultsStorageGcsPath = googleCloudApi.existingFilePath(resultsStorageGcsPath)
+        if (existingResultsStorageGcsPath != null) {
+            logger.info { "Results storage gcs path already exists, updating to a unique one" }
+            resultsStorageGcsPath += UUID.randomUUID().toString()
+        }
         val resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = testRunKey.resultGcsPath().path
+                gcsPath = resultsStorageGcsPath
             ),
             toolResultsHistory = ToolResultsHistory(
                 projectId = firebaseProjectId,
@@ -335,9 +343,15 @@ internal class TestMatrixStore(
             )
         )
 
+        var resultsStorageGcsPath = testRunKey.resultGcsPath().path
+        val existingResultsStorageGcsPath = googleCloudApi.existingFilePath(resultsStorageGcsPath)
+        if (existingResultsStorageGcsPath != null) {
+            logger.info { "Results storage gcs path already exists, updating to a unique one" }
+            resultsStorageGcsPath += UUID.randomUUID().toString()
+        }
         val resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = testRunKey.resultGcsPath().path
+                gcsPath = resultsStorageGcsPath
             ),
             toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
         )

@@ -36,7 +36,8 @@ internal class FirebaseTestLabControllerTest {
             datastoreApi = fakeBackend.datastoreApi,
             firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
             toolsResultApi = fakeBackend.fakeToolsResultApi,
-            resultsGcsPrefix = GcsPath("gs://test-results")
+            resultsGcsPrefix = GcsPath("gs://test-results"),
+            googleCloudApi = fakeBackend.fakeGoogleCloudApi
         )
     )
 

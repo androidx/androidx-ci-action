@@ -17,8 +17,10 @@
 package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
+import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.fake.FakeDatastore
 import dev.androidx.ci.fake.FakeFirebaseTestLabApi
+import dev.androidx.ci.fake.FakeGoogleCloudApi
 import dev.androidx.ci.fake.FakeToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidDevice
@@ -37,15 +39,17 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 internal class TestMatrixStoreTest {
-    val firebaseTestLabApi = FakeFirebaseTestLabApi()
-    val datastoreApi = FakeDatastore()
-    val toolsResultApi = FakeToolsResultApi()
+    private val firebaseTestLabApi = FakeFirebaseTestLabApi()
+    private val datastoreApi = FakeDatastore()
+    private val toolsResultApi = FakeToolsResultApi()
+    private val fakeBackend = FakeBackend()
     private val store = TestMatrixStore(
         firebaseProjectId = "p1",
         firebaseTestLabApi = firebaseTestLabApi,
         datastoreApi = datastoreApi,
         toolsResultApi = toolsResultApi,
-        resultsGcsPrefix = GcsPath("gs://test")
+        resultsGcsPrefix = GcsPath("gs://test"),
+        googleCloudApi = fakeBackend.fakeGoogleCloudApi
     )
 
     private val envMatrix1 = EnvironmentMatrix(
