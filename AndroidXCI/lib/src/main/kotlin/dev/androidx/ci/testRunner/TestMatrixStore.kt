@@ -50,8 +50,7 @@ internal class TestMatrixStore(
     private val datastoreApi: DatastoreApi,
     private val firebaseTestLabApi: FirebaseTestLabApi,
     toolsResultApi: ToolsResultApi,
-    private val resultsGcsPrefix: GcsPath,
-    private val googleCloudApi: GoogleCloudApi
+    private val resultsGcsPrefix: GcsPath
 ) {
     private val logger = logger()
     private val toolsResultStore = ToolsResultStore(
@@ -299,15 +298,9 @@ internal class TestMatrixStore(
             ),
             testSetup = testSetup
         )
-        var resultsStorageGcsPath = testRunKey.resultGcsPath().path
-        val existingResultsStorageGcsPath = googleCloudApi.existingFilePath(resultsStorageGcsPath)
-        if (existingResultsStorageGcsPath != null) {
-            logger.info { "Results storage gcs path already exists, updating to a unique one" }
-            resultsStorageGcsPath += UUID.randomUUID().toString()
-        }
         val resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = resultsStorageGcsPath
+                gcsPath = testRunKey.resultGcsPath().path
             ),
             toolResultsHistory = ToolResultsHistory(
                 projectId = firebaseProjectId,
@@ -343,15 +336,9 @@ internal class TestMatrixStore(
             )
         )
 
-        var resultsStorageGcsPath = testRunKey.resultGcsPath().path
-        val existingResultsStorageGcsPath = googleCloudApi.existingFilePath(resultsStorageGcsPath)
-        if (existingResultsStorageGcsPath != null) {
-            logger.info { "Results storage gcs path already exists, updating to a unique one" }
-            resultsStorageGcsPath += UUID.randomUUID().toString()
-        }
         val resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = resultsStorageGcsPath
+                gcsPath = testRunKey.resultGcsPath().path
             ),
             toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
         )
@@ -389,5 +376,5 @@ internal class TestMatrixStore(
         )
     }
 
-    private fun TestRun.Id.resultGcsPath() = (resultsGcsPrefix + key.name)
+    private fun TestRun.Id.resultGcsPath() = (resultsGcsPrefix + key.name + UUID.randomUUID().toString())
 }

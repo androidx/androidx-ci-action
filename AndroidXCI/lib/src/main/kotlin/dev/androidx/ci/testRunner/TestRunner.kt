@@ -85,8 +85,7 @@ class TestRunner internal constructor(
         datastoreApi = datastoreApi,
         firebaseTestLabApi = firebaseTestLabApi,
         toolsResultApi = toolsResultApi,
-        resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$targetRunId"),
-        googleCloudApi = googleCloudApi
+        resultsGcsPrefix = googleCloudApi.getGcsPath("ftl/$targetRunId")
     )
     private val apkStore = ApkStore(googleCloudApi)
     private val testLabController = FirebaseTestLabController(

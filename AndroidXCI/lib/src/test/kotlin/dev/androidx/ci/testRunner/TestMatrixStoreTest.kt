@@ -41,14 +41,12 @@ internal class TestMatrixStoreTest {
     private val firebaseTestLabApi = FakeFirebaseTestLabApi()
     private val datastoreApi = FakeDatastore()
     private val toolsResultApi = FakeToolsResultApi()
-    private val fakeBackend = FakeBackend()
     private val store = TestMatrixStore(
         firebaseProjectId = "p1",
         firebaseTestLabApi = firebaseTestLabApi,
         datastoreApi = datastoreApi,
         toolsResultApi = toolsResultApi,
-        resultsGcsPrefix = GcsPath("gs://test"),
-        googleCloudApi = fakeBackend.fakeGoogleCloudApi
+        resultsGcsPrefix = GcsPath("gs://test")
     )
 
     private val envMatrix1 = EnvironmentMatrix(
