@@ -20,7 +20,6 @@ import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.fake.FakeDatastore
 import dev.androidx.ci.fake.FakeFirebaseTestLabApi
-import dev.androidx.ci.fake.FakeGoogleCloudApi
 import dev.androidx.ci.fake.FakeToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidDevice
