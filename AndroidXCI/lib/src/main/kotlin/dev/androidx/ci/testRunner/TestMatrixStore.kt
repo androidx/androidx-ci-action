@@ -299,7 +299,7 @@ internal class TestMatrixStore(
         )
         val resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = testRunKey.resultGcsPath().path
+                gcsPath = createUniqueResultGcsPath(testRunKey).path
             ),
             toolResultsHistory = ToolResultsHistory(
                 projectId = firebaseProjectId,
@@ -337,7 +337,7 @@ internal class TestMatrixStore(
 
         val resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = testRunKey.resultGcsPath().path
+                gcsPath = createUniqueResultGcsPath(testRunKey).path
             ),
             toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
         )
@@ -375,5 +375,7 @@ internal class TestMatrixStore(
         )
     }
 
-    private fun TestRun.Id.resultGcsPath() = (resultsGcsPrefix + key.name + UUID.randomUUID().toString())
+    private fun createUniqueResultGcsPath(testRunKey: TestRun.Id): GcsPath {
+        return resultsGcsPrefix + testRunKey.key.name + UUID.randomUUID().toString()
+    }
 }
