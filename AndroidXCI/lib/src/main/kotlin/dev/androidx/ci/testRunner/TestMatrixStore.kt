@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.testRunner
 
+import com.google.common.annotations.VisibleForTesting
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
@@ -299,7 +300,7 @@ internal class TestMatrixStore(
         )
         val resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = testRunKey.resultGcsPath().path
+                gcsPath = createUniqueResultGcsPath(testRunKey).path
             ),
             toolResultsHistory = ToolResultsHistory(
                 projectId = firebaseProjectId,
@@ -337,7 +338,7 @@ internal class TestMatrixStore(
 
         val resultStorage = ResultStorage(
             googleCloudStorage = GoogleCloudStorage(
-                gcsPath = testRunKey.resultGcsPath().path
+                gcsPath = createUniqueResultGcsPath(testRunKey).path
             ),
             toolResultsHistory = testMatrix.resultStorage.toolResultsHistory
         )
@@ -375,5 +376,8 @@ internal class TestMatrixStore(
         )
     }
 
-    private fun TestRun.Id.resultGcsPath() = (resultsGcsPrefix + key.name)
+    @VisibleForTesting
+    internal fun createUniqueResultGcsPath(testRunKey: TestRun.Id): GcsPath {
+        return resultsGcsPrefix + testRunKey.key.name + UUID.randomUUID().toString()
+    }
 }

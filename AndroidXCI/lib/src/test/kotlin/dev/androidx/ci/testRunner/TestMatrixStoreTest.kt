@@ -30,6 +30,7 @@ import dev.androidx.ci.generated.ftl.FileReference
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.UniformSharding
+import dev.androidx.ci.testRunner.dto.TestRun
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -37,9 +38,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 internal class TestMatrixStoreTest {
-    val firebaseTestLabApi = FakeFirebaseTestLabApi()
-    val datastoreApi = FakeDatastore()
-    val toolsResultApi = FakeToolsResultApi()
+    private val firebaseTestLabApi = FakeFirebaseTestLabApi()
+    private val datastoreApi = FakeDatastore()
+    private val toolsResultApi = FakeToolsResultApi()
     private val store = TestMatrixStore(
         firebaseProjectId = "p1",
         firebaseTestLabApi = firebaseTestLabApi,
@@ -328,6 +329,28 @@ internal class TestMatrixStoreTest {
                 it.testSetup?.directoriesToPull
             ).containsExactly("/sdcard/Android/data/$testPackageName/cache/androidx_screenshots")
         }
+    }
+
+    @Test
+    fun createUniqueResultGcsPath() = runBlocking {
+        val testRunId = TestRun.createId(
+            datastoreApi = datastoreApi,
+            environment = envMatrix1,
+            clientInfo = ClientInfo(name = "test"),
+            sharding = ShardingOption(),
+            appApk = createFakeApk("app.pak").apkInfo,
+            testApk = createFakeApk("test.apk").apkInfo,
+            deviceSetup = DeviceSetup()
+        )
+
+        val resultGcsPath1 = store.createUniqueResultGcsPath(testRunId)
+        val resultGcsPath2 = store.createUniqueResultGcsPath(testRunId)
+
+        assertThat(
+            resultGcsPath1
+        ).isNotEqualTo(
+            resultGcsPath2
+        )
     }
     private fun createFakeApk(name: String) = UploadedApk(
         gcsPath = GcsPath("gs://foo/bar/$name"),
