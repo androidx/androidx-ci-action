@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.testRunner
 
+import com.google.common.annotations.VisibleForTesting
 import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
@@ -375,7 +376,8 @@ internal class TestMatrixStore(
         )
     }
 
-    private fun createUniqueResultGcsPath(testRunKey: TestRun.Id): GcsPath {
+    @VisibleForTesting
+    internal fun createUniqueResultGcsPath(testRunKey: TestRun.Id): GcsPath {
         return resultsGcsPrefix + testRunKey.key.name + UUID.randomUUID().toString()
     }
 }
