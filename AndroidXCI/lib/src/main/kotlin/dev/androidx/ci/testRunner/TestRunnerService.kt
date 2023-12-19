@@ -124,6 +124,10 @@ interface TestRunnerService {
         gcsPath: GcsPath
     ): ResultFileResource?
 
+    suspend fun getTestMatrixTestIssues(
+        testMatrix: TestMatrix
+    ): List<String>
+
     companion object {
         /**
          * Creates an implementation of [TestRunnerService].

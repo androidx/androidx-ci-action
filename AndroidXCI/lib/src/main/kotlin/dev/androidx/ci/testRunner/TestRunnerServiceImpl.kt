@@ -26,6 +26,7 @@ import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
+import dev.androidx.ci.generated.testResults.TestIssue
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -278,6 +279,19 @@ internal class TestRunnerServiceImpl internal constructor(
                 blobVisitor
             )
         }
+    }
+
+    override suspend fun getTestMatrixTestIssues(testMatrix: TestMatrix): List<String> {
+        val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
+        val testIssues = steps.flatMap {
+            it.testExecutionStep?.testIssues?.filter { testIssue ->
+                (testIssue.severity?.equals(TestIssue.Severity.severe) == true)
+            } ?: emptyList()
+        }.mapNotNull {
+            it.errorMessage
+        }
+
+        return testIssues
     }
 
     suspend fun getTestMatrixResults(
