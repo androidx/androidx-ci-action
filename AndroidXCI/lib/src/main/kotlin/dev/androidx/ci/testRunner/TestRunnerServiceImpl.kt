@@ -281,14 +281,16 @@ internal class TestRunnerServiceImpl internal constructor(
         }
     }
 
-    override suspend fun getTestMatrixTestIssues(testMatrix: TestMatrix): List<String> {
+    override suspend fun getTestMatrixTestIssues(testMatrix: TestMatrix): List<TestRunnerService.TestIssue> {
         val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
         val testIssues = steps.flatMap {
-            it.testExecutionStep?.testIssues?.filter { testIssue ->
-                (testIssue.severity?.equals(TestIssue.Severity.severe) == true)
-            } ?: emptyList()
-        }.mapNotNull {
-            it.errorMessage
+            it.testExecutionStep?.testIssues ?: emptyList()
+        }.map {
+            TestRunnerService.TestIssue(
+                errorMessage = it.errorMessage ?: "error message not set",
+                severity = it.severity?.name ?: "unspecifiedSeverity",
+                type = it.type?.name
+            )
         }
 
         return testIssues

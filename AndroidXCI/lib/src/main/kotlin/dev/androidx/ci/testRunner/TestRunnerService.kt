@@ -130,7 +130,7 @@ interface TestRunnerService {
      */
     suspend fun getTestMatrixTestIssues(
         testMatrix: TestMatrix
-    ): List<String>
+    ): List<TestIssue>
 
     companion object {
         /**
@@ -353,4 +353,22 @@ interface TestRunnerService {
             const val TEXTPROTO = "textproto"
         }
     }
+
+    /**
+     * Represents the issue detected while running tests in a testMatrix in FTL
+     */
+    data class TestIssue(
+        /**
+         * Error message describing the issue
+         */
+        val errorMessage: String,
+        /**
+         * Severity of issue
+         */
+        val severity: String?,
+        /**
+         * Type of issue
+         */
+        val type: String?
+    )
 }

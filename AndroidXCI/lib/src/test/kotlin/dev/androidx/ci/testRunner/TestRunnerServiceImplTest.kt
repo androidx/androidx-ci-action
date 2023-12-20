@@ -1457,7 +1457,7 @@ class TestRunnerServiceImplTest {
         ).isNotEmpty()
 
         assertThat(
-            testIssues.first()
+            testIssues.first().errorMessage
         ).isEqualTo(
             "test module error"
         )
