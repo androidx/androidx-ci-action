@@ -124,6 +124,10 @@ interface TestRunnerService {
         gcsPath: GcsPath
     ): ResultFileResource?
 
+    /**
+     * Gets the testIssues encountered while running [testMatrix] in FTL.
+     * If no severe issues were observed, returns an emptyList.
+     */
     suspend fun getTestMatrixTestIssues(
         testMatrix: TestMatrix
     ): List<String>
