@@ -124,6 +124,14 @@ interface TestRunnerService {
         gcsPath: GcsPath
     ): ResultFileResource?
 
+    /**
+     * Gets the testIssues encountered while running [testMatrix] in FTL.
+     * If no severe issues were observed, returns an emptyList.
+     */
+    suspend fun getTestMatrixTestIssues(
+        testMatrix: TestMatrix
+    ): List<TestIssue>
+
     companion object {
         /**
          * Creates an implementation of [TestRunnerService].
@@ -345,4 +353,22 @@ interface TestRunnerService {
             const val TEXTPROTO = "textproto"
         }
     }
+
+    /**
+     * Represents the issue detected while running tests in a testMatrix in FTL
+     */
+    data class TestIssue(
+        /**
+         * Error message describing the issue
+         */
+        val errorMessage: String,
+        /**
+         * Severity of issue
+         */
+        val severity: String?,
+        /**
+         * Type of issue
+         */
+        val type: String?
+    )
 }

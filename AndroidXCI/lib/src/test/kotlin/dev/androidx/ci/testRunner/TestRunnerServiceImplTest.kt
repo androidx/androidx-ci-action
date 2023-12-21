@@ -19,6 +19,7 @@ import dev.androidx.ci.generated.testResults.FileReference
 import dev.androidx.ci.generated.testResults.Step
 import dev.androidx.ci.generated.testResults.TestCaseReference
 import dev.androidx.ci.generated.testResults.TestExecutionStep
+import dev.androidx.ci.generated.testResults.TestIssue
 import dev.androidx.ci.generated.testResults.ToolExecution
 import dev.androidx.ci.generated.testResults.ToolOutputReference
 import dev.androidx.ci.testRunner.vo.DeviceSetup
@@ -1407,6 +1408,58 @@ class TestRunnerServiceImplTest {
                     shard = 3
                 )
             )
+        )
+    }
+
+    @Test
+    fun getTestIssues() = runBlocking {
+        val testMatrix = fakeBackend.fakeFirebaseTestLabApi.createTestMatrix(
+            projectId = fakeBackend.firebaseProjectId,
+            requestId = "requestId",
+            testMatrix = TestMatrix(
+                resultStorage = ResultStorage(
+                    googleCloudStorage = GoogleCloudStorage(
+                        "${fakeBackend.fakeGoogleCloudApi.rootGcsPath}/my-test-matrix-results"
+                    ),
+                    toolResultsExecution = ToolResultsExecution(
+                        executionId = "test_executionId",
+                        historyId = "test_historyId"
+                    )
+                ),
+                projectId = fakeBackend.firebaseProjectId,
+                environmentMatrix = EnvironmentMatrix(),
+                testSpecification = TestSpecification()
+            )
+        )
+        assertThat(
+            subject.getTestMatrixTestIssues(testMatrix)
+        ).isEmpty()
+
+        fakeToolsResultApi.addStep(
+            projectId = fakeBackend.firebaseProjectId,
+            executionId = "test_executionId",
+            historyId = "test_historyId",
+            step = Step(
+                stepId = UUID.randomUUID().toString(),
+                testExecutionStep = TestExecutionStep(
+                    testIssues = listOf(
+                        TestIssue(
+                            errorMessage = "test module error",
+                            severity = TestIssue.Severity.severe
+                        )
+                    )
+                )
+            )
+        )
+        val testIssues = subject.getTestMatrixTestIssues(testMatrix)
+        assertThat(
+            testIssues
+        ).isNotEmpty()
+
+        assertThat(
+            testIssues.first().errorMessage
+        ).isEqualTo(
+            "test module error"
         )
     }
 
