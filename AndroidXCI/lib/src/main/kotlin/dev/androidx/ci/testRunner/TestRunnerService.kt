@@ -130,7 +130,7 @@ interface TestRunnerService {
      */
     suspend fun getTestMatrixTestIssues(
         testMatrix: TestMatrix
-    ): List<TestIssue>
+    ): Map<String, List<TestIssue>>
 
     companion object {
         /**

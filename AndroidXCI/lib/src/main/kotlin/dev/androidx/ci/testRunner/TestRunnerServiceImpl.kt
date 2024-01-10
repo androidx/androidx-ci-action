@@ -26,7 +26,6 @@ import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
-import dev.androidx.ci.generated.testResults.TestIssue
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
@@ -281,19 +280,21 @@ internal class TestRunnerServiceImpl internal constructor(
         }
     }
 
-    override suspend fun getTestMatrixTestIssues(testMatrix: TestMatrix): List<TestRunnerService.TestIssue> {
+    override suspend fun getTestMatrixTestIssues(testMatrix: TestMatrix): Map<String, List<TestRunnerService.TestIssue>> {
         val steps = testExecutionStore.getTestExecutionSteps(testMatrix)
-        val testIssues = steps.flatMap {
-            it.testExecutionStep?.testIssues ?: emptyList()
-        }.map {
-            TestRunnerService.TestIssue(
-                errorMessage = it.errorMessage ?: "error message not set",
-                severity = it.severity?.name ?: "unspecifiedSeverity",
-                type = it.type?.name
-            )
+        return steps.associate {
+            (it.stepId ?: "invalidStepId") to ((it.testExecutionStep?.testIssues)?.map { testIssue ->
+                TestRunnerService.TestIssue(
+                    errorMessage = testIssue.errorMessage ?: "error message not set",
+                    severity = testIssue.severity?.name ?: "unspecifiedSeverity",
+                    type = testIssue.type?.name
+                )
+            } ?: emptyList())
+        }.filter {
+            it.key != "invalidStepId"
+        }.filter {
+            it.value.isNotEmpty()
         }
-
-        return testIssues
     }
 
     suspend fun getTestMatrixResults(

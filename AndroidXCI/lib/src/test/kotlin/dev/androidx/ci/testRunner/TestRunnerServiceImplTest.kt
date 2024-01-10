@@ -1435,12 +1435,13 @@ class TestRunnerServiceImplTest {
             subject.getTestMatrixTestIssues(testMatrix)
         ).isEmpty()
 
+        val stepId = UUID.randomUUID().toString()
         fakeToolsResultApi.addStep(
             projectId = fakeBackend.firebaseProjectId,
             executionId = "test_executionId",
             historyId = "test_historyId",
             step = Step(
-                stepId = UUID.randomUUID().toString(),
+                stepId = stepId,
                 testExecutionStep = TestExecutionStep(
                     testIssues = listOf(
                         TestIssue(
@@ -1457,7 +1458,7 @@ class TestRunnerServiceImplTest {
         ).isNotEmpty()
 
         assertThat(
-            testIssues.first().errorMessage
+            testIssues[stepId]?.first()?.errorMessage
         ).isEqualTo(
             "test module error"
         )
