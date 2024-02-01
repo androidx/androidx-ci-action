@@ -135,14 +135,18 @@ internal class TestMatrixStore(
         checkNotNull(testMatrix.testMatrixId) {
             "Test matrix id for the base test matrix should not be null"
         }
-        check(testTargets.isNotEmpty()) {
-            "The test targets should not be empty"
+        val sharding = if (testTargets.isEmpty()) {
+            // It's beneficial to keep sharding same as base testMatrix
+            // when we are running all the tests instead of a subset
+            testMatrix.testSpecification.androidInstrumentationTest?.shardingOption
+        } else {
+            null
         }
         val testRunId = TestRun.createId(
             datastoreApi = datastoreApi,
             environment = testMatrix.environmentMatrix,
             clientInfo = testMatrix.clientInfo,
-            sharding = testMatrix.testSpecification.androidInstrumentationTest?.shardingOption,
+            sharding = sharding,
             testSetup = testMatrix.testSpecification.testSetup,
             testTargets = testTargets,
             baseTestMatrixId = testMatrix.testMatrixId
@@ -160,7 +164,8 @@ internal class TestMatrixStore(
             testRunKey = testRunId,
             testMatrix = testMatrix,
             testTargets = testTargets,
-            flakyTestAttempts = flakyTestAttempts
+            flakyTestAttempts = flakyTestAttempts,
+            sharding = sharding
         )
         logger.info {
             "created test matrix: $newTestMatrix"
@@ -324,7 +329,8 @@ internal class TestMatrixStore(
         testRunKey: TestRun.Id,
         testMatrix: TestMatrix,
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int = 0
+        flakyTestAttempts: Int = 0,
+        sharding: ShardingOption?
     ): TestMatrix {
         logger.trace {
             "test matrix id: ${testMatrix.testMatrixId}"
@@ -332,7 +338,8 @@ internal class TestMatrixStore(
 
         val testSpecification = testMatrix.testSpecification.copy(
             androidInstrumentationTest = testMatrix.testSpecification.androidInstrumentationTest?.copy(
-                testTargets = testTargets
+                testTargets = testTargets,
+                shardingOption = sharding
             )
         )
 
