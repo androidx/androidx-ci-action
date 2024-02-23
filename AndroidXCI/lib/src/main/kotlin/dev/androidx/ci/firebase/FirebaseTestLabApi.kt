@@ -70,13 +70,9 @@ internal interface FirebaseTestLabApi {
         fun build(
             config: Config.FirebaseTestLab
         ): FirebaseTestLabApi {
-            val dispatcher = Dispatcher().apply {
-                maxRequests = MAX_CONCURRENT_REQUESTS
-                maxRequestsPerHost = MAX_CONCURRENT_REQUESTS
-            }
             val client = OkHttpClient
                 .Builder()
-                .dispatcher(dispatcher)
+                .dispatcher(config.dispatcher)
                 .authenticateWith(
                     config.gcp
                 ).addInterceptor {
