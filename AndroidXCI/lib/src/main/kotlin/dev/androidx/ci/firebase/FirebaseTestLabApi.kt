@@ -27,6 +27,7 @@ import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
 import dev.androidx.ci.util.withLog4J
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -65,26 +66,34 @@ internal interface FirebaseTestLabApi {
     ): GetApkDetailsResponse
 
     companion object {
+        private const val MAX_CONCURRENT_REQUESTS = 64
         fun build(
             config: Config.FirebaseTestLab
         ): FirebaseTestLabApi {
-            val client = OkHttpClient.Builder().authenticateWith(
-                config.gcp
-            ).addInterceptor {
-                val newBuilder = it.request().newBuilder()
-                newBuilder.addHeader(
-                    "Content-Type", "application/json;charset=utf-8",
-                )
-                newBuilder.addHeader(
-                    "Accept", "application/json"
-                )
-                it.proceed(
-                    newBuilder.build()
-                )
-            }.withLog4J(
-                level = config.httpLogLevel,
-                klass = FirebaseTestLabApi::class
-            ).build()
+            val dispatcher = Dispatcher().apply {
+                maxRequests = MAX_CONCURRENT_REQUESTS
+                maxRequestsPerHost = MAX_CONCURRENT_REQUESTS
+            }
+            val client = OkHttpClient
+                .Builder()
+                .dispatcher(dispatcher)
+                .authenticateWith(
+                    config.gcp
+                ).addInterceptor {
+                    val newBuilder = it.request().newBuilder()
+                    newBuilder.addHeader(
+                        "Content-Type", "application/json;charset=utf-8",
+                    )
+                    newBuilder.addHeader(
+                        "Accept", "application/json"
+                    )
+                    it.proceed(
+                        newBuilder.build()
+                    )
+                }.withLog4J(
+                    level = config.httpLogLevel,
+                    klass = FirebaseTestLabApi::class
+                ).build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()
