@@ -27,7 +27,6 @@ import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
 import dev.androidx.ci.util.withLog4J
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
-import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
