@@ -66,7 +66,6 @@ internal interface FirebaseTestLabApi {
     ): GetApkDetailsResponse
 
     companion object {
-        private const val MAX_CONCURRENT_REQUESTS = 64
         fun build(
             config: Config.FirebaseTestLab
         ): FirebaseTestLabApi {
