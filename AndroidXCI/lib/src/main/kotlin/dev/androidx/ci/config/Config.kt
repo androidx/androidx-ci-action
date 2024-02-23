@@ -17,6 +17,7 @@
 package dev.androidx.ci.config
 
 import com.google.auth.Credentials
+import okhttp3.Dispatcher
 import okhttp3.logging.HttpLoggingInterceptor
 
 /**
@@ -44,6 +45,7 @@ internal class Config {
         val gcp: Gcp,
         val endPoint: String = "https://testing.googleapis.com/v1/",
         val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
+        val dispatcher: Dispatcher = Dispatcher()
     )
     class Datastore(
         val gcp: Gcp,

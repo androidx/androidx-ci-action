@@ -18,6 +18,7 @@ import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import okhttp3.Dispatcher
 import okhttp3.logging.HttpLoggingInterceptor
 import java.io.InputStream
 
@@ -173,7 +174,11 @@ interface TestRunnerService {
              * You may want to modify this if you want to use the same GCP account for isolated
              * test runs.
              */
-            testRunDataStoreObjectKind: String = AOSP_OBJECT_KIND
+            testRunDataStoreObjectKind: String = AOSP_OBJECT_KIND,
+            /**
+             * Dispatcher for making api calls to FTL
+             */
+            dispatcher: Dispatcher = Dispatcher()
         ): TestRunnerService {
             val httpLogLevel = if (logHttpCalls) {
                 HttpLoggingInterceptor.Level.BODY
@@ -211,6 +216,7 @@ interface TestRunnerService {
                     config = Config.FirebaseTestLab(
                         gcp = gcpConfig,
                         httpLogLevel = httpLogLevel,
+                        dispatcher = dispatcher
                     )
                 ),
                 gcsResultPath = gcsResultPath

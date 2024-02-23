@@ -68,23 +68,26 @@ internal interface FirebaseTestLabApi {
         fun build(
             config: Config.FirebaseTestLab
         ): FirebaseTestLabApi {
-            val client = OkHttpClient.Builder().authenticateWith(
-                config.gcp
-            ).addInterceptor {
-                val newBuilder = it.request().newBuilder()
-                newBuilder.addHeader(
-                    "Content-Type", "application/json;charset=utf-8",
-                )
-                newBuilder.addHeader(
-                    "Accept", "application/json"
-                )
-                it.proceed(
-                    newBuilder.build()
-                )
-            }.withLog4J(
-                level = config.httpLogLevel,
-                klass = FirebaseTestLabApi::class
-            ).build()
+            val client = OkHttpClient
+                .Builder()
+                .dispatcher(config.dispatcher)
+                .authenticateWith(
+                    config.gcp
+                ).addInterceptor {
+                    val newBuilder = it.request().newBuilder()
+                    newBuilder.addHeader(
+                        "Content-Type", "application/json;charset=utf-8",
+                    )
+                    newBuilder.addHeader(
+                        "Accept", "application/json"
+                    )
+                    it.proceed(
+                        newBuilder.build()
+                    )
+                }.withLog4J(
+                    level = config.httpLogLevel,
+                    klass = FirebaseTestLabApi::class
+                ).build()
             val moshi = Moshi.Builder()
                 .add(MetadataKotlinJsonAdapterFactory())
                 .build()
