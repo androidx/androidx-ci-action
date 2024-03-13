@@ -16,6 +16,7 @@ import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.ToolResultsExecution
 import dev.androidx.ci.generated.ftl.UniformSharding
 import dev.androidx.ci.generated.testResults.FileReference
+import dev.androidx.ci.generated.testResults.StackTrace
 import dev.androidx.ci.generated.testResults.Step
 import dev.androidx.ci.generated.testResults.TestCaseReference
 import dev.androidx.ci.generated.testResults.TestExecutionStep
@@ -1446,7 +1447,8 @@ class TestRunnerServiceImplTest {
                     testIssues = listOf(
                         TestIssue(
                             errorMessage = "test module error",
-                            severity = TestIssue.Severity.severe
+                            severity = TestIssue.Severity.severe,
+                            stackTrace = StackTrace(exception = "stack trace")
                         )
                     )
                 )
@@ -1461,6 +1463,11 @@ class TestRunnerServiceImplTest {
             testIssues[stepId]?.first()?.errorMessage
         ).isEqualTo(
             "test module error"
+        )
+        assertThat(
+            testIssues[stepId]?.first()?.stackTrace
+        ).isEqualTo(
+            "stack trace"
         )
     }
 
