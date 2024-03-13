@@ -375,6 +375,10 @@ interface TestRunnerService {
         /**
          * Type of issue
          */
-        val type: String?
+        val type: String?,
+        /**
+         * Stack trace message
+         */
+        val stackTrace: String?,
     )
 }

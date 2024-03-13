@@ -288,7 +288,8 @@ internal class TestRunnerServiceImpl internal constructor(
                     TestRunnerService.TestIssue(
                         errorMessage = testIssue.errorMessage ?: "error message not set",
                         severity = testIssue.severity?.name ?: "unspecifiedSeverity",
-                        type = testIssue.type?.name
+                        type = testIssue.type?.name,
+                        stackTrace = testIssue.stackTrace?.exception
                     )
                 } ?: emptyList()
                 )
