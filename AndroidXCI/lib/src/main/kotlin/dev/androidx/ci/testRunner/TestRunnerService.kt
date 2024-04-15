@@ -357,6 +357,7 @@ interface TestRunnerService {
             const val LOGCAT = "logcat"
             const val PNG = "png"
             const val TEXTPROTO = "textproto"
+            const val PROTOBINARY = "pb"
         }
     }
 
