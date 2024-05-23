@@ -262,7 +262,7 @@ internal class TestRunnerServiceImpl internal constructor(
                     }.add(
                         TestRunnerService.TestCaseArtifact(
                             ResultFileResourceImpl(visitor),
-                            visitor.fileName.substringAfterLast(".").uppercase(Locale.getDefault())
+                            visitor.fileName.substringAfterLast(".").uppercase(Locale.US)
                         )
                     )
                 }
