@@ -354,10 +354,10 @@ interface TestRunnerService {
         val resourceType: String
     ) {
         companion object ResourceType {
-            const val LOGCAT = "logcat"
-            const val PNG = "png"
-            const val TEXTPROTO = "textproto"
-            const val PROTOBINARY = "pb"
+            const val LOGCAT = "LOGCAT"
+            const val PNG = "PNG"
+            const val TEXTPROTO = "TEXTPROTO"
+            const val PROTOBINARY = "PB"
         }
     }
 

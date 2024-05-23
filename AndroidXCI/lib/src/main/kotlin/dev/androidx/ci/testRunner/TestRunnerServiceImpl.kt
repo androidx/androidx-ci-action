@@ -30,6 +30,7 @@ import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import java.io.InputStream
+import java.util.Locale
 
 /**
  * Real implementation of [TestRunnerService].
@@ -208,7 +209,7 @@ internal class TestRunnerServiceImpl internal constructor(
                     getTestResultFiles(visitor).addTestCaseArtifact(
                         testIdentifier,
                         ResultFileResourceImpl(visitor),
-                        "logcat"
+                        "LOGCAT"
                     )
                 }
             }
@@ -261,7 +262,7 @@ internal class TestRunnerServiceImpl internal constructor(
                     }.add(
                         TestRunnerService.TestCaseArtifact(
                             ResultFileResourceImpl(visitor),
-                            visitor.fileName.substringAfterLast(".")
+                            visitor.fileName.substringAfterLast(".").uppercase(Locale.US)
                         )
                     )
                 }
