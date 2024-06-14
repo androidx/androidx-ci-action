@@ -166,12 +166,16 @@ internal class FirebaseTestLabController(
     suspend fun getTestMatrix(
         testMatrixId: String
     ): TestMatrix? {
+        logger.info("Calling getTestMatrix in FTL on $testMatrixId")
         return try {
             firebaseTestLabApi.getTestMatrix(
                 projectId = firebaseProjectId,
                 testMatrixId = testMatrixId
             )
         } catch (httpException: HttpException) {
+            logger.error(httpException) {
+                "FTL getTestMatrix call ran into issues"
+            }
             if (httpException.code() == 404) {
                 return null
             }
