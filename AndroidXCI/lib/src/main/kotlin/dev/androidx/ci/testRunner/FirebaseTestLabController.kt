@@ -174,7 +174,7 @@ internal class FirebaseTestLabController(
             )
         } catch (httpException: HttpException) {
             logger.error(httpException) {
-                "FTL getTestMatrix call ran into issues"
+                "FTL getTestMatrix call for $testMatrixId ran into issues"
             }
             if (httpException.code() == 404) {
                 return null
