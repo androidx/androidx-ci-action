@@ -82,7 +82,8 @@ interface TestRunnerService {
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int = 2
+        flakyTestAttempts: Int = 2,
+        testTimeout: String = "2700s"
     ): ScheduleTestsResponse
 
     /**

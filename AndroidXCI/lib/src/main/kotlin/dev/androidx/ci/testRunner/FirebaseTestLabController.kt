@@ -111,7 +111,8 @@ internal class FirebaseTestLabController(
         pullScreenshots: Boolean = false,
         cachedTestMatrixFilter: CachedTestMatrixFilter,
         testTargets: List<String>? = null,
-        flakyTestAttempts: Int = 2
+        flakyTestAttempts: Int = 2,
+        testTimeout: String = "2700s"
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
@@ -129,7 +130,8 @@ internal class FirebaseTestLabController(
                 pullScreenshots = pullScreenshots,
                 cachedTestMatrixFilter = cachedTestMatrixFilter,
                 testTargets = testTargets,
-                flakyTestAttempts = flakyTestAttempts
+                flakyTestAttempts = flakyTestAttempts,
+                testTimeout = testTimeout
             )
         }
     }
