@@ -72,7 +72,7 @@ internal class TestMatrixStore(
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2,
-        testTimeout: String = "2700s"
+        testTimeout: Int = 2700
     ): TestMatrix {
 
         val testRunId = TestRun.createId(
@@ -263,7 +263,7 @@ internal class TestMatrixStore(
         pullScreenshots: Boolean = false,
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2,
-        testTimeout: String = "2700s"
+        testTimeout: Int = 2700
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -291,7 +291,7 @@ internal class TestMatrixStore(
             )
         }
         val testSpecification = TestSpecification(
-            testTimeout = testTimeout,
+            testTimeout = "${testTimeout}s",
             disableVideoRecording = false,
             disablePerformanceMetrics = true, // Not a useful feature for androidx
             androidInstrumentationTest = AndroidInstrumentationTest(
