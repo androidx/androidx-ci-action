@@ -103,7 +103,7 @@ internal class TestRunnerServiceImpl internal constructor(
         cachedTestMatrixFilter: CachedTestMatrixFilter,
         testTargets: List<String>?,
         flakyTestAttempts: Int,
-        testTimeout: Int
+        testTimeoutSeconds: Int
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
             appApk = appApk ?: apkStore.getPlaceholderApk(),
@@ -116,7 +116,7 @@ internal class TestRunnerServiceImpl internal constructor(
             cachedTestMatrixFilter = cachedTestMatrixFilter,
             testTargets = testTargets,
             flakyTestAttempts = flakyTestAttempts,
-            testTimeout = testTimeout
+            testTimeoutSeconds = testTimeoutSeconds
         )
         return TestRunnerService.ScheduleTestsResponse.create(
             testMatrices
