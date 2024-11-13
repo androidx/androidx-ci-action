@@ -266,6 +266,11 @@ internal interface BlobVisitor {
         get() = gcsPath.path.substringAfterLast('/')
 
     /**
+     * The size of the blob
+     */
+    val size: Long
+
+    /**
      * Opens the input stream to the blob. You must make sure to close it after using it.
      */
     fun obtainInputStream(): InputStream
@@ -288,4 +293,6 @@ private class BlobVisitorImpl(
     override fun toString(): String {
         return "Blob($gcsPath)"
     }
+
+    override val size: Long = blob.size
 }
