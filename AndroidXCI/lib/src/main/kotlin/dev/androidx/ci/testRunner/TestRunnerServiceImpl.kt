@@ -347,6 +347,7 @@ internal class TestRunnerServiceImpl internal constructor(
         private val blobVisitor: BlobVisitor
     ) : TestRunnerService.ResultFileResource {
         override val gcsPath = blobVisitor.gcsPath
+        override val size = blobVisitor.size
         override fun openInputStream(): InputStream = blobVisitor.obtainInputStream()
         override fun toString(): String {
             return "ResultFile('$gcsPath')"

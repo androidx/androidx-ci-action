@@ -57,6 +57,9 @@ internal class FakeGoogleCloudApi(
                     get() = entry.key.path.substringAfter(gcsPath.path).trimStart('/')
                 override val gcsPath: GcsPath
                     get() = entry.key
+                override val size: Long
+                    get() = artifacts[gcsPath]?.size?.toLong() ?: 0
+
                 override fun obtainInputStream(): InputStream {
                     return entry.value.inputStream()
                 }
@@ -71,6 +74,9 @@ internal class FakeGoogleCloudApi(
                     get() = ""
                 override val gcsPath: GcsPath
                     get() = gcsPath
+                override val size: Long
+                    get() = artifacts[gcsPath]?.size?.toLong() ?: 0
+
                 override fun obtainInputStream(): InputStream {
                     return artifacts[gcsPath]?.inputStream() ?: InputStream.nullInputStream()
                 }

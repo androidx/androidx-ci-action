@@ -238,6 +238,11 @@ interface TestRunnerService {
          * Creates an [InputStream] for the file. Note that you must close it after using.
          */
         fun openInputStream(): InputStream
+
+        /**
+         * Size of the file.
+         */
+        val size: Long
     }
 
     /**
