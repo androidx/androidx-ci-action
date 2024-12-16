@@ -214,6 +214,8 @@ internal class TestRunnerServiceImpl internal constructor(
                         "LOGCAT"
                     )
                 }
+            } else if (fileName.contains(CRASH_REPORT_FILE_NAME)) {
+                getTestResultFiles(visitor).crashReport = ResultFileResourceImpl(visitor)
             }
         }
         // remove this if block when b/299975596 is fixed
@@ -342,6 +344,7 @@ internal class TestRunnerServiceImpl internal constructor(
         private const val TEST_RESULT_XML_PREFIX = "test_result_"
         private const val TEST_RESULT_XML_SUFFIX = ".xml"
         private const val INSTRUMENTATION_RESULTS_FILE_NAME = "instrumentation.results"
+        private const val CRASH_REPORT_FILE_NAME = "crash"
     }
     class ResultFileResourceImpl(
         private val blobVisitor: BlobVisitor
@@ -372,6 +375,8 @@ internal class TestRunnerServiceImpl internal constructor(
         override val xmlResults: List<TestRunnerService.ResultFileResource> = xmlResultBlobs
         override val testCaseArtifacts: Map<TestRunnerService.TestIdentifier, List<TestRunnerService.TestCaseArtifact>> = testCaseArtifactBlobs
         override val deviceRun: DeviceRun = DeviceRun.create(fullDeviceId)
+        override var crashReport: TestRunnerService.ResultFileResource? = null
+            internal set
 
         internal fun addXmlResult(resultFileResource: TestRunnerService.ResultFileResource) {
             xmlResultBlobs.add(resultFileResource)

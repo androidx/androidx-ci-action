@@ -347,6 +347,11 @@ interface TestRunnerService {
          * Test case log files produced by the test.
          */
         val testCaseArtifacts: Map<TestIdentifier, List<TestCaseArtifact>>
+
+        /**
+         * Crash report if module encountered a crash
+         */
+        val crashReport: ResultFileResource?
     }
 
     data class TestCaseArtifact(
