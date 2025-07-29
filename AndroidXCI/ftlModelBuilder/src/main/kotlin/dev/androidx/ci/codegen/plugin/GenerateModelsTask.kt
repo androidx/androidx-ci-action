@@ -21,15 +21,15 @@ import dev.androidx.ci.codegen.DiscoveryDocumentModelGenerator
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
-import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 
 /**
  * Task that generates kotlin model code based on a discovery document.
  */
-@CacheableTask
+@DisableCachingByDefault // the models are backed by a network task so it could change on us
 internal abstract class GenerateModelsTask : DefaultTask() {
     @get:Input
     abstract val models: ListProperty<GeneratedModelInfo>
