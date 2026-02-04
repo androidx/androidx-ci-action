@@ -22,6 +22,7 @@ import dev.androidx.ci.gcloud.BlobVisitor
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.gcloud.GoogleCloudApi
 import dev.androidx.ci.generated.ftl.AndroidDevice
+import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
@@ -103,7 +104,8 @@ internal class TestRunnerServiceImpl internal constructor(
         cachedTestMatrixFilter: CachedTestMatrixFilter,
         testTargets: List<String>?,
         flakyTestAttempts: Int,
-        testTimeoutSeconds: Int
+        testTimeoutSeconds: Int,
+        orchestratorOption: OrchestratorOption?,
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = testLabController.submitTests(
             appApk = appApk ?: apkStore.getPlaceholderApk(),
@@ -116,7 +118,8 @@ internal class TestRunnerServiceImpl internal constructor(
             cachedTestMatrixFilter = cachedTestMatrixFilter,
             testTargets = testTargets,
             flakyTestAttempts = flakyTestAttempts,
-            testTimeoutSeconds = testTimeoutSeconds
+            testTimeoutSeconds = testTimeoutSeconds,
+            orchestratorOption = orchestratorOption,
         )
         return TestRunnerService.ScheduleTestsResponse.create(
             testMatrices

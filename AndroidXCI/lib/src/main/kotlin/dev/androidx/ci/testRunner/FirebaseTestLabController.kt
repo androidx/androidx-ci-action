@@ -21,6 +21,7 @@ import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.dto.EnvironmentType
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.AndroidDeviceList
+import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.ShardingOption
@@ -112,7 +113,8 @@ internal class FirebaseTestLabController(
         cachedTestMatrixFilter: CachedTestMatrixFilter,
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2,
-        testTimeoutSeconds: Int = 2700
+        testTimeoutSeconds: Int = 2700,
+        orchestratorOption: OrchestratorOption? = null,
     ): List<TestMatrix> {
         val devices = (devicePicker ?: defaultDevicePicker).pickDevices()
         logger.info {
@@ -131,7 +133,8 @@ internal class FirebaseTestLabController(
                 cachedTestMatrixFilter = cachedTestMatrixFilter,
                 testTargets = testTargets,
                 flakyTestAttempts = flakyTestAttempts,
-                testTimeoutSeconds = testTimeoutSeconds
+                testTimeoutSeconds = testTimeoutSeconds,
+                orchestratorOption = orchestratorOption,
             )
         }
     }

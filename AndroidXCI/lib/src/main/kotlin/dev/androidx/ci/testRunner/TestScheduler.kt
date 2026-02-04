@@ -125,7 +125,7 @@ internal sealed interface TestScheduler {
             ).filter {
                 it.entry.name.endsWith("AndroidTest.json")
             }.mapNotNull { zipEntryScope ->
-                adapter.fromJson(zipEntryScope.bytes.toString(Charsets.UTF_8)).also { testRunConfig ->
+                adapter.fromJson(zipEntryScope.bytes.toString(Charsets.UTF_8)).also { _ ->
                     "Found AndroidTest config: ${zipEntryScope.entry.name}"
                 }
             }.filter { testRunConfig ->

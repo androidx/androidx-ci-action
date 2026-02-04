@@ -23,6 +23,7 @@ import dev.androidx.ci.fake.FakeToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.AndroidDeviceList
+import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
@@ -340,7 +341,8 @@ internal class TestMatrixStoreTest {
             sharding = ShardingOption(),
             appApk = createFakeApk("app.pak").apkInfo,
             testApk = createFakeApk("test.apk").apkInfo,
-            deviceSetup = DeviceSetup()
+            deviceSetup = DeviceSetup(),
+            orchestratorOption = OrchestratorOption.DO_NOT_USE_ORCHESTRATOR,
         )
 
         val resultGcsPath1 = store.createUniqueResultGcsPath(testRunId)

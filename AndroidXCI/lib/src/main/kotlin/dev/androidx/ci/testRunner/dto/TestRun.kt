@@ -23,6 +23,7 @@ import com.google.cloud.datastore.Key
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import dev.androidx.ci.datastore.DatastoreApi
+import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.ShardingOption
@@ -72,7 +73,8 @@ internal class TestRun(
             appApk: ApkInfo,
             testApk: ApkInfo,
             deviceSetup: DeviceSetup?,
-            sharding: ShardingOption?
+            sharding: ShardingOption?,
+            orchestratorOption: OrchestratorOption?,
         ): Id {
             val json = adapter.toJson(
                 mapOf(
@@ -88,7 +90,7 @@ internal class TestRun(
                         it.gcsPath.path
                     }, // The order we install additional apks is important, so we do not sort here.
                     "directoriesToPull" to deviceSetup?.directoriesToPull?.sorted()
-                )
+                ) + if (orchestratorOption != null) mapOf("orchestratorOption" to orchestratorOption) else mapOf()
             )
             val sha = sha256(json.toByteArray(Charsets.UTF_8))
             return Id(datastoreApi.createKey(datastoreApi.testRunObjectKind, sha))

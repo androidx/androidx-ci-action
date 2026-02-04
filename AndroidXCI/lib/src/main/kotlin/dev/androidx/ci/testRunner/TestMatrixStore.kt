@@ -22,6 +22,7 @@ import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest
+import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.FileReference
@@ -72,7 +73,8 @@ internal class TestMatrixStore(
         cachedTestMatrixFilter: CachedTestMatrixFilter = { true },
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2,
-        testTimeoutSeconds: Int = 2700
+        testTimeoutSeconds: Int = 2700,
+        orchestratorOption: OrchestratorOption? = null,
     ): TestMatrix {
 
         val testRunId = TestRun.createId(
@@ -82,7 +84,8 @@ internal class TestMatrixStore(
             sharding = sharding,
             appApk = appApk.apkInfo,
             testApk = testApk.apkInfo,
-            deviceSetup = deviceSetup
+            deviceSetup = deviceSetup,
+            orchestratorOption = orchestratorOption,
         )
         logger.trace {
             "test run id: $testRunId"
@@ -263,7 +266,8 @@ internal class TestMatrixStore(
         pullScreenshots: Boolean = false,
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2,
-        testTimeoutSeconds: Int = 2700
+        testTimeoutSeconds: Int = 2700,
+        orchestratorOption: OrchestratorOption? = null,
     ): TestMatrix {
         val packageName = firebaseTestLabApi.getApkDetails(
             FileReference(
@@ -302,7 +306,8 @@ internal class TestMatrixStore(
                     gcsPath = testApk.gcsPath.path
                 ),
                 shardingOption = sharding,
-                testTargets = testTargets
+                testTargets = testTargets,
+                orchestratorOption = orchestratorOption
             ),
             testSetup = testSetup
         )
