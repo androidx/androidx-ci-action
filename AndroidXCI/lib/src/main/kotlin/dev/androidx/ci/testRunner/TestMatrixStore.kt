@@ -106,7 +106,8 @@ internal class TestMatrixStore(
             pullScreenshots = pullScreenshots,
             testTargets = testTargets,
             flakyTestAttempts = flakyTestAttempts,
-            testTimeoutSeconds = testTimeoutSeconds
+            testTimeoutSeconds = testTimeoutSeconds,
+            orchestratorOption = orchestratorOption,
         )
         logger.info {
             "created test matrix: $newTestMatrix"
