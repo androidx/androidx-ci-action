@@ -10,11 +10,11 @@ import dev.androidx.ci.generated.ftl.EnvironmentVariable
 import dev.androidx.ci.generated.ftl.GoogleCloudStorage
 import dev.androidx.ci.generated.ftl.ResultStorage
 import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.generated.ftl.SmartSharding
 import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
 import dev.androidx.ci.generated.ftl.TestMatrix
 import dev.androidx.ci.generated.ftl.TestSpecification
 import dev.androidx.ci.generated.ftl.ToolResultsExecution
-import dev.androidx.ci.generated.ftl.UniformSharding
 import dev.androidx.ci.generated.testResults.FileReference
 import dev.androidx.ci.generated.testResults.StackTrace
 import dev.androidx.ci.generated.testResults.Step
@@ -244,9 +244,8 @@ class TestRunnerServiceImplTest {
         ).isEqualTo(clientInfo)
 
         // shard
-        val shardingOption = ShardingOption(
-            uniformSharding = UniformSharding(3)
-        )
+        val shardingOption = ShardingOption(smartSharding = SmartSharding(targetedShardDuration = "600s"))
+
         val shardedTest = subject.scheduleTests(
             testApk = upload1,
             appApk = null,
