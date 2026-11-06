@@ -38,6 +38,7 @@ class TestRunnerServiceImplTest {
         datastoreApi = fakeBackend.datastoreApi,
         toolsResultApi = fakeToolsResultApi,
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
+        deviceRunApi = fakeBackend.fakeDeviceRunApi,
         gcsResultPath = "testRunnerServiceTest"
     )
     private val devicePicker = { _: TestEnvironmentCatalog ->

@@ -86,6 +86,7 @@ interface TestRunnerService {
         flakyTestAttempts: Int = 2,
         testTimeoutSeconds: Int = 2700,
         orchestratorOption: OrchestratorOption? = null,
+        testBackend: TestBackend = TestBackend.FTL
     ): ScheduleTestsResponse
 
     /**
@@ -222,6 +223,13 @@ interface TestRunnerService {
                         dispatcher = dispatcher
                     )
                 ),
+                deviceRunApi = dev.androidx.ci.devicerun.DeviceRunApi.build(
+                    config = Config.DeviceRun(
+                        gcp = gcpConfig,
+                        httpLogLevel = httpLogLevel,
+                        dispatcher = dispatcher
+                    )
+                ),
                 gcsResultPath = gcsResultPath
             )
         }
@@ -262,11 +270,24 @@ interface TestRunnerService {
         /**
          * Number of re-used test matrices.
          */
-        val alreadyCompletedTests: Int
+        val alreadyCompletedTests: Int,
+        /**
+         * All DDP sessions that were either created or re-used from previous runs.
+         */
+        val ddpSessions: List<dev.androidx.ci.generated.ddp.Session> = emptyList(),
+        /**
+         * Numbers of new DDP sessions
+         */
+        val pendingDdpSessions: Int = 0,
+        /**
+         * Number of re-used DDP sessions.
+         */
+        val alreadyCompletedDdpSessions: Int = 0
     ) {
         companion object {
             internal fun create(
-                testMatrices: List<TestMatrix>
+                testMatrices: List<TestMatrix>,
+                ddpSessions: List<dev.androidx.ci.generated.ddp.Session> = emptyList()
             ) = ScheduleTestsResponse(
                 testMatrices = testMatrices,
                 pendingTests = testMatrices.count {
@@ -274,6 +295,15 @@ interface TestRunnerService {
                 },
                 alreadyCompletedTests = testMatrices.count {
                     it.isComplete()
+                },
+                ddpSessions = ddpSessions,
+                pendingDdpSessions = ddpSessions.count {
+                    val status = it.sessionReport?.status?.statusType
+                    status != dev.androidx.ci.generated.ddp.Status.StatusType.DONE
+                },
+                alreadyCompletedDdpSessions = ddpSessions.count {
+                    val status = it.sessionReport?.status?.statusType
+                    status == dev.androidx.ci.generated.ddp.Status.StatusType.DONE
                 }
             )
         }
