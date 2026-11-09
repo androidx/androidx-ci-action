@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ internal class SessionRun(
     }
 }
 
-internal fun SessionRun.toEntity(): FullEntity<IncompleteKey> = Entity.newBuilder()
+internal fun SessionRun.toEntity(): Entity = Entity.newBuilder(id.key)
     .set(PROP_SESSION_ID, sessionId)
     .setKey(id.key)
     .build()
