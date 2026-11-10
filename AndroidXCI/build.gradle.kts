@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinJvm) apply false
+    alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.ktlint)
     alias(libs.plugins.ktlintIdea)
 }
@@ -33,8 +35,8 @@ val publishVersion = githubRunId.orElse("").map {
 val publishRepo = project.layout.buildDirectory.dir("repo")
 subprojects {
     tasks.withType(KotlinCompile::class.java).configureEach {
-        kotlinOptions {
-            jvmTarget = "17"
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
     pluginManager.withPlugin("maven-publish") {

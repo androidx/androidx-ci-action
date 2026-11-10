@@ -22,8 +22,8 @@ import org.gradle.api.file.Directory
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
-import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetContainer
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 /**
@@ -49,7 +49,7 @@ class GenerateModelsPlugin : Plugin<Project> {
             )
         }
 
-        target.tasks.withType(KotlinCompile::class.java).configureEach {
+        target.tasks.withType(KotlinCompilationTask::class.java).configureEach {
             dependsOn(generateModelsTaskProvider)
         }
     }
