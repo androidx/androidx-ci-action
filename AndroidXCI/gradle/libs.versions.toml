@@ -1,9 +1,9 @@
 [versions]
 retrofit = "2.9.0"
 okhttp = "4.9.1"
-moshi = "1.14.0"
-moshix = "0.21.0"
-kotlin = "1.8.0"
+moshi = "1.15.2"
+moshix = "0.38.0"
+kotlin = "2.4.21"
 kotlinpoet = "1.8.0"
 ktlint = "11.0.0"
 coroutines = "1.6.1"
@@ -32,7 +32,7 @@ retrofit = ["retrofit-core", "retrofit-converter-moshi", "okhttp-core", "okhttp-
 
 log4j = ["log4j-kotlin", "log4j-core"]
 [plugins]
-androidApplication = { id = "com.android.application", version = "8.1.2" }
+androidApplication = { id = "com.android.application", version = "9.5.1" }
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 ktlintIdea = { id = "org.jlleitschuh.gradle.ktlint-idea", version.ref = "ktlint" }
