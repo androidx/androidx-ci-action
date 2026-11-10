@@ -149,6 +149,20 @@ internal class TestRunnerServiceImpl internal constructor(
                 orchestratorOption = orchestratorOption,
                 cachedSessionFilter = { false },
                 gcsSmartShardingFilePath = gcsSmartShardingFilePath,
+                jobLabels = { device ->
+                    val matrixId = if (testBackend == TestBackend.BOTH) {
+                        testMatrices.firstOrNull { matrix ->
+                            device in matrix.environmentMatrix.androidDeviceList?.androidDevices.orEmpty()
+                        }?.testMatrixId
+                    } else {
+                        null
+                    }
+                    if (matrixId.isNullOrBlank()) {
+                        emptyMap()
+                    } else {
+                        mapOf(FTL_MATRIX_ID_LABEL to matrixId)
+                    }
+                }
             )
             listOf(session)
         } else {
@@ -383,6 +397,7 @@ internal class TestRunnerServiceImpl internal constructor(
         private const val TEST_RESULT_XML_SUFFIX = ".xml"
         private const val INSTRUMENTATION_RESULTS_FILE_NAME = "instrumentation.results"
         private const val CRASH_REPORT_FILE_NAME = "crash"
+        private const val FTL_MATRIX_ID_LABEL = "ftl_matrix_id"
     }
     class ResultFileResourceImpl(
         private val blobVisitor: BlobVisitor
