@@ -215,7 +215,7 @@ class TestRunner internal constructor(
             )
             val gcpConfig = Config.Gcp(
                 credentials = credentials,
-                projectId = credentials.projectId
+                projectId = credentials.projectId!!
             )
             return TestRunner(
                 googleCloudApi = GoogleCloudApi.build(
