@@ -1,6 +1,7 @@
 package dev.androidx.ci.testRunner
 
 import com.google.common.truth.Truth.assertThat
+import dev.androidx.ci.devicerun.DdpShadowRunLabels
 import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.ClientInfo
@@ -318,6 +319,77 @@ class TestRunnerServiceImplTest {
                 extraApk.gcsPath.path
             )
         }
+    }
+
+    @Test
+    fun schedule_bothBackends_labelsDdpJobsWithFtlTestMatrix() = runBlocking<Unit> {
+        val testApk = subject.getOrUploadApk(
+            name = "foo.apk",
+            sha256 = sha256(byteArrayOf(1, 2, 3, 4, 5))
+        ) {
+            byteArrayOf(1, 2, 3, 4, 5)
+        }
+        val appApk = subject.getOrUploadApk(
+            name = "app.apk",
+            sha256 = sha256(byteArrayOf(6, 7, 8))
+        ) {
+            byteArrayOf(6, 7, 8)
+        }
+        val clientInfo = ClientInfo(
+            name = "test",
+            clientInfoDetails = listOf(
+                ClientInfoDetail("testRunConfigName", "fooAndroidTest.json")
+            )
+        )
+        val result = subject.scheduleTests(
+            testApk = testApk,
+            appApk = appApk,
+            clientInfo = clientInfo,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker,
+            testBackend = TestBackend.BOTH
+        )
+        val testMatrix = result.testMatrices.single()
+        val ddpJob = result.ddpSessions.single().sessionConfig.jobConfigs.single()
+        assertThat(
+            ddpJob.labels as Map<*, *>?
+        ).containsExactlyEntriesIn(
+            mapOf(
+                DdpShadowRunLabels.FTL_MATRIX_ID to testMatrix.testMatrixId,
+                DdpShadowRunLabels.FTL_PROJECT_ID to fakeBackend.firebaseProjectId,
+                DdpShadowRunLabels.DARK_LAUNCH_EXPERIMENT to DdpShadowRunLabels.DEFAULT_EXPERIMENT,
+                DdpShadowRunLabels.COMPATIBILITY_MODE to DdpShadowRunLabels.DEFAULT_COMPATIBILITY_MODE,
+                DdpShadowRunLabels.TEST_APK_SHA256 to testApk.apkInfo.idHash,
+                DdpShadowRunLabels.APP_APK_SHA256 to appApk.apkInfo.idHash,
+                "testRunConfigName" to "fooAndroidTest.json"
+            )
+        )
+    }
+
+    @Test
+    fun schedule_ddpBackend_doesNotLabelDdpJobs() = runBlocking<Unit> {
+        val testApk = subject.getOrUploadApk(
+            name = "foo.apk",
+            sha256 = sha256(byteArrayOf(1, 2, 3, 4, 5))
+        ) {
+            byteArrayOf(1, 2, 3, 4, 5)
+        }
+        val result = subject.scheduleTests(
+            testApk = testApk,
+            appApk = null,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker,
+            testBackend = TestBackend.DDP
+        )
+        assertThat(
+            result.testMatrices
+        ).isEmpty()
+        assertThat(
+            result.ddpSessions.single().sessionConfig.jobConfigs.single().labels
+        ).isNull()
     }
 
     @Test

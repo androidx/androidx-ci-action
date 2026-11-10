@@ -33,6 +33,7 @@ import dev.androidx.ci.testRunner.vo.UploadedApk
 import java.io.InputStream
 import java.util.Locale
 
+import dev.androidx.ci.devicerun.DdpShadowRunLabels
 import dev.androidx.ci.devicerun.DeviceRunApi
 import dev.androidx.ci.devicerun.DeviceRunController
 import dev.androidx.ci.devicerun.DeviceRunSessionStore
@@ -42,7 +43,7 @@ import dev.androidx.ci.devicerun.DeviceRunSessionStore
  */
 internal class TestRunnerServiceImpl internal constructor(
     private val googleCloudApi: GoogleCloudApi,
-    firebaseProjectId: String,
+    private val firebaseProjectId: String,
     datastoreApi: DatastoreApi,
     toolsResultApi: ToolsResultApi,
     firebaseTestLabApi: FirebaseTestLabApi,
@@ -123,9 +124,10 @@ internal class TestRunnerServiceImpl internal constructor(
         orchestratorOption: OrchestratorOption?,
         testBackend: TestBackend
     ): TestRunnerService.ScheduleTestsResponse {
+        val resolvedAppApk = appApk ?: apkStore.getPlaceholderApk()
         val testMatrices = if (testBackend == TestBackend.FTL || testBackend == TestBackend.BOTH) {
             testLabController.submitTests(
-                appApk = appApk ?: apkStore.getPlaceholderApk(),
+                appApk = resolvedAppApk,
                 testApk = testApk,
                 clientInfo = clientInfo,
                 sharding = sharding,
@@ -145,7 +147,7 @@ internal class TestRunnerServiceImpl internal constructor(
         val ddpSessions = if (testBackend == TestBackend.DDP || testBackend == TestBackend.BOTH) {
             val devices = devicePicker(testLabController.getCatalog())
             val session = deviceRunSessionStore.getOrCreateSession(
-                appApk = appApk ?: apkStore.getPlaceholderApk(),
+                appApk = resolvedAppApk,
                 testApk = testApk,
                 devices = devices,
                 clientInfo = clientInfo,
@@ -155,7 +157,23 @@ internal class TestRunnerServiceImpl internal constructor(
                 testTargets = testTargets,
                 flakyTestAttempts = flakyTestAttempts,
                 testTimeoutSeconds = testTimeoutSeconds,
-                orchestratorOption = orchestratorOption
+                orchestratorOption = orchestratorOption,
+                jobLabels = { device ->
+                    if (testBackend == TestBackend.BOTH) {
+                        // Pair each DDP job with the FTL test matrix for the same device so that their
+                        // results can be compared.
+                        DdpShadowRunLabels.forDevice(
+                            device = device,
+                            ftlTestMatrices = testMatrices,
+                            ftlProjectId = firebaseProjectId,
+                            testApk = testApk.apkInfo,
+                            appApk = resolvedAppApk.apkInfo,
+                            clientInfo = clientInfo
+                        )
+                    } else {
+                        emptyMap()
+                    }
+                }
             )
             listOf(session)
         } else {

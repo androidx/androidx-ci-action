@@ -165,6 +165,56 @@ internal class DeviceRunControllerTest {
         assertThat(flakyAttempts).isEqualTo(3)
     }
 
+    @Test
+    fun testSubmitTests_jobLabels() = runBlocking<Unit> {
+        val appApk = createUploadedApk("app.apk")
+        val testApk = createUploadedApk("test.apk")
+        val devices = listOf(
+            AndroidDevice("tokay", "34", "en_US", "portrait"),
+            AndroidDevice("oriole", "31", "en_US", "portrait")
+        )
+
+        val session = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devices = devices,
+            sharding = null,
+            deviceSetup = null,
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            jobLabels = { device ->
+                if (device.androidModelId == "tokay") {
+                    mapOf("ftl_matrix_id" to "tokay-matrix")
+                } else {
+                    emptyMap()
+                }
+            }
+        )
+
+        val jobConfigs = session.sessionConfig.jobConfigs
+        assertThat(jobConfigs).hasSize(2)
+        assertThat(jobConfigs[0].labels).isEqualTo(mapOf("ftl_matrix_id" to "tokay-matrix"))
+        // No labels rather than an empty map
+        assertThat(jobConfigs[1].labels).isNull()
+    }
+
+    @Test
+    fun testSubmitTests_noJobLabelsByDefault() = runBlocking<Unit> {
+        val session = controller.submitTests(
+            appApk = createUploadedApk("app.apk"),
+            testApk = createUploadedApk("test.apk"),
+            devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait")),
+            sharding = null,
+            deviceSetup = null,
+            gcsResultPath = "gs://results"
+        )
+
+        assertThat(session.sessionConfig.jobConfigs.single().labels).isNull()
+    }
+
     private fun createUploadedApk(name: String) = UploadedApk(
         gcsPath = GcsPath("gs://apk/$name"),
         apkInfo = ApkInfo(filePath = "files/$name", idHash = name)

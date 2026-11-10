@@ -60,6 +60,9 @@ internal class DeviceRunSessionStore(
     /**
      * Creates a Session for the given configuration or returns an existing one if we've run the same test with the
      * same APKs and environment configuration.
+     *
+     * [jobLabels] are only metadata, so they are not part of the cache key: a re-used Session keeps the labels it was
+     * created with.
      */
     suspend fun getOrCreateSession(
         appApk: UploadedApk,
@@ -73,7 +76,8 @@ internal class DeviceRunSessionStore(
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2,
         testTimeoutSeconds: Int = 2700,
-        orchestratorOption: OrchestratorOption? = null
+        orchestratorOption: OrchestratorOption? = null,
+        jobLabels: (AndroidDevice) -> Map<String, String> = { emptyMap() }
     ): Session {
         val environmentMatrix = devices.createEnvironmentMatrix()
         val sessionRunId = SessionRun.createId(
@@ -106,7 +110,8 @@ internal class DeviceRunSessionStore(
             flakyTestAttempts = flakyTestAttempts,
             testTimeoutSeconds = testTimeoutSeconds,
             orchestratorOption = orchestratorOption,
-            gcsResultPath = createUniqueResultGcsPath(sessionRunId).path
+            gcsResultPath = createUniqueResultGcsPath(sessionRunId).path,
+            jobLabels = jobLabels
         )
         
         logger.info {

@@ -22,5 +22,10 @@ package dev.androidx.ci.testRunner
 enum class TestBackend {
     FTL,
     DDP,
+
+    /**
+     * Runs the tests on both FTL and DDP. Each DDP job is labeled with the FTL test matrix that
+     * runs on the same device, so that their results can be compared.
+     */
     BOTH
 }

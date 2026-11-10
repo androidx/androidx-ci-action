@@ -75,7 +75,9 @@ internal class DeviceRunController(
         flakyTestAttempts: Int = 2,
         testTimeoutSeconds: Int = 2700,
         orchestratorOption: dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption? = null,
-        gcsResultPath: String
+        gcsResultPath: String,
+        // Labels to set on the job that runs on each device, e.g. [DdpShadowRunLabels].
+        jobLabels: (AndroidDevice) -> Map<String, String> = { emptyMap() }
     ): Session {
         val jobConfigs = mutableListOf<JobConfig>()
         // Rule 1: Chunking Limit -> Max 10 JobConfigs per SessionConfig (but here we expand AndroidDevices into Jobs)
@@ -184,7 +186,8 @@ internal class DeviceRunController(
                             instrumentationTimeout = "${testTimeoutSeconds.coerceIn(60, 10800)}s"
                         )
                     ),
-                    settings = if (retrySettings != null) JobSettings(retrySettings = retrySettings) else null
+                    settings = if (retrySettings != null) JobSettings(retrySettings = retrySettings) else null,
+                    labels = jobLabels(device).takeIf { it.isNotEmpty() }
                 )
             )
         }
