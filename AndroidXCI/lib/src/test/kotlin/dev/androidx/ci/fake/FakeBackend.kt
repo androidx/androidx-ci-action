@@ -29,6 +29,7 @@ internal class FakeBackend(
     val fakeGithubApi: FakeGithubApi = FakeGithubApi(),
     val fakeGoogleCloudApi: FakeGoogleCloudApi = FakeGoogleCloudApi(bucketName),
     val fakeFirebaseTestLabApi: FakeFirebaseTestLabApi = FakeFirebaseTestLabApi(),
+    val fakeDeviceRunApi: FakeDeviceRunApi = FakeDeviceRunApi(),
     val fakeToolsResultApi: FakeToolsResultApi = FakeToolsResultApi(),
     val datastoreApi: FakeDatastore = FakeDatastore(),
     val firebaseProjectId: String = "project1",

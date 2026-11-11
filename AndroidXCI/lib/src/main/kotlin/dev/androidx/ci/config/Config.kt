@@ -47,6 +47,12 @@ internal class Config {
         val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
         val dispatcher: Dispatcher = Dispatcher()
     )
+    class DeviceRun(
+        val gcp: Gcp,
+        val endPoint: String = "https://devicerun.googleapis.com/v1alpha/",
+        val httpLogLevel: HttpLoggingInterceptor.Level = HttpLoggingInterceptor.Level.NONE,
+        val dispatcher: Dispatcher = Dispatcher()
+    )
     class Datastore(
         val gcp: Gcp,
         val testRunObjectKind: String,

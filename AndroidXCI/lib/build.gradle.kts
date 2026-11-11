@@ -29,6 +29,11 @@ generatedModels {
                 internal = false
             ),
             dev.androidx.ci.codegen.plugin.GeneratedModelInfo(
+                discoveryFileUrl = "https://devicerun.googleapis.com/\$discovery/rest?version=v1alpha",
+                pkg = "dev.androidx.ci.generated.ddp",
+                internal = false
+            ),
+            dev.androidx.ci.codegen.plugin.GeneratedModelInfo(
                 discoveryFileUrl = "https://toolresults.googleapis.com/\$discovery/rest?version=v1beta3",
                 pkg = "dev.androidx.ci.generated.testResults",
                 internal = true
