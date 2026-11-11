@@ -17,8 +17,6 @@
 package dev.androidx.ci.devicerun.dto
 
 import com.google.cloud.datastore.Entity
-import com.google.cloud.datastore.FullEntity
-import com.google.cloud.datastore.IncompleteKey
 import com.google.cloud.datastore.Key
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types

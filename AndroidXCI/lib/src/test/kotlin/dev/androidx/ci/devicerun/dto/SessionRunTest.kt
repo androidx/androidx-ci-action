@@ -27,13 +27,11 @@ import org.junit.Test
 
 internal class SessionRunTest {
     private val datastoreApi = FakeDatastore()
-    
     private val baseEnvironment = EnvironmentMatrix(
         androidDeviceList = AndroidDeviceList(
             androidDevices = listOf(AndroidDevice("MediumPhone.arm", "33", "en_US", "portrait"))
         )
     )
-    
     private val baseAppApk = ApkInfo(
         filePath = "app.apk",
         idHash = "hash1"
@@ -175,15 +173,14 @@ internal class SessionRunTest {
             sharding = null,
             orchestratorOption = null
         )
-        
         val originalSession = SessionRun(
             id = id,
             sessionId = "session-12345"
         )
-        
+
         val entity = originalSession.toEntity()
         val convertedSession = entity.toSessionRun()
-        
+
         assertThat(convertedSession).isNotNull()
         assertThat(convertedSession!!.id.key.name).isEqualTo(originalSession.id.key.name)
         assertThat(convertedSession.sessionId).isEqualTo(originalSession.sessionId)
