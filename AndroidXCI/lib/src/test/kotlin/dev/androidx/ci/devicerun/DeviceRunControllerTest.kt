@@ -18,11 +18,11 @@ package dev.androidx.ci.devicerun
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeDeviceRunApi
+import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
-import dev.androidx.ci.gcloud.GcsPath
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
@@ -62,22 +62,22 @@ internal class DeviceRunControllerTest {
             gcsResultPath = "gs://results"
         )
 
-        assertThat(session.sessionConfig?.jobConfigs).hasSize(2)
-        
-        val job1 = session.sessionConfig?.jobConfigs?.get(0)
-        val job2 = session.sessionConfig?.jobConfigs?.get(1)
-        
+        assertThat(session.sessionConfig.jobConfigs).hasSize(2)
+
+        val job1 = session.sessionConfig.jobConfigs[0]
+        val job2 = session.sessionConfig.jobConfigs[1]
+
         // Assert Device Slugging
         val deviceConfig1 = job1?.allocationConfig?.deviceConfigs?.first()
         assertThat(deviceConfig1?.requirement?.deviceId).isEqualTo("mediumphone-arm-33")
-        
+
         val deviceConfig2 = job2?.allocationConfig?.deviceConfigs?.first()
         assertThat(deviceConfig2?.requirement?.deviceId).isEqualTo("tokay-34")
 
         // Assert Locale Mapping and BCP47
         val switchLocale1 = deviceConfig1?.actions?.mapNotNull { it.androidSwitchLocale }?.firstOrNull()
         assertThat(switchLocale1?.localeCode).isEqualTo("en-US")
-        
+
         val switchLocale2 = deviceConfig2?.actions?.mapNotNull { it.androidSwitchLocale }?.firstOrNull()
         assertThat(switchLocale2?.localeCode).isEqualTo("zh-CN")
 
@@ -119,7 +119,7 @@ internal class DeviceRunControllerTest {
             gcsResultPath = "gs://results"
         )
 
-        val job = session.sessionConfig?.jobConfigs?.first()
+        val job = session.sessionConfig.jobConfigs.first()
         val instrumentationTest = job?.action?.androidInstrumentationTest
 
         // Verify test targets received the filtered options
@@ -158,9 +158,9 @@ internal class DeviceRunControllerTest {
             gcsResultPath = "gs://results"
         )
 
-        val job = session.sessionConfig?.jobConfigs?.first()
+        val job = session.sessionConfig.jobConfigs.first()
         val flakyAttempts = job?.settings?.retrySettings?.flakyTestRetryStrategy?.flakyTestAttempts
-        
+
         // FTL 2 retries -> DDP 3 total attempts
         assertThat(flakyAttempts).isEqualTo(3)
     }

@@ -118,7 +118,6 @@ internal class DeviceRunSessionStoreTest {
         assertThat(session1.name).isNotEqualTo(session2.name)
         assertThat(fakeApi.getSessions()).hasSize(2)
     }
-    
     @Test
     fun testGetOrCreateSession_createsNewWhenFilterRejects() = runBlocking<Unit> {
         val appApk = createUploadedApk("app.apk")

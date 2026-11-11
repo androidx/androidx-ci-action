@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.devicerun
 
+import dev.androidx.ci.generated.ddp.AllocationConfig
 import dev.androidx.ci.generated.ddp.AndroidBugreportDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidInstallPackagesDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidInstallable
@@ -23,11 +24,7 @@ import dev.androidx.ci.generated.ddp.AndroidInstrumentationTest
 import dev.androidx.ci.generated.ddp.AndroidLogcatDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidOrientationDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidPullFilesDeviceAction
-import dev.androidx.ci.generated.ddp.AndroidPushFilesDeviceAction
-import dev.androidx.ci.generated.ddp.AndroidPushFilesDeviceActionFileConfig
-import dev.androidx.ci.generated.ddp.AndroidRecordVideoDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidSwitchLocaleDeviceAction
-import dev.androidx.ci.generated.ddp.AllocationConfig
 import dev.androidx.ci.generated.ddp.DeviceAction
 import dev.androidx.ci.generated.ddp.DeviceConfig
 import dev.androidx.ci.generated.ddp.DeviceRequirement
@@ -46,7 +43,6 @@ import dev.androidx.ci.generated.ftl.ShardingOption
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import dev.androidx.ci.util.LazyComputedValue
-import kotlinx.coroutines.delay
 import org.apache.logging.log4j.kotlin.logger
 import retrofit2.HttpException
 import java.util.UUID
@@ -79,12 +75,12 @@ internal class DeviceRunController(
     ): Session {
         val jobConfigs = mutableListOf<JobConfig>()
         // Rule 1: Chunking Limit -> Max 10 JobConfigs per SessionConfig (but here we expand AndroidDevices into Jobs)
-        
+
         devices.forEach { device ->
             // FTL locale: en_US -> DDP BCP-47: en-US
-            val localeCode = device.locale?.replace('_', '-') ?: "en-US"
-            val deviceIdSlug = "${device.androidModelId?.slug()}-${device.androidVersionId?.slug()}"
-            val orientation = device.orientation?.lowercase() ?: "portrait"
+            val localeCode = device.locale.replace('_', '-')
+            val deviceIdSlug = "${device.androidModelId.slug()}-${device.androidVersionId.slug()}"
+            val orientation = device.orientation.lowercase()
 
             val deviceActions = mutableListOf<DeviceAction>()
 
@@ -103,7 +99,7 @@ internal class DeviceRunController(
                     )
                 )
             )
-            
+
             // 2. Orientation & Locale
             deviceActions.add(DeviceAction(androidOrientation = AndroidOrientationDeviceAction(orientation = orientation)))
             deviceActions.add(DeviceAction(androidSwitchLocale = AndroidSwitchLocaleDeviceAction(localeCode = localeCode)))
@@ -199,7 +195,7 @@ internal class DeviceRunController(
         val sessionRequest = Session(
             sessionConfig = sessionConfig
         )
-        
+
         logger.info { "Submitting DDP Session $sessionId" }
         deviceRunApi.createSession(
             projectId = gcpProjectId,
