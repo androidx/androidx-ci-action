@@ -41,7 +41,7 @@ class SchemaProcessorTest {
             /**
              * escape me please % %T %S
              */
-            public class MyClass
+            public class MyClass()
             """.trimIndent()
         )
     }
@@ -69,7 +69,7 @@ class SchemaProcessorTest {
         assertThat(code.trimIndent()).isEqualTo(
             """
             public data class MyClass(
-              public val prop1: foo.bar.MyClass.Prop1? = null
+              public val prop1: foo.bar.MyClass.Prop1? = null,
             ) {
               public enum class Prop1 {
                 /**

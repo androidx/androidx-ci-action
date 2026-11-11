@@ -19,8 +19,7 @@ package dev.androidx.ci.gcloud
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeGoogleCloudApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -29,16 +28,15 @@ import org.junit.runners.JUnit4
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class FakeGoogleCloudApiTest {
     private val api = FakeGoogleCloudApi("my-bucket")
-    private val testScope = TestCoroutineScope()
 
     @Test
-    fun putArtifact() = testScope.runBlockingTest {
+    fun putArtifact() = runTest {
         val result = api.upload("/foo/bar", byteArrayOf(1, 2, 3))
         assertThat(api.getArtifact(result)).isEqualTo(byteArrayOf(1, 2, 3))
     }
 
     @Test
-    fun copyArtifact() = testScope.runBlockingTest {
+    fun copyArtifact() = runTest {
         val sourceGcsPath = api.upload("/foo/bar", byteArrayOf(1, 2, 3))
         val result = api.copy(sourceGcsPath, "/copy/foo/bar")
         assertThat(api.getArtifact(result)).isEqualTo(byteArrayOf(1, 2, 3))
