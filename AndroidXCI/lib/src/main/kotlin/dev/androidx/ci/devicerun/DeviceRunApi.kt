@@ -18,6 +18,7 @@ package dev.androidx.ci.devicerun
 
 import com.squareup.moshi.Moshi
 import dev.androidx.ci.config.Config
+import dev.androidx.ci.firebase.authenticateWith
 import dev.androidx.ci.generated.ddp.CancelSessionRequest
 import dev.androidx.ci.generated.ddp.CancelSessionResponse
 import dev.androidx.ci.generated.ddp.CatalogListDevicesResponse
@@ -27,7 +28,6 @@ import dev.androidx.ci.generated.ddp.Session
 import dev.androidx.ci.util.Retry
 import dev.androidx.ci.util.RetryCallAdapterFactory
 import dev.androidx.ci.util.withLog4J
-import dev.androidx.ci.firebase.authenticateWith
 import dev.zacsweers.moshix.reflect.MetadataKotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit

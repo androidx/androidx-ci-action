@@ -47,7 +47,7 @@ internal class GoogleCloudCredentialsRule : TestRule {
         }
         gcpConfig = Config.Gcp(
             credentials = credentials,
-            projectId = projectId
+            projectId = projectId!!
         )
     }
 

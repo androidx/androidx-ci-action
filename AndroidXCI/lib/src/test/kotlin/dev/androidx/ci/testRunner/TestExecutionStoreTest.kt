@@ -66,7 +66,7 @@ internal class TestExecutionStoreTest {
 
         val projectId = testMatrix.projectId!!
         val historyId = testMatrix.resultStorage.toolResultsExecution?.historyId!!
-        val executionId = testMatrix.resultStorage.toolResultsExecution?.executionId!!
+        val executionId = testMatrix.resultStorage.toolResultsExecution.executionId!!
 
         // Add 2 steps for this execution
         inputSteps.forEach {

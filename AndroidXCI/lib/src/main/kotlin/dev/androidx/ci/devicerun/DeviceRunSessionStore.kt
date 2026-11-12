@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,17 @@ import dev.androidx.ci.datastore.DatastoreApi
 import dev.androidx.ci.devicerun.dto.SessionRun
 import dev.androidx.ci.devicerun.dto.toEntity
 import dev.androidx.ci.devicerun.dto.toSessionRun
+import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ddp.Session
 import dev.androidx.ci.generated.ftl.AndroidDevice
+import dev.androidx.ci.generated.ftl.AndroidDeviceList
+import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
-import dev.androidx.ci.generated.ftl.AndroidDeviceList
 import dev.androidx.ci.generated.ftl.ShardingOption
-import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import org.apache.logging.log4j.kotlin.logger
-import retrofit2.HttpException
-
-import dev.androidx.ci.gcloud.GcsPath
 import java.util.UUID
 
 /**
@@ -40,7 +38,6 @@ import java.util.UUID
  * for the same configuration.
  */
 internal class DeviceRunSessionStore(
-    private val gcpProjectId: String,
     private val datastoreApi: DatastoreApi,
     private val deviceRunController: DeviceRunController,
     private val resultsGcsPrefix: GcsPath
@@ -73,7 +70,8 @@ internal class DeviceRunSessionStore(
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2,
         testTimeoutSeconds: Int = 2700,
-        orchestratorOption: OrchestratorOption? = null
+        orchestratorOption: OrchestratorOption? = null,
+        gcsSmartShardingFilePath: String
     ): Session {
         val environmentMatrix = devices.createEnvironmentMatrix()
         val sessionRunId = SessionRun.createId(
@@ -99,16 +97,16 @@ internal class DeviceRunSessionStore(
             appApk = appApk,
             testApk = testApk,
             devices = devices,
-            sharding = sharding,
             deviceSetup = deviceSetup,
             pullScreenshots = pullScreenshots,
             testTargets = testTargets,
             flakyTestAttempts = flakyTestAttempts,
             testTimeoutSeconds = testTimeoutSeconds,
             orchestratorOption = orchestratorOption,
-            gcsResultPath = createUniqueResultGcsPath(sessionRunId).path
+            gcsResultPath = createUniqueResultGcsPath(sessionRunId).path,
+            gcsSmartShardingFilePath = gcsSmartShardingFilePath
         )
-        
+
         logger.info {
             "created session: ${newSession.name}"
         }

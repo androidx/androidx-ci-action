@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,14 @@ internal class DeviceRunSessionStoreTest {
     private val fakeApi = FakeDeviceRunApi()
     private val datastoreApi = FakeDatastore()
     private val controller = DeviceRunController(fakeApi, "test-project")
-    private val store = DeviceRunSessionStore("test-project", datastoreApi, controller, GcsPath("gs://results/prefix"))
+    private val store = DeviceRunSessionStore(
+        datastoreApi = datastoreApi,
+        deviceRunController = controller,
+        resultsGcsPrefix = GcsPath("gs://results/prefix")
+    )
 
     @Test
-    fun testGetOrCreateSession_createsNewWhenEmpty() = runBlocking<Unit> {
+    fun testGetOrCreateSession_createsNewWhenEmpty() = runBlocking {
         val appApk = createUploadedApk("app.apk")
         val testApk = createUploadedApk("test.apk")
         val devices = listOf(AndroidDevice("MediumPhone.arm", "33", "en_US", "portrait"))
@@ -46,7 +50,8 @@ internal class DeviceRunSessionStoreTest {
             sharding = null,
             deviceSetup = null,
             pullScreenshots = false,
-            testTargets = null
+            testTargets = null,
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         assertThat(session.name).isNotNull()
@@ -54,7 +59,7 @@ internal class DeviceRunSessionStoreTest {
     }
 
     @Test
-    fun testGetOrCreateSession_reusesExistingWhenSameConfig() = runBlocking<Unit> {
+    fun testGetOrCreateSession_reusesExistingWhenSameConfig() = runBlocking {
         val appApk = createUploadedApk("app.apk")
         val testApk = createUploadedApk("test.apk")
         val devices = listOf(AndroidDevice("MediumPhone.arm", "33", "en_US", "portrait"))
@@ -67,7 +72,8 @@ internal class DeviceRunSessionStoreTest {
             sharding = null,
             deviceSetup = null,
             pullScreenshots = false,
-            testTargets = null
+            testTargets = null,
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         val session2 = store.getOrCreateSession(
@@ -78,7 +84,8 @@ internal class DeviceRunSessionStoreTest {
             sharding = null,
             deviceSetup = null,
             pullScreenshots = false,
-            testTargets = null
+            testTargets = null,
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         assertThat(session1.name).isEqualTo(session2.name)
@@ -87,7 +94,7 @@ internal class DeviceRunSessionStoreTest {
     }
 
     @Test
-    fun testGetOrCreateSession_createsNewWhenConfigChanges() = runBlocking<Unit> {
+    fun testGetOrCreateSession_createsNewWhenConfigChanges() = runBlocking {
         val appApk = createUploadedApk("app.apk")
         val testApk = createUploadedApk("test.apk")
         val devices1 = listOf(AndroidDevice("MediumPhone.arm", "33", "en_US", "portrait"))
@@ -101,7 +108,8 @@ internal class DeviceRunSessionStoreTest {
             sharding = null,
             deviceSetup = null,
             pullScreenshots = false,
-            testTargets = null
+            testTargets = null,
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         val session2 = store.getOrCreateSession(
@@ -112,15 +120,15 @@ internal class DeviceRunSessionStoreTest {
             sharding = null,
             deviceSetup = null,
             pullScreenshots = false,
-            testTargets = null
+            testTargets = null,
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         assertThat(session1.name).isNotEqualTo(session2.name)
         assertThat(fakeApi.getSessions()).hasSize(2)
     }
-    
     @Test
-    fun testGetOrCreateSession_createsNewWhenFilterRejects() = runBlocking<Unit> {
+    fun testGetOrCreateSession_createsNewWhenFilterRejects() = runBlocking {
         val appApk = createUploadedApk("app.apk")
         val testApk = createUploadedApk("test.apk")
         val devices = listOf(AndroidDevice("MediumPhone.arm", "33", "en_US", "portrait"))
@@ -133,7 +141,8 @@ internal class DeviceRunSessionStoreTest {
             sharding = null,
             deviceSetup = null,
             pullScreenshots = false,
-            testTargets = null
+            testTargets = null,
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         val session2 = store.getOrCreateSession(
@@ -145,7 +154,8 @@ internal class DeviceRunSessionStoreTest {
             deviceSetup = null,
             pullScreenshots = false,
             testTargets = null,
-            cachedSessionFilter = { false } // Reject cache
+            cachedSessionFilter = { false }, // Reject cache
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         assertThat(session1.name).isNotEqualTo(session2.name)
