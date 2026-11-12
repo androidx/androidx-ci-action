@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,11 +38,11 @@ import dev.androidx.ci.generated.ddp.RetrySettingsFlakyTestRetryStrategy
 import dev.androidx.ci.generated.ddp.Session
 import dev.androidx.ci.generated.ddp.SessionConfig
 import dev.androidx.ci.generated.ddp.SessionConfigSessionOutputFileDirectoryConfig
+import dev.androidx.ci.generated.ddp.SmartSharding
 import dev.androidx.ci.generated.ftl.AndroidDevice
-import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
-import dev.androidx.ci.util.LazyComputedValue
 import org.apache.logging.log4j.kotlin.logger
 import retrofit2.HttpException
 import java.util.UUID
@@ -56,25 +56,21 @@ internal class DeviceRunController(
 ) {
     private val logger = logger()
 
-    private val catalog = LazyComputedValue {
-        deviceRunApi.listDevices(projectId = gcpProjectId)
-    }
-
     suspend fun submitTests(
         appApk: UploadedApk,
         testApk: UploadedApk,
         devices: List<AndroidDevice>,
-        sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
         pullScreenshots: Boolean = false,
         testTargets: List<String>? = null,
         flakyTestAttempts: Int = 2,
         testTimeoutSeconds: Int = 2700,
-        orchestratorOption: dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption? = null,
-        gcsResultPath: String
+        orchestratorOption: OrchestratorOption? = null,
+        gcsResultPath: String,
+        gcsSmartShardingFilePath: String
     ): Session {
         val jobConfigs = mutableListOf<JobConfig>()
-        // Rule 1: Chunking Limit -> Max 10 JobConfigs per SessionConfig (but here we expand AndroidDevices into Jobs)
+        // Chunking Limit -> Max 10 JobConfigs per SessionConfig (but here we expand AndroidDevices into Jobs)
 
         devices.forEach { device ->
             // FTL locale: en_US -> DDP BCP-47: en-US
@@ -84,7 +80,7 @@ internal class DeviceRunController(
 
             val deviceActions = mutableListOf<DeviceAction>()
 
-            // 1. App installation
+            // App installation
             deviceActions.add(
                 DeviceAction(
                     androidInstallPackages = AndroidInstallPackagesDeviceAction(
@@ -100,11 +96,11 @@ internal class DeviceRunController(
                 )
             )
 
-            // 2. Orientation & Locale
+            // Orientation & Locale
             deviceActions.add(DeviceAction(androidOrientation = AndroidOrientationDeviceAction(orientation = orientation)))
             deviceActions.add(DeviceAction(androidSwitchLocale = AndroidSwitchLocaleDeviceAction(localeCode = localeCode)))
 
-            // 3. Push/Pull Files
+            // Push/Pull Files
             val pullDirs = deviceSetup?.directoriesToPull?.toMutableList() ?: mutableListOf()
             if (pullScreenshots) {
                 pullDirs.add("/sdcard/screenshots")
@@ -114,7 +110,7 @@ internal class DeviceRunController(
                 deviceActions.add(DeviceAction(androidPullFiles = AndroidPullFilesDeviceAction(paths = pullDirs)))
             }
 
-            // 4. Artifact Collection (Rule 5: Explicit defaults)
+            // Artifact Collection (Explicit defaults)
             deviceActions.add(DeviceAction(androidLogcat = AndroidLogcatDeviceAction()))
             deviceActions.add(DeviceAction(androidBugreport = AndroidBugreportDeviceAction()))
 
@@ -146,18 +142,29 @@ internal class DeviceRunController(
                 }
             }
 
-            // Retry Settings
-            val retrySettings = if (flakyTestAttempts > 0) {
-                RetrySettings(
-                    flakyTestRetryStrategy = RetrySettingsFlakyTestRetryStrategy(
-                        flakyTestAttempts = (flakyTestAttempts + 1).coerceIn(1, 5)
-                    )
-                )
-            } else null
-
-            val ddpOrchestratorOption = if (orchestratorOption == dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption.USE_ORCHESTRATOR) {
+            val ddpOrchestratorOption = if (orchestratorOption == OrchestratorOption.USE_ORCHESTRATOR) {
                 "auto"
             } else null
+
+            // New Settings for DDP (Different from FTL)
+            // Retry Settings
+            val retrySettings = RetrySettings(
+                flakyTestRetryStrategy = RetrySettingsFlakyTestRetryStrategy(
+                    flakyTestAttempts = flakyTestAttempts + 1,
+                    testReductionMode = RetrySettingsFlakyTestRetryStrategy.TestReductionMode.REDUCE_TO_FAILED_TEST_CASES
+                )
+            )
+
+            // Smart sharding
+            val smartSharding = SmartSharding(
+                maxShardCount = 20,
+                targetedShardDuration = "10m",
+                timingRecord = InputFile(
+                    gcsInputFile = GcsPath(
+                        path = gcsSmartShardingFilePath
+                    )
+                )
+            )
 
             jobConfigs.add(
                 JobConfig(
@@ -174,13 +181,14 @@ internal class DeviceRunController(
                             testInstallable = AndroidInstallable(
                                 files = listOf(InputFile(gcsInputFile = GcsPath(path = testApk.gcsPath.path)))
                             ),
-                            testTargets = if (mappedTestTargets.isNotEmpty()) mappedTestTargets else null,
+                            testTargets = mappedTestTargets.ifEmpty { null },
                             orchestratorVersion = ddpOrchestratorOption,
-                            additionalTestOptions = if (filteredOptions.isNotEmpty()) filteredOptions else null,
-                            instrumentationTimeout = "${testTimeoutSeconds.coerceIn(60, 10800)}s"
+                            additionalTestOptions = filteredOptions.ifEmpty { null },
+                            instrumentationTimeout = "${testTimeoutSeconds.coerceIn(60, 10800)}s",
+                            smartSharding = smartSharding
                         )
                     ),
-                    settings = if (retrySettings != null) JobSettings(retrySettings = retrySettings) else null
+                    settings = JobSettings(retrySettings = retrySettings)
                 )
             )
         }

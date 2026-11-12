@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Android Open Source Project
+ * Copyright 2026 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ internal class DeviceRunControllerTest {
     private val controller = DeviceRunController(fakeApi, "test-project")
 
     @Test
-    fun testSubmitTests_localeTranslationAndDeviceSlug() = runBlocking<Unit> {
+    fun testSubmitTests_localeTranslationAndDeviceSlug() = runBlocking {
         val appApk = createUploadedApk("app.apk")
         val testApk = createUploadedApk("test.apk")
         val devices = listOf(
@@ -53,13 +53,13 @@ internal class DeviceRunControllerTest {
             appApk = appApk,
             testApk = testApk,
             devices = devices,
-            sharding = null,
             deviceSetup = null,
             pullScreenshots = false,
             testTargets = null,
             flakyTestAttempts = 0,
             testTimeoutSeconds = 900,
-            gcsResultPath = "gs://results"
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         assertThat(session.sessionConfig.jobConfigs).hasSize(2)
@@ -68,28 +68,28 @@ internal class DeviceRunControllerTest {
         val job2 = session.sessionConfig.jobConfigs[1]
 
         // Assert Device Slugging
-        val deviceConfig1 = job1?.allocationConfig?.deviceConfigs?.first()
-        assertThat(deviceConfig1?.requirement?.deviceId).isEqualTo("mediumphone-arm-33")
+        val deviceConfig1 = job1.allocationConfig.deviceConfigs.first()
+        assertThat(deviceConfig1.requirement.deviceId).isEqualTo("mediumphone-arm-33")
 
-        val deviceConfig2 = job2?.allocationConfig?.deviceConfigs?.first()
-        assertThat(deviceConfig2?.requirement?.deviceId).isEqualTo("tokay-34")
+        val deviceConfig2 = job2.allocationConfig.deviceConfigs.first()
+        assertThat(deviceConfig2.requirement.deviceId).isEqualTo("tokay-34")
 
         // Assert Locale Mapping and BCP47
-        val switchLocale1 = deviceConfig1?.actions?.mapNotNull { it.androidSwitchLocale }?.firstOrNull()
+        val switchLocale1 = deviceConfig1.actions?.firstNotNullOfOrNull { it.androidSwitchLocale }
         assertThat(switchLocale1?.localeCode).isEqualTo("en-US")
 
-        val switchLocale2 = deviceConfig2?.actions?.mapNotNull { it.androidSwitchLocale }?.firstOrNull()
+        val switchLocale2 = deviceConfig2.actions?.firstNotNullOfOrNull { it.androidSwitchLocale }
         assertThat(switchLocale2?.localeCode).isEqualTo("zh-CN")
 
         // Assert Orientation
-        val orient1 = deviceConfig1?.actions?.mapNotNull { it.androidOrientation }?.firstOrNull()
+        val orient1 = deviceConfig1.actions?.firstNotNullOfOrNull { it.androidOrientation }
         assertThat(orient1?.orientation).isEqualTo("portrait")
-        val orient2 = deviceConfig2?.actions?.mapNotNull { it.androidOrientation }?.firstOrNull()
+        val orient2 = deviceConfig2.actions?.firstNotNullOfOrNull { it.androidOrientation }
         assertThat(orient2?.orientation).isEqualTo("landscape")
 
         // Assert logcat and bugreport actions present
-        assertThat(deviceConfig1?.actions?.mapNotNull { it.androidLogcat }).isNotEmpty()
-        assertThat(deviceConfig1?.actions?.mapNotNull { it.androidBugreport }).isNotEmpty()
+        assertThat(deviceConfig1.actions?.mapNotNull { it.androidLogcat }).isNotEmpty()
+        assertThat(deviceConfig1.actions?.mapNotNull { it.androidBugreport }).isNotEmpty()
     }
 
     @Test
@@ -110,20 +110,20 @@ internal class DeviceRunControllerTest {
             appApk = appApk,
             testApk = testApk,
             devices = devices,
-            sharding = null,
             deviceSetup = deviceSetup,
             pullScreenshots = false,
             testTargets = listOf("package com.example.foo"),
             flakyTestAttempts = 0,
             testTimeoutSeconds = 900,
-            gcsResultPath = "gs://results"
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         val job = session.sessionConfig.jobConfigs.first()
-        val instrumentationTest = job?.action?.androidInstrumentationTest
+        val instrumentationTest = job.action.androidInstrumentationTest
 
         // Verify test targets received the filtered options
-        val testTargets = instrumentationTest?.testTargets ?: emptyList<String>()
+        val testTargets = instrumentationTest?.testTargets ?: emptyList()
         val targetsSet = testTargets.toSet()
         assertThat(targetsSet.contains("package com.example.foo")).isTrue()
         assertThat(targetsSet.contains("class com.example.TestClass")).isTrue()
@@ -132,7 +132,7 @@ internal class DeviceRunControllerTest {
 
         // Verify non-filter keys remained in extra options along with implicit defaults
         val additionalTestOptions = instrumentationTest?.additionalTestOptions ?: emptyList<String>()
-        val optionsSet = additionalTestOptions as List<String>
+        val optionsSet = additionalTestOptions as List<*>
         assertThat(optionsSet.contains("disable_window_animations=true")).isTrue()
         assertThat(optionsSet.contains("firebase.test.lab=true")).isTrue()
         assertThat(optionsSet.contains("customKey=customValue")).isTrue()
@@ -149,17 +149,17 @@ internal class DeviceRunControllerTest {
             appApk = appApk,
             testApk = testApk,
             devices = devices,
-            sharding = null,
             deviceSetup = null,
             pullScreenshots = false,
             testTargets = null,
             flakyTestAttempts = 2,
             testTimeoutSeconds = 900,
-            gcsResultPath = "gs://results"
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
         )
 
         val job = session.sessionConfig.jobConfigs.first()
-        val flakyAttempts = job?.settings?.retrySettings?.flakyTestRetryStrategy?.flakyTestAttempts
+        val flakyAttempts = job.settings?.retrySettings?.flakyTestRetryStrategy?.flakyTestAttempts
 
         // FTL 2 retries -> DDP 3 total attempts
         assertThat(flakyAttempts).isEqualTo(3)
