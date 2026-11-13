@@ -31,7 +31,7 @@ internal class FakeDatastore : DatastoreApi {
         return Key.newBuilder("local", kind, id).build()
     }
 
-    override suspend fun put(entity: FullEntity<IncompleteKey>): Entity {
+    override suspend fun put(entity: FullEntity<out IncompleteKey>): Entity {
         val key: Key = (entity.key as? Key) ?: createKey(kind = "random", id = UUID.randomUUID().toString())
         val built = Entity.newBuilder(key, entity).build()
         data[key] = built

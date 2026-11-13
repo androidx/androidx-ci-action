@@ -44,7 +44,7 @@ internal interface DatastoreApi {
      * Puts the entity into Datastore, replacing it if it exists
      */
     suspend fun put(
-        entity: FullEntity<IncompleteKey>
+        entity: FullEntity<out IncompleteKey>
     ): Entity
 
     /**
@@ -80,7 +80,7 @@ private class DatastoreApiImpl(
     ): Key = service.newKeyFactory().setKind(kind).newKey(id)
 
     override suspend fun put(
-        entity: FullEntity<IncompleteKey>
+        entity: FullEntity<out IncompleteKey>
     ): Entity = withContext(context) {
         service.put(entity)
     }
