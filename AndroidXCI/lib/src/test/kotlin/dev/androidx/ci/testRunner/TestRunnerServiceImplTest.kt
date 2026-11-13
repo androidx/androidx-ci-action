@@ -174,7 +174,8 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             result.testMatrices
@@ -189,7 +190,8 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             sameRequest.testMatrices
@@ -202,7 +204,8 @@ class TestRunnerServiceImplTest {
             sharding = null,
             deviceSetup = null,
             devicePicker = devicePicker,
-            cachedTestMatrixFilter = { false }
+            cachedTestMatrixFilter = { false },
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             noReuse.testMatrices
@@ -221,7 +224,8 @@ class TestRunnerServiceImplTest {
             clientInfo = clientInfo,
             sharding = null,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             sameRequest.testMatrices
@@ -254,7 +258,8 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = shardingOption,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         // sharding will invalidate cache as it will change the test matrix response
         // significantly. Otherwise, we'll be returning a TestMatrix with mismatched
@@ -291,7 +296,8 @@ class TestRunnerServiceImplTest {
                 )
             ),
             devicePicker = devicePicker,
-            pullScreenshots = true
+            pullScreenshots = true,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         withDeviceInfo.testMatrices.single().testSpecification.testSetup!!.let { testSetup ->
             assertThat(
@@ -337,7 +343,8 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             result.testMatrices

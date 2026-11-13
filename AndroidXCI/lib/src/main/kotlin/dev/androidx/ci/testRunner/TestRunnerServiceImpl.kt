@@ -16,6 +16,9 @@
 package dev.androidx.ci.testRunner
 
 import dev.androidx.ci.datastore.DatastoreApi
+import dev.androidx.ci.devicerun.DeviceRunApi
+import dev.androidx.ci.devicerun.DeviceRunController
+import dev.androidx.ci.devicerun.DeviceRunSessionStore
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.BlobVisitor
@@ -32,10 +35,6 @@ import dev.androidx.ci.testRunner.vo.RemoteApk
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import java.io.InputStream
 import java.util.Locale
-
-import dev.androidx.ci.devicerun.DeviceRunApi
-import dev.androidx.ci.devicerun.DeviceRunController
-import dev.androidx.ci.devicerun.DeviceRunSessionStore
 
 /**
  * Real implementation of [TestRunnerService].
@@ -61,7 +60,6 @@ internal class TestRunnerServiceImpl internal constructor(
         gcpProjectId = firebaseProjectId
     )
     private val deviceRunSessionStore = DeviceRunSessionStore(
-        gcpProjectId = firebaseProjectId,
         datastoreApi = datastoreApi,
         deviceRunController = deviceRunController,
         resultsGcsPrefix = googleCloudApi.getGcsPath("aosp-ddp/$gcsResultPath")
@@ -121,7 +119,8 @@ internal class TestRunnerServiceImpl internal constructor(
         flakyTestAttempts: Int,
         testTimeoutSeconds: Int,
         orchestratorOption: OrchestratorOption?,
-        testBackend: TestBackend
+        testBackend: TestBackend,
+        gcsSmartShardingFilePath: String
     ): TestRunnerService.ScheduleTestsResponse {
         val testMatrices = if (testBackend == TestBackend.FTL || testBackend == TestBackend.BOTH) {
             testLabController.submitTests(
@@ -141,13 +140,12 @@ internal class TestRunnerServiceImpl internal constructor(
         } else {
             emptyList()
         }
-        
+
         val ddpSessions = if (testBackend == TestBackend.DDP || testBackend == TestBackend.BOTH) {
-            val devices = devicePicker(testLabController.getCatalog())
             val session = deviceRunSessionStore.getOrCreateSession(
                 appApk = appApk ?: apkStore.getPlaceholderApk(),
                 testApk = testApk,
-                devices = devices,
+                devicePicker = devicePicker,
                 clientInfo = clientInfo,
                 sharding = sharding,
                 deviceSetup = deviceSetup,
@@ -155,7 +153,9 @@ internal class TestRunnerServiceImpl internal constructor(
                 testTargets = testTargets,
                 flakyTestAttempts = flakyTestAttempts,
                 testTimeoutSeconds = testTimeoutSeconds,
-                orchestratorOption = orchestratorOption
+                orchestratorOption = orchestratorOption,
+                cachedSessionFilter = { false },
+                gcsSmartShardingFilePath = gcsSmartShardingFilePath,
             )
             listOf(session)
         } else {

@@ -86,7 +86,8 @@ interface TestRunnerService {
         flakyTestAttempts: Int = 2,
         testTimeoutSeconds: Int = 2700,
         orchestratorOption: OrchestratorOption? = null,
-        testBackend: TestBackend = TestBackend.FTL
+        testBackend: TestBackend = TestBackend.FTL,
+        gcsSmartShardingFilePath: String
     ): ScheduleTestsResponse
 
     /**
