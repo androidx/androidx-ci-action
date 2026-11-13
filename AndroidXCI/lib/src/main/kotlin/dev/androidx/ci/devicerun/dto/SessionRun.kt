@@ -67,7 +67,7 @@ internal class SessionRun(
             datastoreApi: DatastoreApi,
             environment: EnvironmentMatrix,
             clientInfo: ClientInfo?,
-            appApk: ApkInfo,
+            appApk: ApkInfo?,
             testApk: ApkInfo,
             deviceSetup: DeviceSetup?,
             sharding: ShardingOption?,
@@ -78,7 +78,7 @@ internal class SessionRun(
                     "e" to environment,
                     "clientInfo" to clientInfo,
                     "sharding" to sharding,
-                    "app" to appApk.idHash,
+                    "app" to appApk?.idHash,
                     "test" to testApk.idHash,
                     "instrumentationArgs" to deviceSetup?.instrumentationArguments?.flatMap {
                         listOf(it.key, it.value)

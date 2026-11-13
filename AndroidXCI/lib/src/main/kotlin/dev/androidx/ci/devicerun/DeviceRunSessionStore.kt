@@ -60,7 +60,7 @@ internal class DeviceRunSessionStore(
      * same APKs and environment configuration.
      */
     suspend fun getOrCreateSession(
-        appApk: UploadedApk,
+        appApk: UploadedApk?,
         testApk: UploadedApk,
         devicePicker: DevicePicker,
         clientInfo: ClientInfo?,
@@ -80,7 +80,7 @@ internal class DeviceRunSessionStore(
             environment = environmentMatrix,
             clientInfo = clientInfo,
             sharding = sharding,
-            appApk = appApk.apkInfo,
+            appApk = appApk?.apkInfo,
             testApk = testApk.apkInfo,
             deviceSetup = deviceSetup,
             orchestratorOption = orchestratorOption,

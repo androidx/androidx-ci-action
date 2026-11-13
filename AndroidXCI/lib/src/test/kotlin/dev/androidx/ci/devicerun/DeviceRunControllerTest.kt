@@ -18,11 +18,13 @@ package dev.androidx.ci.devicerun
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeDeviceRunApi
+import dev.androidx.ci.fake.throwHttpError
 import dev.androidx.ci.gcloud.GcsPath
 import dev.androidx.ci.generated.ddp.CatalogAndroidDeviceDetails
 import dev.androidx.ci.generated.ddp.CatalogDevice
 import dev.androidx.ci.generated.ddp.CatalogListDevicesResponse
 import dev.androidx.ci.generated.ddp.CatalogScreenMetrics
+import dev.androidx.ci.generated.ddp.Session
 import dev.androidx.ci.generated.ftl.AndroidDevice
 import dev.androidx.ci.generated.ftl.AndroidModel
 import dev.androidx.ci.testRunner.DevicePicker
@@ -30,7 +32,9 @@ import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertThrows
 import org.junit.Test
+import retrofit2.HttpException
 
 internal class DeviceRunControllerTest {
     private val fakeApi = FakeDeviceRunApi()
@@ -296,6 +300,141 @@ internal class DeviceRunControllerTest {
             assertThat(model.screenX).isEqualTo(1080)
             assertThat(model.screenY).isEqualTo(2400)
         }
+    }
+
+    @Test
+    fun testSubmitTests_additionalApks() = runBlocking {
+        val appApk = createUploadedApk("app.apk")
+        val testApk = createUploadedApk("test.apk")
+        val extraApk1 = createUploadedApk("extra1.apk")
+        val extraApk2 = createUploadedApk("extra2.apk")
+        val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
+
+        val deviceSetup = DeviceSetup(
+            additionalApks = listOf(extraApk1, extraApk2)
+        )
+
+        val session = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = deviceSetup,
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+
+        val job = session.sessionConfig.jobConfigs.first()
+        val installPackages = job.allocationConfig.deviceConfigs.first().actions
+            ?.firstNotNullOfOrNull { it.androidInstallPackages }
+
+        assertThat(installPackages).isNotNull()
+        assertThat(installPackages?.targetApp?.files?.firstOrNull()?.gcsInputFile?.path)
+            .isEqualTo(appApk.gcsPath.path)
+        val postInstallPaths = installPackages?.postTargetAppInstallables?.flatMap {
+            it.files
+        }?.mapNotNull { it.gcsInputFile?.path }
+        assertThat(postInstallPaths).containsExactly(extraApk1.gcsPath.path, extraApk2.gcsPath.path).inOrder()
+    }
+
+    @Test
+    fun testSubmitTests_pullScreenshotsAndDirectoriesToPull() = runBlocking {
+        val appApk = createUploadedApk("app.apk")
+        val testApk = createUploadedApk("test.apk")
+        val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
+
+        val deviceSetup = DeviceSetup(
+            directoriesToPull = mutableListOf("/sdcard/custom/logs")
+        )
+
+        val sessionWithPulls = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = deviceSetup,
+            pullScreenshots = true,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+
+        val job = sessionWithPulls.sessionConfig.jobConfigs.first()
+        val pullAction = job.allocationConfig.deviceConfigs.first().actions
+            ?.firstNotNullOfOrNull { it.androidPullFiles }
+        assertThat(pullAction).isNotNull()
+        assertThat(pullAction?.paths).containsExactly(
+            "/sdcard/custom/logs",
+            "/sdcard/screenshots",
+            "/sdcard/Pictures/screenshots"
+        ).inOrder()
+
+        val sessionWithoutPulls = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = null,
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+        val noPullAction = sessionWithoutPulls.sessionConfig.jobConfigs.first().allocationConfig.deviceConfigs.first().actions
+            ?.firstNotNullOfOrNull { it.androidPullFiles }
+        assertThat(noPullAction).isNull()
+    }
+
+    @Test
+    fun testGetSession_success() = runBlocking {
+        val appApk = createUploadedApk("app.apk")
+        val testApk = createUploadedApk("test.apk")
+        val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
+
+        val session = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = null,
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+        val sessionId = session.name!!.substringAfterLast('/')
+
+        val retrieved = controller.getSession(sessionId)
+        assertThat(retrieved).isNotNull()
+        assertThat(retrieved?.name).isEqualTo(session.name)
+    }
+
+    @Test
+    fun testGetSession_notFound() = runBlocking {
+        val result = controller.getSession("non-existent-session-id")
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun testGetSession_serverError() {
+        val throwingApi = object : DeviceRunApi by fakeApi {
+            override suspend fun getSession(projectId: String, sessionId: String): Session {
+                throwHttpError<Session>(500)
+            }
+        }
+        val errorController = DeviceRunController(throwingApi, "test-project")
+        val exception = assertThrows(HttpException::class.java) {
+            runBlocking {
+                errorController.getSession("any-session")
+            }
+        }
+        assertThat(exception.code()).isEqualTo(500)
     }
 
     private fun createUploadedApk(name: String) = UploadedApk(

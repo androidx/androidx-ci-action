@@ -143,7 +143,7 @@ internal class TestRunnerServiceImpl internal constructor(
 
         val ddpSessions = if (testBackend == TestBackend.DDP || testBackend == TestBackend.BOTH) {
             val session = deviceRunSessionStore.getOrCreateSession(
-                appApk = appApk ?: apkStore.getPlaceholderApk(),
+                appApk = appApk,
                 testApk = testApk,
                 devicePicker = devicePicker,
                 clientInfo = clientInfo,

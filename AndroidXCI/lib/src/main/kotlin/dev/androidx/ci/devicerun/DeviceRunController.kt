@@ -96,7 +96,7 @@ internal class DeviceRunController(
     }
 
     suspend fun submitTests(
-        appApk: UploadedApk,
+        appApk: UploadedApk?,
         testApk: UploadedApk,
         devicePicker: DevicePicker? = null,
         deviceSetup: DeviceSetup?,
@@ -124,9 +124,11 @@ internal class DeviceRunController(
             deviceActions.add(
                 DeviceAction(
                     androidInstallPackages = AndroidInstallPackagesDeviceAction(
-                        targetApp = AndroidInstallable(
-                            files = listOf(InputFile(gcsInputFile = GcsPath(path = appApk.gcsPath.path)))
-                        ),
+                        targetApp = appApk?.let {
+                            AndroidInstallable(
+                                files = listOf(InputFile(gcsInputFile = GcsPath(path = appApk.gcsPath.path)))
+                            )
+                        },
                         postTargetAppInstallables = deviceSetup?.additionalApks?.map {
                             AndroidInstallable(
                                 files = listOf(InputFile(gcsInputFile = GcsPath(path = it.gcsPath.path)))
