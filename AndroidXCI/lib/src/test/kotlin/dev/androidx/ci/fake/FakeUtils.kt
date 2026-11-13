@@ -21,10 +21,12 @@ import okio.Buffer
 import retrofit2.HttpException
 import retrofit2.Response
 
-internal fun <T> throwNotFound(): Nothing {
+internal fun <T> throwNotFound(): Nothing = throwHttpError<T>(404)
+
+internal fun <T> throwHttpError(code: Int): Nothing {
     throw HttpException(
         Response.error<T>(
-            404,
+            code,
             RealResponseBody(null, 0, Buffer())
         )
     )

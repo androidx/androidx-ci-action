@@ -16,6 +16,7 @@
 
 package dev.androidx.ci.devicerun
 
+import com.google.common.annotations.VisibleForTesting
 import dev.androidx.ci.generated.ddp.AllocationConfig
 import dev.androidx.ci.generated.ddp.AndroidBugreportDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidInstallPackagesDeviceAction
@@ -25,6 +26,8 @@ import dev.androidx.ci.generated.ddp.AndroidLogcatDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidOrientationDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidPullFilesDeviceAction
 import dev.androidx.ci.generated.ddp.AndroidSwitchLocaleDeviceAction
+import dev.androidx.ci.generated.ddp.CatalogDevice
+import dev.androidx.ci.generated.ddp.CatalogListDevicesResponse
 import dev.androidx.ci.generated.ddp.DeviceAction
 import dev.androidx.ci.generated.ddp.DeviceConfig
 import dev.androidx.ci.generated.ddp.DeviceRequirement
@@ -40,9 +43,17 @@ import dev.androidx.ci.generated.ddp.SessionConfig
 import dev.androidx.ci.generated.ddp.SessionConfigSessionOutputFileDirectoryConfig
 import dev.androidx.ci.generated.ddp.SmartSharding
 import dev.androidx.ci.generated.ftl.AndroidDevice
+import dev.androidx.ci.generated.ftl.AndroidDeviceCatalog
+import dev.androidx.ci.generated.ftl.AndroidDeviceList
 import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOption
+import dev.androidx.ci.generated.ftl.AndroidModel
+import dev.androidx.ci.generated.ftl.AndroidVersion
+import dev.androidx.ci.generated.ftl.EnvironmentMatrix
+import dev.androidx.ci.generated.ftl.TestEnvironmentCatalog
+import dev.androidx.ci.testRunner.DevicePicker
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
+import dev.androidx.ci.util.LazyComputedValue
 import org.apache.logging.log4j.kotlin.logger
 import retrofit2.HttpException
 import java.util.UUID
@@ -56,10 +67,38 @@ internal class DeviceRunController(
 ) {
     private val logger = logger()
 
+    private val testCatalog = LazyComputedValue {
+        deviceRunApi.listDevices(
+            projectId = gcpProjectId
+        )
+    }
+
+    private val defaultDevicePicker: DevicePicker = { catalog: TestEnvironmentCatalog ->
+        logger.info { "received catalog: $catalog" }
+        val defaultModel = catalog.androidDeviceCatalog?.models?.firstOrNull { model ->
+            model.tags?.contains("default") == true
+        } ?: catalog.androidDeviceCatalog?.models?.firstOrNull()
+            ?: error("Cannot find default model in test device catalog: $catalog")
+        val defaultModelVersion = defaultModel.supportedVersionIds
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.maxOrNull()
+            ?.toString()
+            ?: defaultModel.supportedVersionIds?.firstOrNull()
+            ?: error("Cannot find supported version for $defaultModel in test device catalog: $catalog")
+        listOf(
+            AndroidDevice(
+                locale = "en_US",
+                androidModelId = defaultModel.id,
+                androidVersionId = defaultModelVersion,
+                orientation = "portrait"
+            )
+        )
+    }
+
     suspend fun submitTests(
-        appApk: UploadedApk,
+        appApk: UploadedApk?,
         testApk: UploadedApk,
-        devices: List<AndroidDevice>,
+        devicePicker: DevicePicker? = null,
         deviceSetup: DeviceSetup?,
         pullScreenshots: Boolean = false,
         testTargets: List<String>? = null,
@@ -72,7 +111,8 @@ internal class DeviceRunController(
         val jobConfigs = mutableListOf<JobConfig>()
         // Chunking Limit -> Max 10 JobConfigs per SessionConfig (but here we expand AndroidDevices into Jobs)
 
-        devices.forEach { device ->
+        val targetDevices = (devicePicker ?: defaultDevicePicker).pickDevices()
+        targetDevices.forEach { device ->
             // FTL locale: en_US -> DDP BCP-47: en-US
             val localeCode = device.locale.replace('_', '-')
             val deviceIdSlug = "${device.androidModelId.slug()}-${device.androidVersionId.slug()}"
@@ -84,9 +124,11 @@ internal class DeviceRunController(
             deviceActions.add(
                 DeviceAction(
                     androidInstallPackages = AndroidInstallPackagesDeviceAction(
-                        targetApp = AndroidInstallable(
-                            files = listOf(InputFile(gcsInputFile = GcsPath(path = appApk.gcsPath.path)))
-                        ),
+                        targetApp = appApk?.let {
+                            AndroidInstallable(
+                                files = listOf(InputFile(gcsInputFile = GcsPath(path = appApk.gcsPath.path)))
+                            )
+                        },
                         postTargetAppInstallables = deviceSetup?.additionalApks?.map {
                             AndroidInstallable(
                                 files = listOf(InputFile(gcsInputFile = GcsPath(path = it.gcsPath.path)))
@@ -228,4 +270,102 @@ internal class DeviceRunController(
     }
 
     private fun String.slug(): String = lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
+
+    private suspend fun DevicePicker.pickDevices(): List<AndroidDevice> {
+        return testCatalog.get().toTestEnvironmentCatalog().let(this)
+    }
+
+    internal suspend fun createEnvironmentMatrix(devicePicker: DevicePicker) = EnvironmentMatrix(
+        androidDeviceList = AndroidDeviceList(
+            androidDevices = devicePicker.pickDevices()
+        )
+    )
+
+    @VisibleForTesting
+    internal fun CatalogListDevicesResponse.toTestEnvironmentCatalog(): TestEnvironmentCatalog {
+        val androidDevices = devices?.filter {
+            it.platform != CatalogDevice.Platform.IOS && it.iosDetails == null
+        } ?: emptyList()
+
+        val models = androidDevices
+            .groupBy { device ->
+                device.modelCode?.takeIf { it.isNotBlank() }
+                    ?: device.name?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+                    ?: ""
+            }
+            .filterKeys { it.isNotBlank() }
+            .map { (modelId, deviceGroup) ->
+                val supportedVersionIds = deviceGroup
+                    .mapNotNull { it.osVersion?.takeIf { v -> v.isNotBlank() } }
+                    .distinct()
+
+                val tags = deviceGroup.flatMap { device ->
+                    when (val labels = device.labels) {
+                        is List<*> -> labels.filterIsInstance<String>()
+                        is Map<*, *> -> {
+                            val tagList = (labels["tags"] as? List<*>)?.filterIsInstance<String>()
+                                ?: (labels["tag"] as? List<*>)?.filterIsInstance<String>()
+                            tagList ?: labels.entries.mapNotNull { entry ->
+                                val key = entry.key?.toString() ?: return@mapNotNull null
+                                val value = entry.value?.toString()
+                                if (value.isNullOrBlank() || value == "true") key else "$key:$value"
+                            }
+                        }
+                        is String -> listOf(labels)
+                        else -> emptyList()
+                    }
+                }.distinct().ifEmpty { null }
+
+                val primaryScreen = deviceGroup.firstNotNullOfOrNull { it.primaryScreen }
+
+                AndroidModel(
+                    id = modelId,
+                    name = deviceGroup.firstNotNullOfOrNull { it.displayName } ?: modelId,
+                    manufacturer = deviceGroup.firstNotNullOfOrNull { it.manufacturer },
+                    brand = deviceGroup.firstNotNullOfOrNull { it.manufacturer },
+                    codename = deviceGroup.firstNotNullOfOrNull { it.modelCode },
+                    form = when (deviceGroup.firstNotNullOfOrNull { it.hardwareType }) {
+                        CatalogDevice.HardwareType.PHYSICAL -> AndroidModel.Form.PHYSICAL
+                        CatalogDevice.HardwareType.VIRTUAL -> AndroidModel.Form.VIRTUAL
+                        else -> null
+                    },
+                    formFactor = when (deviceGroup.firstNotNullOfOrNull { it.formFactor }) {
+                        CatalogDevice.FormFactor.PHONE -> AndroidModel.FormFactor.PHONE
+                        CatalogDevice.FormFactor.TABLET -> AndroidModel.FormFactor.TABLET
+                        CatalogDevice.FormFactor.WEARABLE -> AndroidModel.FormFactor.WEARABLE
+                        CatalogDevice.FormFactor.TV -> AndroidModel.FormFactor.TV
+                        else -> null
+                    },
+                    supportedAbis = deviceGroup.firstNotNullOfOrNull { it.androidDetails?.supportedAbis },
+                    supportedVersionIds = supportedVersionIds.ifEmpty { null },
+                    tags = tags,
+                    screenDensity = primaryScreen?.densityDpi,
+                    screenX = primaryScreen?.widthPx,
+                    screenY = primaryScreen?.heightPx
+                )
+            }
+
+        val versions = androidDevices
+            .mapNotNull { it.osVersion?.takeIf { v -> v.isNotBlank() } }
+            .distinct()
+            .map { versionId ->
+                AndroidVersion(
+                    id = versionId,
+                    apiLevel = versionId.toIntOrNull(),
+                    versionString = versionId
+                )
+            }
+
+        return TestEnvironmentCatalog(
+            androidDeviceCatalog = AndroidDeviceCatalog(
+                models = models,
+                versions = versions.ifEmpty { null }
+            )
+        )
+    }
+
+    @VisibleForTesting
+    internal suspend fun getDefaultEnvironmentMatrix(): EnvironmentMatrix {
+        return createEnvironmentMatrix(defaultDevicePicker)
+    }
 }

@@ -18,13 +18,23 @@ package dev.androidx.ci.devicerun
 
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeDeviceRunApi
+import dev.androidx.ci.fake.throwHttpError
 import dev.androidx.ci.gcloud.GcsPath
+import dev.androidx.ci.generated.ddp.CatalogAndroidDeviceDetails
+import dev.androidx.ci.generated.ddp.CatalogDevice
+import dev.androidx.ci.generated.ddp.CatalogListDevicesResponse
+import dev.androidx.ci.generated.ddp.CatalogScreenMetrics
+import dev.androidx.ci.generated.ddp.Session
 import dev.androidx.ci.generated.ftl.AndroidDevice
+import dev.androidx.ci.generated.ftl.AndroidModel
+import dev.androidx.ci.testRunner.DevicePicker
 import dev.androidx.ci.testRunner.vo.ApkInfo
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertThrows
 import org.junit.Test
+import retrofit2.HttpException
 
 internal class DeviceRunControllerTest {
     private val fakeApi = FakeDeviceRunApi()
@@ -52,7 +62,7 @@ internal class DeviceRunControllerTest {
         val session = controller.submitTests(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = { devices },
             deviceSetup = null,
             pullScreenshots = false,
             testTargets = null,
@@ -93,7 +103,7 @@ internal class DeviceRunControllerTest {
     }
 
     @Test
-    fun testSubmitTests_extraOptionsMovedToTestTargets() = runBlocking<Unit> {
+    fun testSubmitTests_extraOptionsMovedToTestTargets() = runBlocking {
         val appApk = createUploadedApk("app.apk")
         val testApk = createUploadedApk("test.apk")
         val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
@@ -109,7 +119,7 @@ internal class DeviceRunControllerTest {
         val session = controller.submitTests(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = { devices },
             deviceSetup = deviceSetup,
             pullScreenshots = false,
             testTargets = listOf("package com.example.foo"),
@@ -140,7 +150,7 @@ internal class DeviceRunControllerTest {
     }
 
     @Test
-    fun testSubmitTests_retryMapping() = runBlocking<Unit> {
+    fun testSubmitTests_retryMapping() = runBlocking {
         val appApk = createUploadedApk("app.apk")
         val testApk = createUploadedApk("test.apk")
         val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
@@ -148,7 +158,7 @@ internal class DeviceRunControllerTest {
         val session = controller.submitTests(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = { devices },
             deviceSetup = null,
             pullScreenshots = false,
             testTargets = null,
@@ -163,6 +173,268 @@ internal class DeviceRunControllerTest {
 
         // FTL 2 retries -> DDP 3 total attempts
         assertThat(flakyAttempts).isEqualTo(3)
+    }
+
+    @Test
+    fun testSubmitTests_withDevicePicker() = runBlocking {
+        val fakeCatalog = CatalogListDevicesResponse(
+            devices = listOf(
+                CatalogDevice(
+                    modelCode = "MediumPhone.arm",
+                    osVersion = "33",
+                    displayName = "Medium Phone",
+                    platform = CatalogDevice.Platform.ANDROID,
+                    labels = listOf("default")
+                ),
+                CatalogDevice(
+                    modelCode = "tokay",
+                    osVersion = "34",
+                    displayName = "Pixel 9",
+                    platform = CatalogDevice.Platform.ANDROID
+                )
+            )
+        )
+        fakeApi.setDevicesResponse(fakeCatalog)
+
+        val appApk = createUploadedApk("app.apk")
+        val testApk = createUploadedApk("test.apk")
+        val picker: DevicePicker = { catalog ->
+            val model = catalog.androidDeviceCatalog?.models?.first { it.id == "tokay" }!!
+            listOf(
+                AndroidDevice(
+                    androidModelId = model.id,
+                    androidVersionId = model.supportedVersionIds!!.first(),
+                    locale = "en_US",
+                    orientation = "portrait"
+                )
+            )
+        }
+
+        val session = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = picker,
+            deviceSetup = null,
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+
+        assertThat(session.sessionConfig.jobConfigs).hasSize(1)
+        val job = session.sessionConfig.jobConfigs.first()
+        val deviceConfig = job.allocationConfig.deviceConfigs.first()
+        assertThat(deviceConfig.requirement.deviceId).isEqualTo("tokay-34")
+    }
+
+    @Test
+    fun testDefaultEnvironment() = runBlocking {
+        val fakeCatalog = CatalogListDevicesResponse(
+            devices = listOf(
+                CatalogDevice(
+                    modelCode = "MediumPhone.arm",
+                    osVersion = "33",
+                    displayName = "Medium Phone",
+                    platform = CatalogDevice.Platform.ANDROID,
+                    labels = listOf("default")
+                )
+            )
+        )
+        fakeApi.setDevicesResponse(fakeCatalog)
+
+        val defaultEnv = controller.getDefaultEnvironmentMatrix()
+        val defaultDevice = defaultEnv.androidDeviceList?.androidDevices?.first()
+        assertThat(defaultDevice?.androidModelId).isEqualTo("MediumPhone.arm")
+        assertThat(defaultDevice?.androidVersionId).isEqualTo("33")
+    }
+
+    @Test
+    fun testCatalogConversion_mapsDdpDevicesToFtlCatalog() = runBlocking {
+        val ddpResponse = CatalogListDevicesResponse(
+            devices = listOf(
+                CatalogDevice(
+                    modelCode = "MediumPhone.arm",
+                    osVersion = "33",
+                    displayName = "Medium Phone 33",
+                    manufacturer = "Google",
+                    platform = CatalogDevice.Platform.ANDROID,
+                    hardwareType = CatalogDevice.HardwareType.VIRTUAL,
+                    formFactor = CatalogDevice.FormFactor.PHONE,
+                    androidDetails = CatalogAndroidDeviceDetails(supportedAbis = listOf("arm64-v8a")),
+                    primaryScreen = CatalogScreenMetrics(densityDpi = 420, widthPx = 1080, heightPx = 2400),
+                    labels = listOf("default")
+                ),
+                CatalogDevice(
+                    modelCode = "MediumPhone.arm",
+                    osVersion = "34",
+                    displayName = "Medium Phone 34",
+                    manufacturer = "Google",
+                    platform = CatalogDevice.Platform.ANDROID,
+                    hardwareType = CatalogDevice.HardwareType.VIRTUAL,
+                    formFactor = CatalogDevice.FormFactor.PHONE
+                ),
+                CatalogDevice(
+                    modelCode = "iphone14pro",
+                    osVersion = "17.4",
+                    platform = CatalogDevice.Platform.IOS
+                )
+            )
+        )
+
+        with(controller) {
+            val catalog = ddpResponse.toTestEnvironmentCatalog()
+            val models = catalog.androidDeviceCatalog?.models
+            assertThat(models).hasSize(1)
+
+            val model = models!!.first()
+            assertThat(model.id).isEqualTo("MediumPhone.arm")
+            assertThat(model.supportedVersionIds).containsExactly("33", "34")
+            assertThat(model.manufacturer).isEqualTo("Google")
+            assertThat(model.form).isEqualTo(AndroidModel.Form.VIRTUAL)
+            assertThat(model.formFactor).isEqualTo(AndroidModel.FormFactor.PHONE)
+            assertThat(model.tags).contains("default")
+            assertThat(model.supportedAbis).containsExactly("arm64-v8a")
+            assertThat(model.screenDensity).isEqualTo(420)
+            assertThat(model.screenX).isEqualTo(1080)
+            assertThat(model.screenY).isEqualTo(2400)
+        }
+    }
+
+    @Test
+    fun testSubmitTests_additionalApks() = runBlocking {
+        val appApk = createUploadedApk("app.apk")
+        val testApk = createUploadedApk("test.apk")
+        val extraApk1 = createUploadedApk("extra1.apk")
+        val extraApk2 = createUploadedApk("extra2.apk")
+        val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
+
+        val deviceSetup = DeviceSetup(
+            additionalApks = listOf(extraApk1, extraApk2)
+        )
+
+        val session = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = deviceSetup,
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+
+        val job = session.sessionConfig.jobConfigs.first()
+        val installPackages = job.allocationConfig.deviceConfigs.first().actions
+            ?.firstNotNullOfOrNull { it.androidInstallPackages }
+
+        assertThat(installPackages).isNotNull()
+        assertThat(installPackages?.targetApp?.files?.firstOrNull()?.gcsInputFile?.path)
+            .isEqualTo(appApk.gcsPath.path)
+        val postInstallPaths = installPackages?.postTargetAppInstallables?.flatMap {
+            it.files
+        }?.mapNotNull { it.gcsInputFile?.path }
+        assertThat(postInstallPaths).containsExactly(extraApk1.gcsPath.path, extraApk2.gcsPath.path).inOrder()
+    }
+
+    @Test
+    fun testSubmitTests_pullScreenshotsAndDirectoriesToPull() = runBlocking {
+        val appApk = createUploadedApk("app.apk")
+        val testApk = createUploadedApk("test.apk")
+        val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
+
+        val deviceSetup = DeviceSetup(
+            directoriesToPull = mutableListOf("/sdcard/custom/logs")
+        )
+
+        val sessionWithPulls = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = deviceSetup,
+            pullScreenshots = true,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+
+        val job = sessionWithPulls.sessionConfig.jobConfigs.first()
+        val pullAction = job.allocationConfig.deviceConfigs.first().actions
+            ?.firstNotNullOfOrNull { it.androidPullFiles }
+        assertThat(pullAction).isNotNull()
+        assertThat(pullAction?.paths).containsExactly(
+            "/sdcard/custom/logs",
+            "/sdcard/screenshots",
+            "/sdcard/Pictures/screenshots"
+        ).inOrder()
+
+        val sessionWithoutPulls = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = null,
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+        val noPullAction = sessionWithoutPulls.sessionConfig.jobConfigs.first().allocationConfig.deviceConfigs.first().actions
+            ?.firstNotNullOfOrNull { it.androidPullFiles }
+        assertThat(noPullAction).isNull()
+    }
+
+    @Test
+    fun testGetSession_success() = runBlocking {
+        val appApk = createUploadedApk("app.apk")
+        val testApk = createUploadedApk("test.apk")
+        val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
+
+        val session = controller.submitTests(
+            appApk = appApk,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = null,
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+        val sessionId = session.name!!.substringAfterLast('/')
+
+        val retrieved = controller.getSession(sessionId)
+        assertThat(retrieved).isNotNull()
+        assertThat(retrieved?.name).isEqualTo(session.name)
+    }
+
+    @Test
+    fun testGetSession_notFound() = runBlocking {
+        val result = controller.getSession("non-existent-session-id")
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun testGetSession_serverError() {
+        val throwingApi = object : DeviceRunApi by fakeApi {
+            override suspend fun getSession(projectId: String, sessionId: String): Session {
+                throwHttpError<Session>(500)
+            }
+        }
+        val errorController = DeviceRunController(throwingApi, "test-project")
+        val exception = assertThrows(HttpException::class.java) {
+            runBlocking {
+                errorController.getSession("any-session")
+            }
+        }
+        assertThat(exception.code()).isEqualTo(500)
     }
 
     private fun createUploadedApk(name: String) = UploadedApk(

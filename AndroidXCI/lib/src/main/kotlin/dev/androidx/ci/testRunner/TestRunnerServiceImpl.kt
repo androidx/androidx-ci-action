@@ -16,6 +16,9 @@
 package dev.androidx.ci.testRunner
 
 import dev.androidx.ci.datastore.DatastoreApi
+import dev.androidx.ci.devicerun.DeviceRunApi
+import dev.androidx.ci.devicerun.DeviceRunController
+import dev.androidx.ci.devicerun.DeviceRunSessionStore
 import dev.androidx.ci.firebase.FirebaseTestLabApi
 import dev.androidx.ci.firebase.ToolsResultApi
 import dev.androidx.ci.gcloud.BlobVisitor
@@ -42,6 +45,7 @@ internal class TestRunnerServiceImpl internal constructor(
     datastoreApi: DatastoreApi,
     toolsResultApi: ToolsResultApi,
     firebaseTestLabApi: FirebaseTestLabApi,
+    deviceRunApi: DeviceRunApi,
     gcsResultPath: String
 ) : TestRunnerService {
     private val testMatrixStore = TestMatrixStore(
@@ -50,6 +54,15 @@ internal class TestRunnerServiceImpl internal constructor(
         firebaseTestLabApi = firebaseTestLabApi,
         toolsResultApi = toolsResultApi,
         resultsGcsPrefix = googleCloudApi.getGcsPath("aosp-ftl/$gcsResultPath")
+    )
+    private val deviceRunController = DeviceRunController(
+        deviceRunApi = deviceRunApi,
+        gcpProjectId = firebaseProjectId
+    )
+    private val deviceRunSessionStore = DeviceRunSessionStore(
+        datastoreApi = datastoreApi,
+        deviceRunController = deviceRunController,
+        resultsGcsPrefix = googleCloudApi.getGcsPath("aosp-ddp/$gcsResultPath")
     )
     private val apkStore = ApkStore(googleCloudApi)
     private val testLabController = FirebaseTestLabController(
@@ -106,23 +119,52 @@ internal class TestRunnerServiceImpl internal constructor(
         flakyTestAttempts: Int,
         testTimeoutSeconds: Int,
         orchestratorOption: OrchestratorOption?,
+        testBackend: TestBackend,
+        gcsSmartShardingFilePath: String
     ): TestRunnerService.ScheduleTestsResponse {
-        val testMatrices = testLabController.submitTests(
-            appApk = appApk ?: apkStore.getPlaceholderApk(),
-            testApk = testApk,
-            clientInfo = clientInfo,
-            sharding = sharding,
-            deviceSetup = deviceSetup,
-            devicePicker = devicePicker,
-            pullScreenshots = pullScreenshots,
-            cachedTestMatrixFilter = cachedTestMatrixFilter,
-            testTargets = testTargets,
-            flakyTestAttempts = flakyTestAttempts,
-            testTimeoutSeconds = testTimeoutSeconds,
-            orchestratorOption = orchestratorOption,
-        )
+        val testMatrices = if (testBackend == TestBackend.FTL || testBackend == TestBackend.BOTH) {
+            testLabController.submitTests(
+                appApk = appApk ?: apkStore.getPlaceholderApk(),
+                testApk = testApk,
+                clientInfo = clientInfo,
+                sharding = sharding,
+                deviceSetup = deviceSetup,
+                devicePicker = devicePicker,
+                pullScreenshots = pullScreenshots,
+                cachedTestMatrixFilter = cachedTestMatrixFilter,
+                testTargets = testTargets,
+                flakyTestAttempts = flakyTestAttempts,
+                testTimeoutSeconds = testTimeoutSeconds,
+                orchestratorOption = orchestratorOption,
+            )
+        } else {
+            emptyList()
+        }
+
+        val ddpSessions = if (testBackend == TestBackend.DDP || testBackend == TestBackend.BOTH) {
+            val session = deviceRunSessionStore.getOrCreateSession(
+                appApk = appApk,
+                testApk = testApk,
+                devicePicker = devicePicker,
+                clientInfo = clientInfo,
+                sharding = sharding,
+                deviceSetup = deviceSetup,
+                pullScreenshots = pullScreenshots,
+                testTargets = testTargets,
+                flakyTestAttempts = flakyTestAttempts,
+                testTimeoutSeconds = testTimeoutSeconds,
+                orchestratorOption = orchestratorOption,
+                cachedSessionFilter = { false },
+                gcsSmartShardingFilePath = gcsSmartShardingFilePath,
+            )
+            listOf(session)
+        } else {
+            emptyList()
+        }
+
         return TestRunnerService.ScheduleTestsResponse.create(
-            testMatrices
+            testMatrices = testMatrices,
+            ddpSessions = ddpSessions
         )
     }
 

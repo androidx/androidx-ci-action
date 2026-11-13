@@ -45,7 +45,7 @@ internal class DeviceRunSessionStoreTest {
         val session = store.getOrCreateSession(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = { devices },
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
@@ -67,7 +67,7 @@ internal class DeviceRunSessionStoreTest {
         val session1 = store.getOrCreateSession(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = { devices },
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
@@ -79,7 +79,7 @@ internal class DeviceRunSessionStoreTest {
         val session2 = store.getOrCreateSession(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = { devices },
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
@@ -103,7 +103,7 @@ internal class DeviceRunSessionStoreTest {
         val session1 = store.getOrCreateSession(
             appApk = appApk,
             testApk = testApk,
-            devices = devices1,
+            devicePicker = { devices1 },
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
@@ -115,7 +115,7 @@ internal class DeviceRunSessionStoreTest {
         val session2 = store.getOrCreateSession(
             appApk = appApk,
             testApk = testApk,
-            devices = devices2,
+            devicePicker = { devices2 },
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
@@ -136,7 +136,7 @@ internal class DeviceRunSessionStoreTest {
         val session1 = store.getOrCreateSession(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = { devices },
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
@@ -148,7 +148,7 @@ internal class DeviceRunSessionStoreTest {
         val session2 = store.getOrCreateSession(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = { devices },
             clientInfo = null,
             sharding = null,
             deviceSetup = null,

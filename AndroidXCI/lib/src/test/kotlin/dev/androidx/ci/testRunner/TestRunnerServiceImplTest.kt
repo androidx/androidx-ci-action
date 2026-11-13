@@ -3,6 +3,12 @@ package dev.androidx.ci.testRunner
 import com.google.common.truth.Truth.assertThat
 import dev.androidx.ci.fake.FakeBackend
 import dev.androidx.ci.gcloud.GcsPath
+import dev.androidx.ci.generated.ddp.Session
+import dev.androidx.ci.generated.ddp.SessionConfig
+import dev.androidx.ci.generated.ddp.SessionConfigSessionOutputFileDirectoryConfig
+import dev.androidx.ci.generated.ddp.SessionReport
+import dev.androidx.ci.generated.ddp.Status
+import dev.androidx.ci.generated.ddp.Status.StatusType
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.ClientInfoDetail
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
@@ -38,6 +44,7 @@ class TestRunnerServiceImplTest {
         datastoreApi = fakeBackend.datastoreApi,
         toolsResultApi = fakeToolsResultApi,
         firebaseTestLabApi = fakeBackend.fakeFirebaseTestLabApi,
+        deviceRunApi = fakeBackend.fakeDeviceRunApi,
         gcsResultPath = "testRunnerServiceTest"
     )
     private val devicePicker = { _: TestEnvironmentCatalog ->
@@ -173,7 +180,8 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             result.testMatrices
@@ -188,7 +196,8 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             sameRequest.testMatrices
@@ -201,7 +210,8 @@ class TestRunnerServiceImplTest {
             sharding = null,
             deviceSetup = null,
             devicePicker = devicePicker,
-            cachedTestMatrixFilter = { false }
+            cachedTestMatrixFilter = { false },
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             noReuse.testMatrices
@@ -220,7 +230,8 @@ class TestRunnerServiceImplTest {
             clientInfo = clientInfo,
             sharding = null,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             sameRequest.testMatrices
@@ -253,7 +264,8 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = shardingOption,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         // sharding will invalidate cache as it will change the test matrix response
         // significantly. Otherwise, we'll be returning a TestMatrix with mismatched
@@ -290,7 +302,8 @@ class TestRunnerServiceImplTest {
                 )
             ),
             devicePicker = devicePicker,
-            pullScreenshots = true
+            pullScreenshots = true,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         withDeviceInfo.testMatrices.single().testSpecification.testSetup!!.let { testSetup ->
             assertThat(
@@ -336,7 +349,8 @@ class TestRunnerServiceImplTest {
             clientInfo = null,
             sharding = null,
             deviceSetup = null,
-            devicePicker = devicePicker
+            devicePicker = devicePicker,
+            gcsSmartShardingFilePath = "gs://testfilepath"
         )
         assertThat(
             result.testMatrices
@@ -395,6 +409,121 @@ class TestRunnerServiceImplTest {
         ).isEqualTo(
             newTestMatrix
         )
+    }
+
+    @Test
+    fun scheduleTests_backendDdp() = runBlocking {
+        val testApk = subject.getOrUploadApk(
+            name = "test.apk",
+            sha256 = sha256(byteArrayOf(1, 2, 3))
+        ) {
+            byteArrayOf(1, 2, 3)
+        }
+        val appApk = subject.getOrUploadApk(
+            name = "app.apk",
+            sha256 = sha256(byteArrayOf(4, 5, 6))
+        ) {
+            byteArrayOf(4, 5, 6)
+        }
+
+        val response = subject.scheduleTests(
+            testApk = testApk,
+            appApk = appApk,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker,
+            testBackend = TestBackend.DDP,
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+
+        assertThat(response.testMatrices).isEmpty()
+        assertThat(response.pendingTests).isEqualTo(0)
+        assertThat(response.alreadyCompletedTests).isEqualTo(0)
+        assertThat(response.ddpSessions).hasSize(1)
+        assertThat(response.pendingDdpSessions).isEqualTo(1)
+        assertThat(response.alreadyCompletedDdpSessions).isEqualTo(0)
+
+        val session = response.ddpSessions.single()
+        assertThat(session.name).isNotNull()
+        val job = session.sessionConfig.jobConfigs.single()
+        val targetAppPath = job.allocationConfig.deviceConfigs.first().actions
+            ?.firstNotNullOfOrNull { it.androidInstallPackages }
+            ?.targetApp?.files?.firstOrNull()?.gcsInputFile?.path
+        assertThat(targetAppPath).isEqualTo(appApk.gcsPath.path)
+        val testAppPath = job.action.androidInstrumentationTest?.testInstallable?.files?.firstOrNull()?.gcsInputFile?.path
+        assertThat(testAppPath).isEqualTo(testApk.gcsPath.path)
+        val smartShardingPath = job.action.androidInstrumentationTest?.smartSharding?.timingRecord?.gcsInputFile?.path
+        assertThat(smartShardingPath).isEqualTo("gs://smartShardingFile")
+    }
+
+    @Test
+    fun scheduleTests_backendBoth() = runBlocking<Unit> {
+        val testApk = subject.getOrUploadApk(
+            name = "test.apk",
+            sha256 = sha256(byteArrayOf(1, 2, 3))
+        ) {
+            byteArrayOf(1, 2, 3)
+        }
+        val appApk = subject.getOrUploadApk(
+            name = "app.apk",
+            sha256 = sha256(byteArrayOf(4, 5, 6))
+        ) {
+            byteArrayOf(4, 5, 6)
+        }
+
+        val response = subject.scheduleTests(
+            testApk = testApk,
+            appApk = appApk,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker,
+            testBackend = TestBackend.BOTH,
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+
+        assertThat(response.testMatrices).hasSize(1)
+        assertThat(response.pendingTests).isEqualTo(1)
+        assertThat(response.ddpSessions).hasSize(1)
+        assertThat(response.pendingDdpSessions).isEqualTo(1)
+    }
+
+    @Test
+    fun scheduleTestsResponse_sessionCounts() {
+        val dummyConfig = SessionConfig(
+            jobConfigs = emptyList(),
+            outputDirectoryConfig = SessionConfigSessionOutputFileDirectoryConfig(
+                gcsOutputDirectory = dev.androidx.ci.generated.ddp.GcsPath("gs://output")
+            )
+        )
+        val pendingSession1 = Session(
+            sessionConfig = dummyConfig,
+            sessionReport = null
+        )
+        val pendingSession2 = Session(
+            sessionConfig = dummyConfig,
+            sessionReport = SessionReport(
+                id = "report2",
+                status = Status(statusType = StatusType.RUNNING)
+            )
+        )
+        val completedSession = Session(
+            sessionConfig = dummyConfig,
+            sessionReport = SessionReport(
+                id = "report3",
+                status = Status(statusType = StatusType.DONE)
+            )
+        )
+
+        val response = TestRunnerService.ScheduleTestsResponse.create(
+            testMatrices = emptyList(),
+            ddpSessions = listOf(pendingSession1, pendingSession2, completedSession)
+        )
+
+        assertThat(response.ddpSessions).hasSize(3)
+        assertThat(response.pendingDdpSessions).isEqualTo(2)
+        assertThat(response.alreadyCompletedDdpSessions).isEqualTo(1)
     }
 
     @Test

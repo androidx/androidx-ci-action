@@ -28,6 +28,7 @@ import dev.androidx.ci.generated.ftl.AndroidInstrumentationTest.OrchestratorOpti
 import dev.androidx.ci.generated.ftl.ClientInfo
 import dev.androidx.ci.generated.ftl.EnvironmentMatrix
 import dev.androidx.ci.generated.ftl.ShardingOption
+import dev.androidx.ci.testRunner.DevicePicker
 import dev.androidx.ci.testRunner.vo.DeviceSetup
 import dev.androidx.ci.testRunner.vo.UploadedApk
 import org.apache.logging.log4j.kotlin.logger
@@ -59,9 +60,9 @@ internal class DeviceRunSessionStore(
      * same APKs and environment configuration.
      */
     suspend fun getOrCreateSession(
-        appApk: UploadedApk,
+        appApk: UploadedApk?,
         testApk: UploadedApk,
-        devices: List<AndroidDevice>,
+        devicePicker: DevicePicker,
         clientInfo: ClientInfo?,
         sharding: ShardingOption?,
         deviceSetup: DeviceSetup?,
@@ -73,13 +74,13 @@ internal class DeviceRunSessionStore(
         orchestratorOption: OrchestratorOption? = null,
         gcsSmartShardingFilePath: String
     ): Session {
-        val environmentMatrix = devices.createEnvironmentMatrix()
+        val environmentMatrix = deviceRunController.createEnvironmentMatrix(devicePicker)
         val sessionRunId = SessionRun.createId(
             datastoreApi = datastoreApi,
             environment = environmentMatrix,
             clientInfo = clientInfo,
             sharding = sharding,
-            appApk = appApk.apkInfo,
+            appApk = appApk?.apkInfo,
             testApk = testApk.apkInfo,
             deviceSetup = deviceSetup,
             orchestratorOption = orchestratorOption,
@@ -96,7 +97,7 @@ internal class DeviceRunSessionStore(
         val newSession = deviceRunController.submitTests(
             appApk = appApk,
             testApk = testApk,
-            devices = devices,
+            devicePicker = devicePicker,
             deviceSetup = deviceSetup,
             pullScreenshots = pullScreenshots,
             testTargets = testTargets,
