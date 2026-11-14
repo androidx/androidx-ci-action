@@ -297,7 +297,7 @@ internal class TestMatrixStore(
         }
         val testSpecification = TestSpecification(
             testTimeout = "${testTimeoutSeconds}s",
-            disableVideoRecording = false,
+            disableVideoRecording = true, // An expensive feature in terms of storage and performance
             disablePerformanceMetrics = true, // Not a useful feature for androidx
             androidInstrumentationTest = AndroidInstrumentationTest(
                 appApk = FileReference(
