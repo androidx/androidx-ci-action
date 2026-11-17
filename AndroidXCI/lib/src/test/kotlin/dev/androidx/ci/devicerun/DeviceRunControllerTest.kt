@@ -141,11 +141,11 @@ internal class DeviceRunControllerTest {
         assertThat(testTargets.size).isEqualTo(3)
 
         // Verify non-filter keys remained in extra options along with implicit defaults
-        val additionalTestOptions = instrumentationTest?.additionalTestOptions ?: emptyList<String>()
-        val optionsSet = additionalTestOptions as List<*>
-        assertThat(optionsSet.contains("disable_window_animations=true")).isTrue()
-        assertThat(optionsSet.contains("firebase.test.lab=true")).isTrue()
-        assertThat(optionsSet.contains("customKey=customValue")).isTrue()
+        @Suppress("UNCHECKED_CAST")
+        val additionalTestOptions = instrumentationTest?.additionalTestOptions as? Map<String, String> ?: emptyMap()
+        assertThat(additionalTestOptions["disable_window_animations"]).isEqualTo("true")
+        assertThat(additionalTestOptions["firebase.test.lab"]).isEqualTo("true")
+        assertThat(additionalTestOptions["customKey"]).isEqualTo("customValue")
         assertThat(additionalTestOptions.size).isEqualTo(3)
     }
 
