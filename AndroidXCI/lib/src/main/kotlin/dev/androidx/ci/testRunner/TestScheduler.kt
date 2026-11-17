@@ -262,8 +262,12 @@ internal sealed interface TestScheduler {
                         return
                     }
                     if (scope.entry.name == name) {
-                        val alreadyUploaded = apkStore.getUploadedApk(name, sha256)
-                        uploadedApk = alreadyUploaded ?: apkStore.uploadApk(name, scope.bytes)
+                        uploadedApk = apkStore.getOrUploadApk(
+                            name = name,
+                            sha256 = sha256
+                        ) {
+                            scope.bytes
+                        }
                     }
                 }
             }

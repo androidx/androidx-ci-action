@@ -70,4 +70,34 @@ internal class ApkStoreTest {
         assertThat(gcpApi.uploadCount).isEqualTo(1)
         assertThat(gcpApi.artifacts()[placeholderApk.gcsPath]).isNotNull()
     }
+
+    @Test
+    fun getOrUploadApk_usesProvidedShaAndChecksExistenceOnce() = runBlocking<Unit> {
+        val apkBytes = byteArrayOf(10, 20, 30, 40)
+        val providedSha = "precomputed-sha256-from-config"
+
+        val uploaded = apkStore.getOrUploadApk(
+            name = "sub/dir/test.apk",
+            sha256 = providedSha
+        ) {
+            apkBytes
+        }
+
+        assertThat(gcpApi.existingFilePathQueryCount).isEqualTo(1)
+        assertThat(gcpApi.uploadCount).isEqualTo(1)
+        assertThat(uploaded.apkInfo.idHash).isEqualTo(providedSha)
+        assertThat(uploaded.gcsPath.path).isEqualTo("gs://my-bucket/sub/dir/test/$providedSha.apk")
+        assertThat(gcpApi.artifacts()[uploaded.gcsPath]).isEqualTo(apkBytes)
+
+        val cached = apkStore.getOrUploadApk(
+            name = "sub/dir/test.apk",
+            sha256 = providedSha
+        ) {
+            error("bytes provider should not be called when APK already exists in GCS")
+        }
+
+        assertThat(cached).isEqualTo(uploaded)
+        assertThat(gcpApi.existingFilePathQueryCount).isEqualTo(2)
+        assertThat(gcpApi.uploadCount).isEqualTo(1)
+    }
 }

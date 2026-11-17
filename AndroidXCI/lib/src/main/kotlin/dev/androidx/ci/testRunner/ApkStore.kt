@@ -66,9 +66,41 @@ internal class ApkStore(
         getUploadedApk(apkInfo)?.let {
             return it
         }
+        return putApk(
+            apkInfo = apkInfo,
+            bytes = bytes
+        )
+    }
+
+    /**
+     * Returns the APK for the given [name] and [sha256] if it already exists in the backend; otherwise obtains the
+     * APK contents via [bytes] and uploads it without re-computing SHA-256 or re-checking GCS existence.
+     */
+    suspend fun getOrUploadApk(
+        name: String,
+        sha256: String,
+        bytes: suspend () -> ByteArray
+    ): UploadedApk {
+        val apkInfo = ApkInfo(
+            filePath = name,
+            idHash = sha256
+        )
+        getUploadedApk(apkInfo)?.let {
+            return it
+        }
+        return putApk(
+            apkInfo = apkInfo,
+            bytes = bytes()
+        )
+    }
+
+    private suspend fun putApk(
+        apkInfo: ApkInfo,
+        bytes: ByteArray
+    ): UploadedApk {
         val relativePath = apkInfo.gcpRelativePath()
         logger.info {
-            "uploading $name to $relativePath"
+            "uploading ${apkInfo.filePath} to $relativePath"
         }
         val gcsPath = googleCloudApi.upload(
             relativePath = relativePath,

@@ -64,6 +64,9 @@ class TestRunnerServiceImplTest {
         assertThat(
             fakeBackend.fakeGoogleCloudApi.uploadCount
         ).isEqualTo(1)
+        assertThat(
+            fakeBackend.fakeGoogleCloudApi.existingFilePathQueryCount
+        ).isEqualTo(1)
         // re-upload
         val upload2 = subject.getOrUploadApk(
             name = "foo.apk",
@@ -77,6 +80,9 @@ class TestRunnerServiceImplTest {
         assertThat(
             fakeBackend.fakeGoogleCloudApi.uploadCount
         ).isEqualTo(1)
+        assertThat(
+            fakeBackend.fakeGoogleCloudApi.existingFilePathQueryCount
+        ).isEqualTo(2)
     }
 
     @Test
