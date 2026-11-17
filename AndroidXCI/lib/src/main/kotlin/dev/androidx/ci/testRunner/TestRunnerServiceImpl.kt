@@ -78,18 +78,11 @@ internal class TestRunnerServiceImpl internal constructor(
         name: String,
         sha256: String,
         bytes: suspend () -> ByteArray
-    ): UploadedApk {
-        apkStore.getUploadedApk(
-            name = name,
-            sha256 = sha256
-        )?.let {
-            return it
-        }
-        return apkStore.uploadApk(
-            name = name,
-            bytes = bytes()
-        )
-    }
+    ): UploadedApk = apkStore.getOrUploadApk(
+        name = name,
+        sha256 = sha256,
+        bytes = bytes
+    )
 
     override suspend fun getOrUploadRemoteApk(
         sourceGcsPath: GcsPath,

@@ -34,6 +34,8 @@ internal class FakeGoogleCloudApi(
 ) : GoogleCloudApi {
     var uploadCount = 0
         private set
+    var existingFilePathQueryCount = 0
+        private set
     val rootGcsPath = GcsPath("gs://$bucketName")
     private val artifacts = mutableMapOf<GcsPath, ByteArray>()
 
@@ -85,6 +87,7 @@ internal class FakeGoogleCloudApi(
     }
 
     override suspend fun existingFilePath(relativePath: String): GcsPath? {
+        existingFilePathQueryCount++
         val path = makeGcsPath(relativePath)
         return if (artifacts.containsKey(path)) {
             path
