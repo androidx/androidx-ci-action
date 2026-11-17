@@ -171,16 +171,16 @@ internal class DeviceRunController(
             }
             // Move AndroidJUnitRunner filter keys (package, class, annotation, etc.) from extraOptions to testTargets if necessary.
             val filterKeys = listOf("package", "notPackage", "class", "notClass", "annotation", "notAnnotation", "size")
-            val filteredOptions = extraOptions.filter { opt ->
-                val key = opt.substringBefore('=')
+            val filteredOptions = mutableMapOf<String, String>()
+            extraOptions.forEach { opt ->
+                val key = opt.substringBefore('=').trim()
+                val value = opt.substringAfter('=').trim()
                 if (filterKeys.contains(key)) {
-                    val value = opt.substringAfter('=')
-                    value.split(',').forEach { v ->
+                    value.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { v ->
                         mappedTestTargets.add("$key $v")
                     }
-                    false
                 } else {
-                    true
+                    filteredOptions[key] = value
                 }
             }
 
