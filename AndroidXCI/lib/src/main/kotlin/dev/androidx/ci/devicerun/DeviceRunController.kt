@@ -200,7 +200,7 @@ internal class DeviceRunController(
             // Smart sharding
             val smartSharding = SmartSharding(
                 maxShardCount = 20,
-                targetedShardDuration = "10m",
+                targetedShardDuration = "600s",
                 timingRecord = InputFile(
                     gcsInputFile = GcsPath(
                         path = gcsSmartShardingFilePath
