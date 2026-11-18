@@ -121,22 +121,24 @@ internal class DeviceRunController(
             val deviceActions = mutableListOf<DeviceAction>()
 
             // App installation
-            deviceActions.add(
-                DeviceAction(
-                    androidInstallPackages = AndroidInstallPackagesDeviceAction(
-                        targetApp = appApk?.let {
-                            AndroidInstallable(
-                                files = listOf(InputFile(gcsInputFile = GcsPath(path = appApk.gcsPath.path)))
-                            )
-                        },
-                        postTargetAppInstallables = deviceSetup?.additionalApks?.map {
-                            AndroidInstallable(
-                                files = listOf(InputFile(gcsInputFile = GcsPath(path = it.gcsPath.path)))
-                            )
-                        }
+            if (appApk != null || deviceSetup?.additionalApks?.isNotEmpty() == true) {
+                deviceActions.add(
+                    DeviceAction(
+                        androidInstallPackages = AndroidInstallPackagesDeviceAction(
+                            targetApp = appApk?.let {
+                                AndroidInstallable(
+                                    files = listOf(InputFile(gcsInputFile = GcsPath(path = appApk.gcsPath.path)))
+                                )
+                            },
+                            postTargetAppInstallables = deviceSetup?.additionalApks?.map {
+                                AndroidInstallable(
+                                    files = listOf(InputFile(gcsInputFile = GcsPath(path = it.gcsPath.path)))
+                                )
+                            }
+                        )
                     )
                 )
-            )
+            }
 
             // Orientation & Locale
             deviceActions.add(DeviceAction(androidOrientation = AndroidOrientationDeviceAction(orientation = orientation)))
