@@ -341,6 +341,30 @@ internal class DeviceRunControllerTest {
     }
 
     @Test
+    fun testSubmitTests_noAdditionalApks() = runBlocking {
+        val testApk = createUploadedApk("test.apk")
+        val devices = listOf(AndroidDevice("tokay", "34", "en_US", "portrait"))
+
+        val session = controller.submitTests(
+            appApk = null,
+            testApk = testApk,
+            devicePicker = { devices },
+            deviceSetup = DeviceSetup(),
+            pullScreenshots = false,
+            testTargets = null,
+            flakyTestAttempts = 0,
+            testTimeoutSeconds = 900,
+            gcsResultPath = "gs://results",
+            gcsSmartShardingFilePath = "gs://smartShardingFile"
+        )
+
+        val job = session.sessionConfig.jobConfigs.first()
+        val installPackages = job.allocationConfig.deviceConfigs.first().actions
+            ?.firstNotNullOfOrNull { it.androidInstallPackages }
+        assertThat(installPackages).isNull()
+    }
+
+    @Test
     fun testSubmitTests_pullScreenshotsAndDirectoriesToPull() = runBlocking {
         val appApk = createUploadedApk("app.apk")
         val testApk = createUploadedApk("test.apk")
