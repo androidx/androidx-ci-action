@@ -55,6 +55,7 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.truth)
 }
+
 /**
  * Copy the empty apk into our build which will be used for library integration tests.
  * Unfortunately, FTL always requires a test apks, hence we need this fake one.
@@ -86,6 +87,10 @@ java {
         }
     }
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(27))
     }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(26)
 }

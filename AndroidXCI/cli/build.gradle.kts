@@ -34,6 +34,10 @@ application {
 }
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(27))
     }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(26)
 }
