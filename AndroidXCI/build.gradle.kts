@@ -21,7 +21,6 @@ plugins {
     alias(libs.plugins.kotlinJvm) apply false
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.ktlint)
-    alias(libs.plugins.ktlintIdea)
 }
 
 val githubRunId = project.providers.environmentVariable("GITHUB_RUN_ID")
@@ -36,7 +35,7 @@ val publishRepo = project.layout.buildDirectory.dir("repo")
 subprojects {
     tasks.withType(KotlinCompile::class.java).configureEach {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
+            jvmTarget.set(JvmTarget.JVM_26)
         }
     }
     pluginManager.withPlugin("maven-publish") {

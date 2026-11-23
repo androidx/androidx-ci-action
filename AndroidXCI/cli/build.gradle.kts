@@ -34,6 +34,11 @@ application {
 }
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(27))
     }
+}
+
+// Kotlin 2.4.21 does support java 27, emit Java 26 bytecode instead
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(26)
 }
