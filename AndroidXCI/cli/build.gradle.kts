@@ -38,6 +38,7 @@ java {
     }
 }
 
+// Kotlin 2.4.21 does support java 27, emit Java 26 bytecode instead
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(26)
 }
