@@ -339,6 +339,80 @@ class TestRunnerServiceImplTest {
     }
 
     @Test
+    fun schedule_bothBackends_labelsDdpJobsWithFtlTestMatrix() = runBlocking<Unit> {
+        val testApk = subject.getOrUploadApk(
+            name = "foo.apk",
+            sha256 = sha256(byteArrayOf(1, 2, 3, 4, 5))
+        ) {
+            byteArrayOf(1, 2, 3, 4, 5)
+        }
+        val appApk = subject.getOrUploadApk(
+            name = "app.apk",
+            sha256 = sha256(byteArrayOf(6, 7, 8))
+        ) {
+            byteArrayOf(6, 7, 8)
+        }
+        val devices = listOf(
+            FTLTestDevices.BLUELINE_API_28_PHYSICAL,
+            FTLTestDevices.ORIOLE_API_31_PHYSICAL
+        )
+        val result = subject.scheduleTests(
+            testApk = testApk,
+            appApk = appApk,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = { devices },
+            testBackend = TestBackend.BOTH
+        )
+        assertThat(result.testMatrices).hasSize(2)
+        val bluelineMatrix = result.testMatrices.single { matrix ->
+            FTLTestDevices.BLUELINE_API_28_PHYSICAL in matrix.environmentMatrix.androidDeviceList?.androidDevices.orEmpty()
+        }
+        val orioleMatrix = result.testMatrices.single { matrix ->
+            FTLTestDevices.ORIOLE_API_31_PHYSICAL in matrix.environmentMatrix.androidDeviceList?.androidDevices.orEmpty()
+        }
+        assertThat(bluelineMatrix.testMatrixId).isNotNull()
+        assertThat(orioleMatrix.testMatrixId).isNotNull()
+        assertThat(bluelineMatrix.testMatrixId).isNotEqualTo(orioleMatrix.testMatrixId)
+        val ddpJobs = result.ddpSessions.single().sessionConfig.jobConfigs
+        assertThat(ddpJobs).hasSize(2)
+        val bluelineJob = ddpJobs.single {
+            it.allocationConfig.deviceConfigs.single().requirement.deviceId == "blueline-28"
+        }
+        val orioleJob = ddpJobs.single {
+            it.allocationConfig.deviceConfigs.single().requirement.deviceId == "oriole-31"
+        }
+        assertThat(bluelineJob.labels).isEqualTo(mapOf("ftl_matrix_id" to bluelineMatrix.testMatrixId))
+        assertThat(orioleJob.labels).isEqualTo(mapOf("ftl_matrix_id" to orioleMatrix.testMatrixId))
+    }
+
+    @Test
+    fun schedule_ddpBackend_doesNotLabelDdpJobs() = runBlocking<Unit> {
+        val testApk = subject.getOrUploadApk(
+            name = "foo.apk",
+            sha256 = sha256(byteArrayOf(1, 2, 3, 4, 5))
+        ) {
+            byteArrayOf(1, 2, 3, 4, 5)
+        }
+        val result = subject.scheduleTests(
+            testApk = testApk,
+            appApk = null,
+            clientInfo = null,
+            sharding = null,
+            deviceSetup = null,
+            devicePicker = devicePicker,
+            testBackend = TestBackend.DDP
+        )
+        assertThat(
+            result.testMatrices
+        ).isEmpty()
+        assertThat(
+            result.ddpSessions.single().sessionConfig.jobConfigs.single().labels
+        ).isNull()
+    }
+
+    @Test
     fun scheduleSpecificTests() = runBlocking<Unit> {
         // create a test Matrix
         val testApk = subject.getOrUploadApk(

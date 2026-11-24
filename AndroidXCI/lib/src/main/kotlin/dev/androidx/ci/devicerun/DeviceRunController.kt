@@ -106,7 +106,9 @@ internal class DeviceRunController(
         testTimeoutSeconds: Int = 2700,
         orchestratorOption: OrchestratorOption? = null,
         gcsResultPath: String,
-        gcsSmartShardingFilePath: String
+        gcsSmartShardingFilePath: String,
+        // Labels to set on the job that runs on each device.
+        jobLabels: (AndroidDevice) -> Map<String, String> = { emptyMap() }
     ): Session {
         val jobConfigs = mutableListOf<JobConfig>()
         // Chunking Limit -> Max 10 JobConfigs per SessionConfig (but here we expand AndroidDevices into Jobs)
@@ -232,7 +234,8 @@ internal class DeviceRunController(
                             smartSharding = smartSharding
                         )
                     ),
-                    settings = JobSettings(retrySettings = retrySettings)
+                    settings = JobSettings(retrySettings = retrySettings),
+                    labels = jobLabels(device).takeIf { it.isNotEmpty() }
                 )
             )
         }
